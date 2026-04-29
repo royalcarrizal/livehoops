@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+
+    <!-- The favicon shown in browser tabs -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- Makes the page fill the full phone screen without zooming -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>LiveHoops</title>
+
+    <!-- ── PWA Manifest ──────────────────────────────────────────────────── -->
+    <!-- Tells the browser where to find the manifest file that describes
+         your PWA (name, icon, colors). Vite generates this file during build. -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+
+    <!-- ── Theme Color ───────────────────────────────────────────────────── -->
+    <!-- Tints the browser chrome (address bar, status bar) with your brand
+         color on Android Chrome and some desktop browsers -->
+    <meta name="theme-color" content="#FF6B00" />
+
+    <!-- ── Android PWA Tags ──────────────────────────────────────────────── -->
+    <!-- Tells Android Chrome that this site can be installed as an app -->
+    <meta name="mobile-web-app-capable" content="yes" />
+
+    <!-- ── iOS / Safari PWA Tags ─────────────────────────────────────────── -->
+    <!-- These are the Apple-specific tags that make "Add to Home Screen"
+         work on iPhones. Safari doesn't use the manifest file, so Apple
+         needs its own set of meta tags. -->
+
+    <!-- Tells Safari this page can run as a full-screen app (no address bar) -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+
+    <!-- 'black-translucent' makes the iPhone status bar transparent so your
+         app content goes edge-to-edge behind it. The alternative is 'black'
+         which reserves space at the top. -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <!-- The name shown under the icon on the iOS home screen -->
+    <meta name="apple-mobile-web-app-title" content="LiveHoops" />
+
+    <!-- The icon shown on the iOS home screen (Safari ignores the manifest icons) -->
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <!-- Mapbox GL JS stylesheet — required for the map to render correctly.
+         This loads the default Mapbox styles (controls, popups, etc.) -->
+    <link href='https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css' rel='stylesheet' />
+  </head>
+  <body>
+    <!-- React mounts your entire app inside this single div -->
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

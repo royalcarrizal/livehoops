@@ -1,0 +1,4160 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+:root {
+  --nav-height: 80px;
+  --status-height: 50px;
+  --font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', system-ui, sans-serif;
+}
+
+/* ── Dark theme (default) ── */
+.theme-dark {
+  --bg: #000000;
+  --bg-card: #1C1C1E;
+  --bg-elevated: #2C2C2E;
+  --bg-input: #1C1C1E;
+  --bg-nav: rgba(18, 18, 18, 0.95);
+  --orange: #FF6B00;
+  --orange-bright: #FF8040;
+  --orange-dim: rgba(255, 107, 0, 0.15);
+  --orange-border: rgba(255, 107, 0, 0.3);
+  --green: #30D158;
+  --green-dim: rgba(48, 209, 88, 0.12);
+  --blue: #0A84FF;
+  --text-primary: #FFFFFF;
+  --text-secondary: #8E8E93;
+  --text-tertiary: #3A3A3C;
+  --separator: #2C2C2E;
+  --separator-strong: #3A3A3C;
+  --card-shadow: none;
+  --map-bg: #111317;
+  --map-road: rgba(255, 255, 255, 0.04);
+}
+
+/* ── Light theme ── */
+.theme-light {
+  --bg: #F2F2F7;
+  --bg-card: #FFFFFF;
+  --bg-elevated: #E5E5EA;
+  --bg-input: #FFFFFF;
+  --bg-nav: rgba(248, 248, 248, 0.95);
+  --orange: #FF6B00;
+  --orange-bright: #FF7A00;
+  --orange-dim: rgba(255, 107, 0, 0.12);
+  --orange-border: rgba(255, 107, 0, 0.25);
+  --green: #34C759;
+  --green-dim: rgba(52, 199, 89, 0.12);
+  --blue: #007AFF;
+  --text-primary: #000000;
+  --text-secondary: #6C6C70;
+  --text-tertiary: #AEAEB2;
+  --separator: #E5E5EA;
+  --separator-strong: #C6C6C8;
+  --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --map-bg: #E0E4EC;
+  --map-road: rgba(0, 0, 0, 0.06);
+}
+
+html, body {
+  background: #000;
+  min-height: 100svh;
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body.theme-light {
+  background: #E5E5EA;
+}
+
+body {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+#root {
+  width: 390px;
+  max-width: 100vw;
+  min-height: 100svh;
+  background: var(--bg);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 0 80px rgba(0,0,0,0.8);
+}
+
+/* ── Scrollable screen area ── */
+.screen-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-bottom: var(--nav-height);
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+.screen-content::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── Status Bar ── */
+.status-bar {
+  height: var(--status-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px 0;
+  flex-shrink: 0;
+}
+
+.status-bar .time {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.3px;
+}
+
+.status-icons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ── Screen headers ── */
+.screen-header {
+  padding: 8px 20px 16px;
+  flex-shrink: 0;
+}
+
+.header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.app-title {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.8px;
+}
+
+.app-title span {
+  color: var(--orange);
+}
+
+.location-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+/* ── Search Bar ── */
+.search-bar {
+  margin: 0 20px 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--separator-strong);
+  border-radius: 12px;
+  padding: 10px 14px;
+}
+
+.search-bar input {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--text-primary);
+  font-size: 15px;
+  font-family: var(--font);
+}
+
+.search-bar input::placeholder {
+  color: var(--text-secondary);
+}
+
+/* ── Section headers ── */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px 12px;
+}
+
+.section-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.4px;
+}
+
+.section-count {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+/* ── Park Cards ── */
+.park-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 16px;
+}
+
+.park-card {
+  background: var(--bg-card);
+  border-radius: 16px;
+  border: 1px solid var(--separator-strong);
+  overflow: hidden;
+  transition: opacity 0.15s ease;
+  cursor: pointer;
+  animation: slideUp 0.3s ease both;
+  box-shadow: var(--card-shadow);
+}
+
+.park-card:active {
+  opacity: 0.85;
+}
+
+.park-card-top {
+  padding: 14px 16px 12px;
+}
+
+.park-name-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.park-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.3px;
+  line-height: 1.2;
+}
+
+.live-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--orange-dim);
+  border: 1px solid var(--orange-border);
+  border-radius: 20px;
+  padding: 3px 8px;
+  flex-shrink: 0;
+}
+
+.live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--orange);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.live-text {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--orange);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.park-address {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.3;
+  margin-bottom: 12px;
+}
+
+.park-meta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.meta-item svg {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+/* ── Player section ── */
+.park-card-bottom {
+  border-top: 1px solid var(--separator);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.player-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.player-count-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--orange-dim);
+  border-radius: 10px;
+  padding: 5px 10px;
+  flex-shrink: 0;
+}
+
+.player-count-num {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--orange);
+  line-height: 1;
+}
+
+.player-count-label {
+  font-size: 11px;
+  color: var(--orange);
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.player-status-text {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.3;
+}
+
+.empty-text {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* ── Avatar Stack ── */
+.avatar-stack {
+  display: flex;
+  align-items: center;
+}
+
+.avatar-stack .avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  border: 2px solid var(--bg-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-left: -8px;
+}
+
+.avatar-stack .avatar:first-child {
+  margin-left: 0;
+}
+
+.avatar-a { background: #FF6B1A; }
+.avatar-b { background: #30D158; }
+.avatar-c { background: #0A84FF; }
+.avatar-d { background: #BF5AF2; }
+.avatar-e { background: #FF375F; }
+.avatar-f { background: #FFD60A; color: #000; }
+
+/* ── Check In Button ── */
+.btn-checkin {
+  background: var(--orange);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 9px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: var(--font);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s ease, transform 0.1s ease;
+  letter-spacing: -0.2px;
+}
+
+.btn-checkin:active {
+  transform: scale(0.95);
+  background: var(--orange-bright);
+}
+
+.btn-checkin.checked-in {
+  background: var(--green-dim);
+  color: var(--green);
+  border: 1px solid rgba(48, 209, 88, 0.3);
+}
+
+.btn-checkin.checked-in:active {
+  background: rgba(48, 209, 88, 0.2);
+}
+
+/* ── Notification button ── */
+.icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: 1px solid var(--separator-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-primary);
+  transition: background 0.15s ease;
+  flex-shrink: 0;
+}
+
+.icon-btn:active {
+  background: var(--bg-elevated);
+}
+
+/* ── Bottom Navigation ── */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 390px;
+  max-width: 100vw;
+  height: var(--nav-height);
+  background: var(--bg-nav);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid var(--separator-strong);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-around;
+  padding: 10px 8px 0;
+  z-index: 100;
+}
+
+.nav-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+  padding: 4px 12px;
+  border-radius: 10px;
+  transition: opacity 0.15s ease;
+  border: none;
+  background: none;
+  color: var(--text-secondary);
+  flex: 1;
+}
+
+.nav-tab:active {
+  opacity: 0.7;
+}
+
+.nav-tab.active {
+  color: var(--orange);
+}
+
+.nav-tab .nav-icon {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.nav-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1px;
+}
+
+/* Check In center button */
+.nav-tab.checkin-tab {
+  flex: none;
+  width: 56px;
+}
+
+.nav-tab.checkin-tab .nav-icon {
+  width: 52px;
+  height: 36px;
+  background: var(--orange);
+  border-radius: 14px;
+  box-shadow: 0 4px 16px rgba(255, 107, 26, 0.4);
+  color: #fff;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.nav-tab.checkin-tab:active .nav-icon {
+  transform: scale(0.92);
+  box-shadow: 0 2px 8px rgba(255, 107, 26, 0.3);
+}
+
+.nav-tab.checkin-tab.has-checkin .nav-icon {
+  background: var(--green);
+  box-shadow: 0 4px 16px rgba(48, 209, 88, 0.35);
+}
+
+/* Active dot indicator */
+.nav-active-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--orange);
+  position: absolute;
+  bottom: -6px;
+}
+
+/* ── Map Screen ── */
+.map-screen {
+  display: flex;
+  flex-direction: column;
+  height: calc(100svh - var(--status-height) - var(--nav-height));
+}
+
+/* ── Map area wrapper ── */
+/* Relative-positioned parent that lets the search bar and loading screen
+   sit on top of the map using position:absolute. The map container itself
+   must be empty, so the overlays live here as siblings, not children. */
+.map-wrap {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+/* The div Mapbox renders its canvas into — must stay completely empty.
+   Mapbox reads offsetWidth / offsetHeight to size its canvas, so we
+   need explicit width + height in addition to inset:0. */
+.mapbox-container {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Floating search bar — sits on top of the map at the top */
+.map-search-bar {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  z-index: 10;
+}
+
+/* The search text input */
+.map-search-input {
+  width: 100%;
+  background: rgba(28, 28, 30, 0.92);
+  color: var(--text-primary);
+  border: 1px solid var(--separator-strong);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-family: var(--font);
+  outline: none;
+  box-sizing: border-box;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.map-search-input::placeholder { color: var(--text-secondary); }
+
+/* Loading overlay — shown while the map tiles download for the first time */
+.map-loading {
+  position: absolute;
+  inset: 0;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  z-index: 5;
+}
+
+/* Pulsing basketball emoji during loading */
+.map-loading-emoji {
+  font-size: 56px;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* "LiveHoops" title shown while loading */
+.map-loading-title {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text-primary);
+  font-family: var(--font);
+}
+
+.map-loading-title span { color: var(--orange); }
+
+.map-loading-text {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+/* ── Court detail bottom sheet ── */
+/* Dims everything when a court sheet is open — tap to close */
+.map-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 400;
+  animation: fadeIn 0.2s ease;
+}
+
+/* The sheet that slides up from the bottom of the screen */
+.map-bottom-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 401;
+  background: var(--bg-card);
+  border-radius: 20px 20px 0 0;
+  border-top: 1px solid var(--separator-strong);
+  padding: 0 20px calc(var(--nav-height) + 24px);
+  max-width: 390px;
+  margin: 0 auto;
+  animation: sheetSlideUp 0.28s ease;
+}
+
+/* Slide-up animation for the court detail sheet */
+@keyframes sheetSlideUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+/* Top row inside sheet: centered handle + close button on the right */
+.map-sheet-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 0 10px;
+  position: relative;
+}
+
+/* Gray drag handle bar in the center */
+.map-sheet-drag-handle {
+  width: 36px;
+  height: 4px;
+  background: var(--separator-strong);
+  border-radius: 2px;
+}
+
+/* ✕ close button — absolute so it doesn't nudge the handle */
+.map-sheet-close {
+  position: absolute;
+  right: 0;
+  top: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  border: none;
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.map-sheet-close:active { opacity: 0.7; }
+
+/* Court name — large and bold */
+.map-sheet-name {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+/* Address below the court name */
+.map-sheet-address {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 14px;
+}
+
+/* Row of info pills */
+.map-sheet-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+
+/* Green pill shown when players are live */
+.map-sheet-live-badge {
+  background: rgba(48, 209, 88, 0.15);
+  color: #30D158;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+/* Gray pill when the court is empty */
+.map-sheet-empty-badge {
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+/* Gray pills for court count, surface type, lighting */
+.map-sheet-meta-item {
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+/* Check In and Get Directions buttons — side by side */
+.map-sheet-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+/* Transparent "Get Directions" link button */
+.map-directions-btn {
+  flex: 1;
+  padding: 14px;
+  background: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--separator-strong);
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: var(--font);
+  cursor: pointer;
+  text-decoration: none;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.15s;
+}
+
+.map-directions-btn:active { opacity: 0.7; }
+
+/* ── Custom Mapbox court markers ── */
+/* Orange circle with a basketball emoji — one per court on the map */
+.mb-marker {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  border: 2px solid var(--separator-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  transition: transform 0.15s ease;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+
+/* Orange background + glow when players are live at this court */
+.mb-marker.live {
+  background: var(--orange);
+  border-color: var(--orange);
+  box-shadow: 0 4px 14px rgba(255, 107, 26, 0.55);
+}
+
+.mb-marker:active { transform: scale(0.88); }
+
+/* Basketball emoji centered inside the marker */
+.mb-marker-emoji {
+  font-size: 20px;
+  line-height: 1;
+  pointer-events: none;
+}
+
+/* Green pulsing dot on the top-right corner of the marker */
+/* Only rendered when park.players > 0 */
+.mb-live-dot {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #30D158;
+  border: 2px solid #000;
+}
+
+/* Expanding ring that pulses outward from the green dot */
+.mb-live-dot::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 2px solid #30D158;
+  animation: pulse 1.5s ease-in-out infinite;
+  opacity: 0.6;
+}
+
+.map-courts-sheet {
+  background: var(--bg-card);
+  border-top: 1px solid var(--separator-strong);
+  padding: 12px 16px 0;
+  max-height: 220px;
+}
+
+.sheet-handle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.sheet-handle {
+  width: 36px;
+  height: 4px;
+  background: var(--separator-strong);
+  border-radius: 2px;
+  margin: 0 auto 12px;
+}
+
+.map-court-list {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 16px;
+  scrollbar-width: none;
+}
+
+.map-court-list::-webkit-scrollbar {
+  display: none;
+}
+
+.map-court-chip {
+  flex-shrink: 0;
+  background: var(--bg-elevated);
+  border-radius: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--separator-strong);
+  cursor: pointer;
+  min-width: 140px;
+  transition: border-color 0.15s ease;
+}
+
+.map-court-chip.has-players {
+  border-color: var(--orange-border);
+}
+
+.map-court-chip-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.map-court-chip-info {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* ── Check In Screen ── */
+.checkin-screen {
+  padding: 0 20px;
+}
+
+.active-session-card {
+  background: linear-gradient(135deg, rgba(255,107,26,0.15), rgba(255,107,26,0.05));
+  border: 1px solid var(--orange-border);
+  border-radius: 20px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.session-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--orange-dim);
+  border-radius: 20px;
+  padding: 4px 10px;
+  margin-bottom: 14px;
+}
+
+.session-badge-text {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--orange);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.session-court-name {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.5px;
+  margin-bottom: 4px;
+}
+
+.session-court-address {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+
+.session-stats {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.session-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.session-stat-value {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--orange);
+  line-height: 1;
+}
+
+.session-stat-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.btn-checkout {
+  width: 100%;
+  background: rgba(255,59,48,0.12);
+  color: #FF453A;
+  border: 1px solid rgba(255,59,48,0.25);
+  border-radius: 12px;
+  padding: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.btn-checkout:active {
+  background: rgba(255,59,48,0.2);
+}
+
+.no-checkin-state {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.no-checkin-icon {
+  font-size: 56px;
+  margin-bottom: 16px;
+}
+
+.no-checkin-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+  letter-spacing: -0.4px;
+}
+
+.no-checkin-subtitle {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 24px;
+}
+
+.btn-primary {
+  background: var(--orange);
+  color: #fff;
+  border: none;
+  border-radius: 14px;
+  padding: 14px 28px;
+  font-size: 16px;
+  font-weight: 700;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: transform 0.1s ease;
+  box-shadow: 0 4px 16px rgba(255,107,26,0.35);
+}
+
+.btn-primary:active {
+  transform: scale(0.96);
+}
+
+/* ── Profile Screen (redesigned as public profile page) ── */
+
+/* Profile header — centered column layout */
+.profile-header {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 24px 20px 0;
+}
+
+/* Avatar wrapper — positions the 80px avatar */
+.profile-avatar-wrap {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 12px;
+}
+
+/* Username — large bold text below avatar */
+.profile-username {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.5px;
+  margin-bottom: 4px;
+}
+
+/* Row of 3 stat pills */
+.profile-stats-row {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin: 16px 0;
+}
+
+/* Individual stat pill */
+.profile-stat-pill {
+  flex: 1;
+  max-width: 100px;
+  background: var(--bg-card);
+  border-radius: 12px;
+  padding: 10px 8px;
+  text-align: center;
+  border: 1px solid var(--separator-strong);
+}
+
+/* Stat number (orange) */
+.profile-stat-value {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--orange);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+/* Stat label text */
+.profile-stat-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* Action buttons row (Achievements + Edit Profile) */
+.profile-action-row {
+  display: flex;
+  gap: 10px;
+  padding: 0 20px;
+  margin: 16px 0;
+  width: 100%;
+}
+
+/* Shared button base for profile action buttons */
+.profile-action-btn {
+  flex: 1;
+  padding: 10px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font);
+  transition: opacity 0.15s ease;
+}
+.profile-action-btn:active { opacity: 0.7; }
+
+/* Outlined variant — orange border + text (Achievements button) */
+.profile-action-btn.outlined {
+  background: transparent;
+  border: 1.5px solid var(--orange);
+  color: var(--orange);
+}
+
+/* Filled variant — dark card background (Edit Profile button) */
+.profile-action-btn.filled {
+  background: var(--bg-card);
+  border: 1px solid var(--separator-strong);
+  color: var(--text-primary);
+}
+
+/* Posts / Check-ins tab row */
+.profile-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--separator-strong);
+  margin: 0 20px;
+}
+
+/* Individual tab button */
+.profile-tab {
+  flex: 1;
+  padding: 12px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font);
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s ease;
+}
+
+/* Active tab — orange underline + text */
+.profile-tab.active {
+  color: var(--orange);
+  border-bottom-color: var(--orange);
+}
+
+/* Posts feed area below the tabs */
+.profile-posts {
+  padding: 0 20px;
+  margin-top: 12px;
+}
+
+/* Achievements slide-up overlay — dark backdrop.
+   Always in the DOM; fades in when .open is added. */
+.achievements-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 200;
+  opacity: 0;
+  pointer-events: none; /* don't block taps when hidden */
+  transition: opacity 0.3s ease;
+}
+
+/* When either sheet is open, the overlay becomes visible and tappable */
+.achievements-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Achievements slide-up sheet — always in the DOM, starts off-screen below.
+   Slides up smoothly when .open is added. */
+.achievements-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%) translateY(100%); /* hidden below viewport */
+  width: 100%;
+  max-width: 390px;
+  background: var(--bg);
+  border-radius: 20px 20px 0 0;
+  z-index: 201;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 20px 0 40px;
+  transition: transform 0.3s ease;
+}
+
+/* Sheet is fully visible when .open is applied */
+.achievements-sheet.open {
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Achievements sheet header — title on left, close button on right */
+.achievements-sheet-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px 16px;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+/* Edit profile sheet — same slide-up pattern as achievements sheet */
+.edit-profile-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%) translateY(100%); /* hidden below viewport */
+  width: 100%;
+  max-width: 390px;
+  background: var(--bg);
+  border-radius: 20px 20px 0 0;
+  z-index: 201;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 20px 20px 40px;
+  transition: transform 0.3s ease;
+}
+
+/* Sheet is fully visible when .open is applied */
+.edit-profile-sheet.open {
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Gear icon button — sits in the top-right of the profile header */
+.profile-back-btn {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  background: none;
+  border: none;
+  color: var(--orange);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: var(--font);
+}
+
+.gear-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Settings Sheet ── */
+
+/* The full-height slide-up settings panel — always in the DOM,
+   slides up from below the screen when .open is added */
+.settings-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%) translateY(100%);
+  width: 100%;
+  max-width: 390px;
+  background: var(--bg);
+  border-radius: 20px 20px 0 0;
+  z-index: 300;
+  height: calc(100vh - 60px);
+  overflow-y: auto;
+  transition: transform 0.3s ease;
+}
+.settings-sheet.open {
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Dark overlay behind the sheet — fades in when .open is added */
+.settings-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 299;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.settings-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Small gray pill at the top of the sheet — drag handle affordance */
+.settings-drag-handle {
+  width: 36px;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  margin: 12px auto 0;
+}
+
+/* Header row: "Settings" title + close button */
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 0.5px solid var(--border);
+}
+.settings-header-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+/* Circular X button in the header */
+.settings-close-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: none;
+  color: var(--text-secondary);
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Scrollable content area containing all sections */
+.settings-body {
+  padding: 16px 20px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Small uppercase label above each section group */
+.settings-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+/* Card containing the rows for one section */
+.settings-group {
+  background: var(--bg-card);
+  border-radius: 12px;
+  border: 0.5px solid var(--border);
+  overflow: hidden;
+}
+
+/* Each individual settings row */
+.settings-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 16px;
+  border-bottom: 0.5px solid var(--border);
+  cursor: pointer;
+  transition: background 0.15s;
+  width: 100%;
+  background: none;
+  font-family: var(--font);
+  text-align: left;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+}
+.settings-row:last-child { border-bottom: none; }
+.settings-row:active { background: rgba(255, 255, 255, 0.05); }
+
+/* Colored square icon on the left of each row */
+.settings-row-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+/* Text content in the middle of the row */
+.settings-row-content { flex: 1; }
+.settings-row-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+.settings-row-desc {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: 1px;
+}
+
+/* Right side element — muted value text or chevron arrow */
+.settings-row-right {
+  font-size: 12px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+/* On/off pill toggle */
+.settings-toggle {
+  width: 38px;
+  height: 22px;
+  border-radius: 11px;
+  background: #3a3a3a;
+  position: relative;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: background 0.2s;
+  border: none;
+}
+/* Orange background when the toggle is ON */
+.settings-toggle.on { background: #FF6B00; }
+
+/* The sliding white dot inside the toggle */
+.settings-toggle-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: white;
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  transition: left 0.2s;
+}
+/* Slide the dot to the right when ON */
+.settings-toggle.on .settings-toggle-dot { left: 18px; }
+
+/* Inline email input field (expands below the Change Email row) */
+.settings-email-input {
+  flex: 1;
+  padding: 8px 12px;
+  background: var(--bg);
+  border: 0.5px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: var(--font);
+  outline: none;
+}
+
+/* Save button next to the email input */
+.settings-email-save-btn {
+  padding: 8px 14px;
+  background: var(--orange);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font);
+}
+.settings-email-save-btn:disabled { opacity: 0.6; cursor: default; }
+
+/* Full-screen dimmed overlay for confirmation dialogs */
+.settings-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+/* The centered confirmation box */
+.settings-confirm-box {
+  background: var(--bg-card);
+  border-radius: 16px;
+  padding: 24px 20px;
+  width: 100%;
+  max-width: 320px;
+  text-align: center;
+}
+.settings-confirm-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+.settings-confirm-desc {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+.settings-confirm-btns {
+  display: flex;
+  gap: 10px;
+}
+
+/* Cancel button — dark background */
+.settings-confirm-cancel {
+  flex: 1;
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--bg);
+  border: 0.5px solid var(--border);
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font);
+}
+
+/* Destructive confirm button — red background */
+.settings-confirm-danger {
+  flex: 1;
+  padding: 12px;
+  border-radius: 10px;
+  background: #E24B4A;
+  border: none;
+  color: white;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font);
+}
+.settings-confirm-danger:disabled { opacity: 0.6; cursor: default; }
+
+/* ── Friends ── */
+.crew-summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.crew-summary-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  flex-shrink: 0;
+}
+
+.crew-summary-text {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.section-action {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--orange);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: var(--font);
+}
+
+/* Crew horizontal scroll row (HomeScreen) */
+.crew-row {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 0 20px 16px;
+  scrollbar-width: none;
+}
+
+.crew-row::-webkit-scrollbar {
+  display: none;
+}
+
+.crew-chip {
+  flex-shrink: 0;
+  min-width: 84px;
+  background: var(--bg-card);
+  border: 1px solid var(--separator-strong);
+  border-radius: 14px;
+  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  font-family: var(--font);
+  transition: border-color 0.15s ease;
+}
+
+.crew-chip:active {
+  border-color: var(--orange-border);
+}
+
+.crew-chip-avatar-wrap {
+  position: relative;
+  display: inline-block;
+}
+
+.crew-chip-avatar {
+  width: 44px;
+  height: 44px;
+  font-size: 14px;
+}
+
+.crew-chip-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-align: center;
+}
+
+.crew-chip-court {
+  font-size: 10px;
+  color: var(--text-secondary);
+  text-align: center;
+  line-height: 1.2;
+}
+
+/* Friend card */
+.friend-card {
+  background: var(--bg-card);
+  border: 1px solid var(--separator-strong);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: var(--card-shadow);
+}
+
+.friend-card-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+}
+
+.friend-avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.friend-avatar {
+  width: 46px;
+  height: 46px;
+  font-size: 15px;
+}
+
+.friend-status-dot {
+  position: absolute;
+  bottom: 1px;
+  right: 1px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 2px solid var(--bg-card);
+}
+
+.friend-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.friend-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.friend-status {
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+
+.friend-status.active {
+  color: var(--green);
+}
+
+.friend-status.offline {
+  color: var(--text-secondary);
+}
+
+.friend-location {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+/* Compact inline stats row shown on every friend card */
+.friend-stats-inline {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--orange);
+  font-weight: 600;
+  flex-wrap: wrap;
+}
+
+.friend-stats-dot {
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+.btn-view {
+  flex-shrink: 0;
+  background: var(--bg-elevated);
+  border: 1px solid var(--separator-strong);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-family: var(--font);
+  transition: background 0.15s ease;
+}
+
+.btn-view:active {
+  background: var(--separator-strong);
+}
+
+/* Expanded stats inside FriendCard */
+.friend-expanded {
+  border-top: 1px solid var(--separator-strong);
+  padding: 12px 14px;
+}
+
+.friend-stats-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+}
+
+.friend-stat {
+  flex: 1;
+  text-align: center;
+}
+
+.friend-stat-value {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--orange);
+  line-height: 1;
+  margin-bottom: 3px;
+}
+
+.friend-stat-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.friend-stat-divider {
+  width: 1px;
+  height: 32px;
+  background: var(--separator-strong);
+}
+
+/* Active friend row (FriendsScreen Active Now) */
+.active-friend-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--separator-strong);
+  border-radius: 14px;
+  padding: 12px 14px;
+}
+
+/* Friend request card */
+.friend-request-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--separator-strong);
+  border-radius: 14px;
+  padding: 12px 14px;
+}
+
+.friend-request-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.friend-mutual {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: 1px;
+}
+
+.friend-request-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.btn-accept {
+  background: var(--green);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: var(--font);
+  cursor: pointer;
+}
+
+.btn-decline {
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  border: 1px solid var(--separator-strong);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--font);
+  cursor: pointer;
+}
+
+/* Add Friend modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.add-friend-modal {
+  background: var(--bg-card);
+  border: 1px solid var(--separator-strong);
+  border-radius: 20px;
+  padding: 24px;
+  width: 100%;
+  max-width: 340px;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.modal-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.4px;
+}
+
+.modal-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-secondary);
+}
+
+.modal-subtitle {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+  line-height: 1.4;
+}
+
+.modal-input {
+  width: 100%;
+  background: var(--bg-elevated);
+  border: 1px solid var(--separator-strong);
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 15px;
+  font-family: var(--font);
+  color: var(--text-primary);
+  outline: none;
+}
+
+.modal-input:focus {
+  border-color: var(--orange-border);
+}
+
+.modal-input::placeholder {
+  color: var(--text-secondary);
+}
+
+.request-sent-state {
+  text-align: center;
+  padding: 8px 0;
+}
+
+/* Active friend count badge on Friends nav tab */
+.nav-badge {
+  position: absolute;
+  top: -4px;
+  right: -6px;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  background: var(--green);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+  line-height: 1;
+}
+
+/* ── Achievements ── */
+.achievements-category {
+  margin: 0 20px 20px;
+}
+
+.achievements-category-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.achievements-category-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.2px;
+}
+
+.achievements-category-count {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.badge-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.badge-tile {
+  border-radius: 12px;
+  padding: 10px 6px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid transparent;
+  position: relative;
+  overflow: hidden;
+}
+
+.badge-tile.earned {
+  background: var(--orange-dim);
+  border-color: var(--orange-border);
+}
+
+.badge-tile.locked {
+  background: var(--bg-elevated);
+  border-color: var(--separator-strong);
+}
+
+.badge-emoji {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.badge-tile.locked .badge-emoji {
+  filter: grayscale(1);
+  opacity: 0.3;
+}
+
+.badge-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-align: center;
+  line-height: 1.2;
+  letter-spacing: 0.1px;
+}
+
+.badge-tile.earned .badge-label {
+  color: var(--orange);
+}
+
+.badge-tile.locked .badge-label {
+  color: var(--text-secondary);
+}
+
+.badge-progress-wrap {
+  width: 100%;
+  margin-top: 2px;
+}
+
+.badge-progress-track {
+  width: 100%;
+  height: 3px;
+  background: var(--separator-strong);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 3px;
+}
+
+.badge-progress-fill {
+  height: 100%;
+  background: var(--orange);
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+
+.badge-progress-text {
+  font-size: 9px;
+  color: var(--text-secondary);
+  text-align: center;
+  font-weight: 500;
+}
+
+/* ── Animations ── */
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.8); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Stagger park cards */
+.park-card:nth-child(1) { animation-delay: 0ms; }
+.park-card:nth-child(2) { animation-delay: 50ms; }
+.park-card:nth-child(3) { animation-delay: 100ms; }
+.park-card:nth-child(4) { animation-delay: 150ms; }
+.park-card:nth-child(5) { animation-delay: 200ms; }
+.park-card:nth-child(6) { animation-delay: 250ms; }
+
+/* ── Active Friends Row ─────────────────────────────────────────────────── */
+/* Shows friends who are currently checked in at a court.                   */
+/* The entire row is hidden (returns null) when no friends are checked in.  */
+
+.active-friends-row {
+  padding: 0 16px;
+  margin-bottom: 4px;
+}
+
+/* "Friends playing now" header — only visible when at least one card shows */
+.active-friends-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Small orange pulsing dot next to the header text */
+.active-friends-live-dot-header {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #FF6B00;
+  flex-shrink: 0;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* Horizontal scroll container — scrollbar hidden on all browsers */
+.active-friends-scroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+.active-friends-scroll::-webkit-scrollbar { display: none; }
+
+/* Each individual friend card */
+.active-friend-card {
+  width: 80px;
+  flex-shrink: 0;
+  background: var(--bg-card);
+  border-radius: 12px;
+  border: 0.5px solid var(--separator);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: transform 0.15s;
+  /* Slides in from the right on mount; animationDelay is set inline per card */
+  animation: slideInFromRight 0.3s ease both;
+}
+.active-friend-card:active { transform: scale(0.96); }
+
+/* Wraps the Avatar so the live dot can be positioned in the corner */
+.active-friend-avatar-wrap {
+  position: relative;
+  width: 36px;
+  height: 36px;
+}
+
+/* Orange pulsing dot in the bottom-right corner of the avatar */
+.active-friend-live-dot {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #FF6B00;
+  border: 2px solid var(--bg-card);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* Map pin emoji */
+.active-friend-pin {
+  font-size: 14px;
+  line-height: 1;
+}
+
+/* Court name — up to 2 lines, then truncates with ellipsis */
+.active-friend-court {
+  font-size: 10px;
+  color: var(--text-secondary);
+  text-align: center;
+  line-height: 1.3;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  width: 100%;
+}
+
+/* Username — single line, truncates with ellipsis */
+.active-friend-name {
+  font-size: 10px;
+  color: var(--text-secondary);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+  opacity: 0.7;
+}
+
+/* Slide-in entrance animation used by each card */
+@keyframes slideInFromRight {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ── Post Composer ── */
+.post-composer {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 8px 20px 0;
+  padding: 12px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--separator-strong);
+  border-radius: 16px;
+  box-shadow: var(--card-shadow);
+}
+
+.composer-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.composer-input {
+  width: 100%;
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: var(--font);
+  resize: none;
+  line-height: 1.5;
+  padding: 0;
+}
+
+.composer-input::placeholder {
+  color: var(--text-secondary);
+}
+
+.composer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+
+.composer-media-btns {
+  display: flex;
+  gap: 14px;
+}
+
+.composer-media-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  opacity: 0.7;
+}
+
+.composer-media-btn:active { opacity: 0.5; }
+
+.composer-post-btn {
+  background: var(--orange);
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.composer-post-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.composer-post-btn:not(:disabled):active {
+  opacity: 0.8;
+}
+
+/* ── Feed Tab Toggle ── */
+.feed-tab-row {
+  display: flex;
+  gap: 0;
+  margin: 16px 20px 4px;
+  background: var(--bg-elevated);
+  border-radius: 10px;
+  padding: 3px;
+}
+
+.feed-tab-btn {
+  flex: 1;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  padding: 7px 0;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.feed-tab-btn.active {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
+
+/* ── Feed List ── */
+.feed-list {
+  display: flex;
+  flex-direction: column;
+  margin-top: 8px;
+}
+
+/* ── Feed Post Card ── */
+.feed-post {
+  background: var(--bg-card);
+  border-top: 1px solid var(--separator);
+  border-bottom: 1px solid var(--separator);
+  margin-bottom: 8px;
+}
+
+.feed-post-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px 8px;
+}
+
+.feed-post-meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.feed-post-author-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.feed-post-name-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+  font-family: var(--font);
+  text-align: left;
+}
+
+.feed-post-name-btn:hover {
+  text-decoration: underline;
+}
+
+.feed-post-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.feed-post-action {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.3;
+}
+
+.feed-post-time {
+  font-size: 11px;
+  color: var(--text-tertiary, var(--text-secondary));
+}
+
+.feed-more-btn {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  border-radius: 8px;
+}
+
+.feed-more-btn:active { background: var(--bg-elevated); }
+
+/* Post content */
+.feed-post-content {
+  padding: 0 16px 10px;
+}
+
+.feed-post-content p {
+  font-size: 14px;
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
+.feed-see-more {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--orange);
+  cursor: pointer;
+  font-family: var(--font);
+  margin-top: 2px;
+}
+
+/* Media — real uploaded photos from Supabase Storage */
+.feed-post-media {
+  width: 100%;
+  /* max-height instead of aspect-ratio so portrait and landscape photos both
+     display at a reasonable size without being cropped to a fixed box */
+  max-height: 300px;
+  overflow: hidden;
+  position: relative;
+  background: var(--bg-elevated);
+  border-radius: 12px;
+  margin-top: 8px;
+  cursor: pointer;
+}
+
+.feed-post-media img {
+  width: 100%;
+  max-height: 300px;
+  object-fit: cover;
+  display: block;
+}
+
+.feed-play-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.3);
+}
+
+.feed-play-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-left: 4px;
+}
+
+/* Check-in pill */
+.feed-checkin-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: 8px 16px;
+  background: var(--orange-dim);
+  border: 1px solid var(--orange-border);
+  border-radius: 20px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--orange);
+  cursor: pointer;
+  font-family: var(--font);
+  transition: background 0.15s;
+}
+
+.feed-checkin-pill:hover {
+  background: var(--orange-border);
+}
+
+.feed-court-pill-hint {
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+/* Repost preview */
+.feed-repost-preview {
+  margin: 0 16px 10px;
+  border: 1px solid var(--separator-strong);
+  border-radius: 8px;
+  background: var(--bg-elevated);
+  overflow: hidden;
+}
+
+.feed-repost-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 10px 6px;
+}
+
+.feed-repost-meta {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.feed-repost-meta span {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.feed-repost-content {
+  padding: 0 10px 10px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+}
+
+.feed-repost-media {
+  max-height: 220px;
+  overflow: hidden;
+  background: var(--bg-card);
+  cursor: pointer;
+}
+
+.feed-repost-media img {
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+  display: block;
+}
+
+.feed-repost-court {
+  margin: 8px 10px 10px;
+}
+
+/* ── Composer court tag ── */
+.composer-court-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0 0 8px;
+  background: var(--orange-dim);
+  border: 1px solid var(--orange-border);
+  border-radius: 20px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--orange);
+}
+
+.composer-court-tag-remove {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--orange);
+  display: flex;
+  align-items: center;
+  opacity: 0.7;
+}
+
+.composer-court-tag-remove:hover {
+  opacity: 1;
+}
+
+/* ── Court picker sheet ── */
+.court-picker-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 200;
+}
+
+.court-picker-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 201;
+  background: var(--bg-card);
+  border-radius: 20px 20px 0 0;
+  padding: 12px 0 0;
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.22s ease;
+}
+
+.court-picker-header {
+  display: flex;
+  align-items: center;
+  padding: 0 16px 12px;
+  position: relative;
+}
+
+.court-picker-title {
+  flex: 1;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-align: center;
+}
+
+.court-picker-close {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  position: absolute;
+  right: 16px;
+}
+
+.court-picker-search {
+  margin: 0 16px 8px;
+  padding: 10px 14px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--separator-strong);
+  border-radius: 12px;
+  font-size: 14px;
+  color: var(--text-primary);
+  font-family: var(--font);
+  outline: none;
+  flex-shrink: 0;
+}
+
+.court-picker-search:focus {
+  border-color: var(--orange);
+}
+
+.court-picker-list {
+  overflow-y: auto;
+  flex: 1;
+  padding: 4px 0 24px;
+}
+
+.court-picker-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  gap: 12px;
+  border-bottom: 1px solid var(--separator);
+  font-family: var(--font);
+}
+
+.court-picker-item:active,
+.court-picker-item.selected {
+  background: var(--orange-dim);
+}
+
+.court-picker-item-info {
+  flex: 1;
+}
+
+.court-picker-item-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.court-picker-item-meta {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.court-picker-empty {
+  padding: 32px 16px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+/* Action bar */
+.feed-action-bar {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 8px 16px 12px;
+}
+
+.feed-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-family: var(--font);
+  padding: 0;
+}
+
+.feed-action-btn.liked span {
+  color: #FF375F;
+}
+
+.feed-action-btn:active { opacity: 0.6; }
+
+/* Comments */
+.feed-comments {
+  border-top: 1px solid var(--separator);
+  padding: 10px 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: slideDown 0.18s ease;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.feed-comment {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.feed-comment-bubble {
+  flex: 1;
+  background: var(--bg-elevated);
+  border-radius: 12px;
+  padding: 7px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.feed-comment-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.feed-comment-text {
+  font-size: 13px;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+.feed-comments-loading {
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-align: center;
+  padding: 4px 0 2px;
+}
+
+.feed-comments-empty {
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-align: center;
+  padding: 4px 0 2px;
+}
+
+.feed-comment-header {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.feed-comment-time {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.feed-comment-delete {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  opacity: 0.6;
+  transition: opacity 0.15s;
+  align-self: center;
+}
+
+.feed-comment-delete:hover {
+  opacity: 1;
+  color: #FF375F;
+}
+
+.feed-comment-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.feed-comment-input-wrap {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.feed-comment-input {
+  flex: 1;
+  background: var(--bg-elevated);
+  border: 1px solid var(--separator-strong);
+  border-radius: 20px;
+  padding: 8px 38px 8px 14px;
+  font-size: 13px;
+  color: var(--text-primary);
+  font-family: var(--font);
+  outline: none;
+  transition: border-color 0.15s;
+  width: 100%;
+}
+
+.feed-comment-input::placeholder {
+  color: var(--text-secondary);
+}
+
+.feed-comment-input:focus {
+  border-color: var(--orange);
+}
+
+.feed-comment-input:disabled {
+  opacity: 0.5;
+}
+
+.feed-comment-send {
+  position: absolute;
+  right: 8px;
+  background: var(--orange);
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #fff;
+  transition: opacity 0.15s, transform 0.1s;
+  flex-shrink: 0;
+}
+
+.feed-comment-send:hover {
+  opacity: 0.85;
+}
+
+.feed-comment-send:active {
+  transform: scale(0.9);
+}
+
+.feed-comment-send:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ── Photo Viewer ── */
+.photo-viewer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.92);
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.photo-viewer-close {
+  position: absolute;
+  top: 56px;
+  right: 20px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.photo-viewer-img {
+  width: 100%;
+  max-height: 80svh;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+/* ── Toast ── */
+.toast-pill {
+  position: fixed;
+  bottom: calc(var(--nav-height) + 16px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--font);
+  padding: 10px 20px;
+  border-radius: 24px;
+  white-space: nowrap;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  z-index: 998;
+  animation: toastSlideUp 0.25s ease;
+  pointer-events: none;
+}
+
+@keyframes toastSlideUp {
+  from { opacity: 0; transform: translateX(-50%) translateY(12px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* ── Notification Banner ── */
+/* The subtle card that appears below the header asking for permission */
+.notif-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 16px 12px;
+  padding: 12px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--orange-border);
+  border-radius: 14px;
+  box-shadow: var(--card-shadow);
+  animation: slideDown 0.2s ease;
+}
+
+.notif-banner-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.notif-banner-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.notif-banner-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.notif-banner-body {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.3;
+}
+
+.notif-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.notif-banner-enable {
+  background: var(--orange);
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.notif-banner-enable:active { opacity: 0.8; }
+
+.notif-banner-dismiss {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 15px;
+  cursor: pointer;
+  padding: 4px 6px;
+  line-height: 1;
+  border-radius: 6px;
+}
+
+.notif-banner-dismiss:active { background: var(--bg-elevated); }
+
+/* ── Bell Badge ── */
+/* The orange dot on the bell icon showing unread count */
+.bell-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 16px;
+  height: 16px;
+  background: var(--orange);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 800;
+  font-family: var(--font);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+  /* The border matches the page background, creating the "cutout" look */
+  border: 1.5px solid var(--bg);
+  pointer-events: none;
+}
+
+/* ── Notification Panel ── */
+/* The dropdown that slides open when the bell is tapped */
+.notif-panel-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 900;
+  animation: fadeIn 0.18s ease;
+}
+
+.notif-panel {
+  position: absolute;
+  top: calc(var(--status-height) + 56px);
+  left: 12px;
+  right: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--separator-strong);
+  border-radius: 18px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.45);
+  max-height: 68svh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: panelSlideDown 0.22s ease;
+}
+
+@keyframes panelSlideDown {
+  from { opacity: 0; transform: translateY(-10px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)     scale(1); }
+}
+
+.notif-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid var(--separator);
+  flex-shrink: 0;
+}
+
+.notif-panel-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  flex: 1;
+}
+
+.notif-clear-text-btn {
+  background: none;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-family: var(--font);
+  cursor: pointer;
+  padding: 0;
+}
+
+.notif-clear-text-btn:active { opacity: 0.6; }
+
+.notif-panel-close {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-primary);
+  flex-shrink: 0;
+}
+
+.notif-panel-close:active { opacity: 0.7; }
+
+/* Empty state inside the panel */
+.notif-panel-empty {
+  padding: 36px 20px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.notif-panel-empty span {
+  font-size: 36px;
+}
+
+.notif-panel-empty p {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.notif-panel-empty-sub {
+  font-size: 13px;
+  color: var(--text-secondary) !important;
+  font-weight: 400 !important;
+}
+
+/* Scrollable list */
+.notif-list {
+  overflow-y: auto;
+  flex: 1;
+  -webkit-overflow-scrolling: touch;
+}
+
+.notif-list::-webkit-scrollbar { display: none; }
+
+/* Individual notification row */
+.notif-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--separator);
+}
+
+/* Unread notifications get a subtle orange tint */
+.notif-item.unread {
+  background: var(--orange-dim);
+}
+
+.notif-item-icon {
+  font-size: 18px;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.notif-item-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.notif-item-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.35;
+}
+
+.notif-item-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notif-item-time {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: 1px;
+}
+
+/* Small orange dot on the right side of unread items */
+.notif-unread-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--orange);
+  flex-shrink: 0;
+}
+
+/* ── Auth Screen ── */
+/* The login / sign-up page shown when no user is logged in */
+.auth-screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  max-width: 390px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Logo area at the top of the auth screen */
+.auth-logo {
+  text-align: center;
+  margin-bottom: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Big basketball emoji above the title */
+.auth-emoji {
+  font-size: 56px;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+/* "Find your run." tagline below the title */
+.auth-tagline {
+  font-size: 15px;
+  color: var(--text-secondary);
+  margin: 4px 0 0;
+  font-weight: 500;
+}
+
+/* The form that holds all the inputs and buttons */
+.auth-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Red error message shown below the inputs when something goes wrong */
+.auth-error {
+  font-size: 13px;
+  color: #FF453A;
+  text-align: center;
+  padding: 8px 12px;
+  background: rgba(255, 69, 58, 0.1);
+  border-radius: 10px;
+  line-height: 1.4;
+}
+
+/* Green success message (e.g. "Check your email for a reset link") */
+.auth-success {
+  font-size: 13px;
+  color: #30D158;
+  text-align: center;
+  padding: 8px 12px;
+  background: rgba(48, 209, 88, 0.1);
+  border-radius: 10px;
+  line-height: 1.4;
+}
+
+/* The big orange "Create Account" or "Log In" button */
+.auth-submit-btn {
+  width: 100%;
+  padding: 14px;
+  background: var(--orange);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: opacity 0.15s;
+  margin-top: 4px;
+}
+
+.auth-submit-btn:active { opacity: 0.85; }
+.auth-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* "Forgot password?" link below the login form */
+.auth-link {
+  background: none;
+  border: none;
+  color: var(--orange);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--font);
+  cursor: pointer;
+  padding: 8px 0;
+  text-align: center;
+}
+
+.auth-link:active { opacity: 0.7; }
+.auth-link:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Onboarding ── */
+/* The first-time welcome flow shown once after a new user signs up */
+
+/* Full-screen fixed overlay — sits on top of everything */
+.onboarding-wrap {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+  z-index: 100;
+}
+
+/* Centers content to 390px max-width, like the rest of the app */
+.onboarding-inner {
+  width: 100%;
+  max-width: 390px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Clips the sliding strip so only one screen is visible at a time */
+.onboarding-strip-wrap {
+  flex: 1;
+  overflow: hidden;
+}
+
+/* The 3-screen strip — 300% wide so each screen is exactly 1 viewport width.
+   Sliding this left/right with transform: translateX() creates the page effect. */
+.onboarding-strip {
+  display: flex;
+  width: 300%;
+  height: 100%;
+  transition: transform 0.3s ease;
+}
+
+/* Each individual screen — 1/3 of the 300%-wide strip */
+.onboarding-slide {
+  width: 33.333%;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  box-sizing: border-box;
+  gap: 16px;
+}
+
+/* Big emoji at the top of each screen (64px) */
+.onboarding-icon {
+  font-size: 64px;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+/* Main title on each screen */
+.onboarding-heading {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--text-primary);
+  text-align: center;
+  margin: 0;
+}
+
+/* Description text below the heading */
+.onboarding-subtext {
+  font-size: 15px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  text-align: center;
+  margin: 0;
+}
+
+/* Row of 3 feature highlights on the Welcome screen */
+.onboarding-feature-row {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+/* Individual feature box — icon + label stacked vertically */
+.onboarding-feature-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-card);
+  border: 1px solid var(--separator-strong);
+  border-radius: 12px;
+  padding: 12px 8px;
+}
+
+/* Small label below the icon in each feature box */
+.onboarding-feature-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+/* Stat preview card on the Ready screen — mimics the profile stats section */
+.onboarding-stat-preview {
+  width: 100%;
+  background: var(--bg-card);
+  border: 1px solid var(--separator-strong);
+  border-radius: 16px;
+  display: flex;
+  padding: 16px 0;
+  margin-top: 8px;
+}
+
+/* Each stat column (Check-ins, Courts, Hours) */
+.onboarding-stat-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+/* The big "0" number */
+.onboarding-stat-value {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+/* The label below the number (e.g. "Check-ins") */
+.onboarding-stat-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+/* Bottom area holding the dots + buttons */
+.onboarding-bottom {
+  padding: 20px 24px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  max-width: 390px;
+  box-sizing: border-box;
+}
+
+/* The 3 progress dots row */
+.onboarding-dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+/* Individual dot — gray by default, orange when active */
+.onboarding-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--separator-strong);
+  transition: background 0.2s;
+}
+
+.onboarding-dot.active {
+  background: var(--orange);
+}
+
+/* Transparent secondary button (e.g. "Go to Home Feed") */
+.onboarding-secondary-btn {
+  width: 100%;
+  padding: 14px;
+  background: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--separator-strong);
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.onboarding-secondary-btn:active { opacity: 0.7; }
+
+/* "Skip for now" text link — no border, gray text */
+.onboarding-skip-link {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-family: var(--font);
+  cursor: pointer;
+  padding: 8px 0;
+  text-align: center;
+}
+
+.onboarding-skip-link:active { opacity: 0.6; }
+
+/* ── Feed Skeleton Loading Cards ── */
+/* These pulsing gray boxes appear while the feed is loading from Supabase.
+   The shimmer animation moves a brighter highlight left-to-right to show
+   that data is on its way. */
+.feed-skeleton {
+  padding: 0 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.feed-skeleton-card {
+  height: 100px;
+  border-radius: 16px;
+  /* Gradient that creates the moving shimmer effect */
+  background: linear-gradient(
+    90deg,
+    var(--bg-card) 25%,
+    var(--bg-elevated) 50%,
+    var(--bg-card) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ── Feed Empty State ── */
+/* Shown on the Following tab when the user has no friends or no posts yet */
+.feed-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 24px;
+  text-align: center;
+  gap: 8px;
+}
+
+.feed-empty-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.feed-empty-sub {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* ── Search Results in Add Friend Modal ── */
+/* Each matching user that appears as you type in the search box */
+.search-result-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--separator);
+}
+
+.search-result-row:last-child {
+  border-bottom: none;
+}
+
+.search-result-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.search-result-username {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* The "Add", "Pending", or "Friends" button on each search result */
+.search-add-btn {
+  background: var(--orange);
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: var(--font);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity 0.15s;
+}
+
+.search-add-btn:active { opacity: 0.8; }
+
+/* Gray "Pending" or "Friends" state — not tappable */
+.search-add-btn.muted {
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  cursor: default;
+}
+
+/* Small spinner inside the modal while search results load */
+.modal-search-loading {
+  text-align: center;
+  padding: 16px 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+/* Empty search results message */
+.modal-search-empty {
+  text-align: center;
+  padding: 16px 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+/* ── Post Composer — image preview ── */
+
+/* Wrapper around the selected image thumbnail shown above the text input */
+.composer-image-preview {
+  position: relative;
+  margin: 8px 0;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* The thumbnail image itself — fixed max height, cropped to fill the width */
+.composer-image-preview img {
+  width: 100%;
+  max-height: 200px;
+  object-fit: cover;
+  display: block;
+}
+
+/* X button in the top-right corner of the preview — removes the selected image */
+.composer-image-remove {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  border: none;
+  color: white;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Profile — avatar upload loading overlay ── */
+
+/* Dark semi-transparent circle that sits on top of the avatar while uploading */
+.avatar-upload-loading {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Sits above the Avatar component (which has no z-index set) */
+  z-index: 1;
+}
+
+/* Spinning ring shown inside the overlay */
+.avatar-upload-spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* Rotation keyframe — reused by any spinner in the app */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   Add a Court — slide-up sheet + multi-step form
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+/* ── The slide-up sheet container ─────────────────────────────────────────── */
+/* Same pattern as .settings-sheet: always in the DOM, hidden below the        */
+/* viewport via translateY(100%), slides up when .open is added.               */
+.add-court-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%) translateY(100%);
+  width: 100%;
+  max-width: 390px;
+  background: var(--bg);
+  border-radius: 20px 20px 0 0;
+  z-index: 300;
+  height: calc(100vh - 80px);
+  overflow-y: auto;
+  transition: transform 0.3s ease;
+}
+
+/* Sheet is fully visible when .open is applied */
+.add-court-sheet.open {
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ── Progress indicator (3 dots at the top) ───────────────────────────────── */
+/* The active step's dot is orange and 24px wide; inactive dots are gray 8px. */
+.add-court-progress {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 0 4px;
+}
+
+.add-court-progress-dot {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--separator);
+  transition: width 0.3s ease, background 0.3s ease;
+  width: 8px;
+}
+
+/* Active dot is wider and orange */
+.add-court-progress-dot.active {
+  background: #FF6B00;
+  width: 24px;
+}
+
+/* ── Sheet header ─────────────────────────────────────────────────────────── */
+.add-court-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 20px 4px;
+}
+
+.add-court-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* X close button in the top-right corner */
+.add-court-close {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+/* ── Scrollable body area ─────────────────────────────────────────────────── */
+.add-court-body {
+  padding: 8px 20px 16px;
+}
+
+/* Step heading — "What kind of court?", "Tell us about the court", etc. */
+.add-court-step-heading {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+/* Sub-heading text below the step heading */
+.add-court-step-subtext {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+  line-height: 1.4;
+}
+
+/* ── Step 1: Court type grid ──────────────────────────────────────────────── */
+/* 2x2 grid of large tappable cards */
+.add-court-type-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 16px 0;
+}
+
+/* Each type card — rounded, centered icon + label */
+.add-court-type-card {
+  background: var(--bg-card);
+  border: 0.5px solid var(--separator);
+  border-radius: 12px;
+  padding: 20px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+/* Selected card gets an orange border and subtle orange tint */
+.add-court-type-card.selected {
+  border-color: #FF6B00;
+  background: rgba(255, 107, 0, 0.08);
+}
+
+.add-court-type-card:active {
+  transform: scale(0.97);
+}
+
+/* Large emoji icon inside the type card */
+.add-court-type-icon {
+  font-size: 32px;
+}
+
+/* Label below the icon */
+.add-court-type-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: center;
+}
+
+/* ── Step 2: Form fields ──────────────────────────────────────────────────── */
+
+/* Small label above each field (like "Court name *") */
+.add-court-field-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-top: 14px;
+  margin-bottom: 6px;
+}
+
+/* Text inputs — dark background, rounded corners, matches .modal-input style */
+.add-court-input {
+  width: 100%;
+  background: var(--bg-elevated);
+  border: 1px solid var(--separator-strong);
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 15px;
+  font-family: var(--font);
+  color: var(--text-primary);
+  outline: none;
+}
+
+/* Orange border when the input is focused */
+.add-court-input:focus {
+  border-color: var(--orange-border);
+}
+
+/* Placeholder text color */
+.add-court-input::placeholder {
+  color: var(--text-secondary);
+}
+
+/* ── Chip selectors (Surface, Lighting) ───────────────────────────────────── */
+.add-court-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 8px 0;
+}
+
+.add-court-chip {
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 0.5px solid var(--separator);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: var(--font);
+}
+
+/* Selected chip — orange border, tinted background, orange text */
+.add-court-chip.selected {
+  border-color: #FF6B00;
+  background: rgba(255, 107, 0, 0.12);
+  color: #FF6B00;
+}
+
+/* ── Number of courts row ─────────────────────────────────────────────────── */
+.add-court-count-row {
+  display: flex;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.add-court-count-btn {
+  flex: 1;
+  padding: 10px;
+  border-radius: 10px;
+  border: 0.5px solid var(--separator);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s;
+  font-family: var(--font);
+}
+
+/* Selected number button — orange */
+.add-court-count-btn.selected {
+  border-color: #FF6B00;
+  background: rgba(255, 107, 0, 0.12);
+  color: #FF6B00;
+}
+
+/* ── Step 3: Location buttons ─────────────────────────────────────────────── */
+.add-court-location-btn {
+  width: 100%;
+  padding: 14px;
+  border-radius: 12px;
+  border: 0.5px solid var(--separator);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 10px;
+  text-align: center;
+  transition: background 0.15s;
+  font-family: var(--font);
+}
+
+.add-court-location-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* "Location captured" confirmation text */
+.add-court-location-captured {
+  font-size: 14px;
+  color: #FF6B00;
+  text-align: center;
+  margin: 12px 0;
+  font-weight: 600;
+}
+
+/* Bottom note about review process */
+.add-court-note {
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-align: center;
+  line-height: 1.5;
+  padding: 12px 0;
+  border-top: 0.5px solid var(--separator);
+  margin-top: 12px;
+}
+
+/* ── Navigation bar (Back / Next / Submit) ────────────────────────────────── */
+.add-court-nav {
+  display: flex;
+  gap: 10px;
+  padding: 16px 20px 40px;
+}
+
+/* Back button — transparent with a subtle border */
+.add-court-back-btn {
+  padding: 14px 20px;
+  border-radius: 12px;
+  border: 0.5px solid var(--separator);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font);
+}
+
+/* Next / Submit button — orange, fills remaining space */
+.add-court-next-btn {
+  flex: 1;
+  padding: 14px;
+  border-radius: 12px;
+  border: none;
+  background: #FF6B00;
+  color: white;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  font-family: var(--font);
+}
+
+/* Disabled state — faded out, no pointer */
+.add-court-next-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ── CheckInScreen: "Add a Court" secondary button ────────────────────────── */
+/* Transparent background with an orange border — sits below "Find a Court". */
+.btn-add-court {
+  width: 100%;
+  margin-top: 12px;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1.5px solid var(--orange);
+  background: transparent;
+  color: var(--orange);
+  font-size: 16px;
+  font-weight: 700;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn-add-court:active {
+  background: var(--orange-dim);
+}
+
+/* ── CheckInScreen: "Know a court?" text link ─────────────────────────────── */
+/* Small orange text centered below the checkout button in the active card.  */
+.add-court-link {
+  text-align: center;
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--orange);
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.add-court-link:active {
+  opacity: 0.7;
+}
+
+/* ── Check-in history rows (ProfileScreen → Check-ins tab) ──────────────── */
+/* Each row shows one past session: court name on the left, date + duration  */
+/* on the right. A thin separator line sits below each row.                  */
+.checkin-history-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--separator);
+}
+
+/* Court name — bold on the left */
+.checkin-history-court {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* "Apr 21 · 45 min" — muted on the right */
+.checkin-history-meta {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+/* ── Legal Sheet (Privacy Policy / Terms of Service) ──────────────────────── */
+/* Slides up over the Settings sheet — sits at z-index 400 (above settings 300) */
+
+.legal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 400;
+}
+
+.legal-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 390px;
+  height: calc(100vh - 40px);
+  background: var(--bg);
+  border-radius: 20px 20px 0 0;
+  z-index: 401;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Sticky header with back button and title */
+.legal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid var(--separator);
+  flex-shrink: 0;
+}
+
+.legal-back-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-elevated);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  color: var(--text-primary);
+  flex-shrink: 0;
+}
+
+.legal-back-btn:active {
+  background: var(--separator-strong);
+}
+
+.legal-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* Scrollable content area */
+.legal-body-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 20px 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* "Last updated" line */
+.legal-meta {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+}
+
+/* Section headings like "1. What We Collect" */
+.legal-section-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--orange);
+  margin: 20px 0 6px;
+}
+
+/* Body paragraphs */
+.legal-body {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-primary);
+  margin-bottom: 10px;
+}
+
+/* Bulleted lists */
+.legal-list {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-primary);
+  padding-left: 20px;
+  margin-bottom: 10px;
+}
+
+.legal-list li {
+  margin-bottom: 6px;
+}
