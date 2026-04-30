@@ -90,11 +90,6 @@ function normPost(row, likedIds) {
   };
 }
 
-const BASIC_POST_SELECT = `
-  *,
-  profiles(*)
-`;
-
 const POST_SELECT = `
   *,
   profiles(*),
@@ -238,7 +233,7 @@ export function usePosts() {
   //   content  — the text of the post (may be empty string for photo-only posts)
   //   type     — 'status' | 'photo' | 'checkin' | 'video'
   //   imageUrl — full HTTPS URL of an uploaded photo, or null for text-only posts
-  const createPost = useCallback(async (userId, content, type = 'status', imageUrl = null, courtId = null, courtName = null) => {
+  const createPost = useCallback(async (userId, content, type = 'status', imageUrl = null, courtId = null, courtName = null, authorProfile = null) => {
     // Require at least text, an image, or a tagged court
     if (!userId || (!content?.trim() && !imageUrl && !courtId)) return;
 
@@ -256,8 +251,9 @@ export function usePosts() {
     const { data, error } = await supabase
       .from('posts')
       .insert(row)
-      // Return the newly created row so we can add it to the feed
-      .select(BASIC_POST_SELECT)
+      // Return only the raw post row. Joined selects can fail independently
+      // from the insert if Supabase relationship metadata is stale.
+      .select('*')
       .single();
 
     if (error) {
@@ -275,7 +271,10 @@ export function usePosts() {
 
     // Add the new post to the top of the feed immediately
     const likedIds = new Set();
-    const newPost  = normPost(data, likedIds);
+    const newPost  = normPost({
+      ...data,
+      profiles: authorProfile,
+    }, likedIds);
     setFeed(prev => [newPost, ...prev]);
 
     return newPost;

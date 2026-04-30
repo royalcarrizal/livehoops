@@ -116,7 +116,7 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
   // image_url is the Supabase Storage public URL, or null for text-only posts.
   // We re-throw on error so PostComposer's catch block can show the error toast.
   const handlePost = async ({ type, content, image_url, court_id, court_name }) => {
-    await createPost(user.id, content, type, image_url, court_id, court_name);
+    await createPost(user.id, content, type, image_url, court_id, court_name, profile);
     showToast('✅ Posted!');
   };
 

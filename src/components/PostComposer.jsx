@@ -115,7 +115,8 @@ export default function PostComposer({
       setPreviewUrl(null);
       setSelectedCourt(null);
 
-    } catch {
+    } catch (err) {
+      console.error('PostComposer submit failed:', err);
       onToast?.('❌ Failed to post — try again');
     } finally {
       setIsPosting(false);
