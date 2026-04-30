@@ -36,6 +36,7 @@ export default function DMThread({ friend, currentUser, onClose }) {
   // ── Real-time: append incoming messages from this friend ──────────────────
   useEffect(() => {
     const unsubscribe = subscribeToMessages(currentUser.id, (newMsg) => {
+      if (!newMsg?.senderId) return;
       // Only add messages from this specific friend (my own sends are already optimistic)
       if (newMsg.senderId === friend.userId) {
         fetchConversation(currentUser.id, friend.userId);

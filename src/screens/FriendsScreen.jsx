@@ -114,12 +114,6 @@ export default function FriendsScreen({ user, profile, onViewProfile, onUnreadDM
     if (inboxLoaded) refreshInbox();
   };
 
-  // ── Resolve friend info from partnerId ───────────────────────────────────
-  // The threads from fetchInbox only have a partnerId — we look up the full
-  // friend object from the friends array so we can display name + avatar.
-  const getFriendByPartnerId = (partnerId) =>
-    friends.find(f => f.userId === partnerId) ?? null;
-
   return (
     <div className="screen-content">
 
@@ -300,10 +294,6 @@ export default function FriendsScreen({ user, profile, onViewProfile, onUnreadDM
           )}
 
           {!inboxLoading && threads.map(thread => {
-            const friend = getFriendByPartnerId(thread.partnerId);
-            // If the friend isn't in our list (edge case), skip the row
-            if (!friend) return null;
-
             // Truncate preview to 42 chars
             const rawPreview = thread.isMine
               ? `You: ${thread.lastMessage}`
@@ -317,22 +307,22 @@ export default function FriendsScreen({ user, profile, onViewProfile, onUnreadDM
                 key={thread.partnerId}
                 className="dm-thread-row"
                 onClick={() => openThread({
-                  userId:    friend.userId,
-                  username:  friend.username,
-                  name:      friend.username,
-                  avatarUrl: friend.avatarUrl,
-                  initials:  friend.initials,
+                  userId:    thread.partnerId,
+                  username:  thread.partnerUsername,
+                  name:      thread.partnerUsername,
+                  avatarUrl: thread.partnerAvatarUrl,
+                  initials:  thread.partnerInitials,
                 })}
               >
                 {/* Avatar with unread dot overlay */}
                 <div className="dm-thread-avatar-wrap">
-                  <Avatar avatarUrl={friend.avatarUrl} initials={friend.initials} size="medium" />
+                  <Avatar avatarUrl={thread.partnerAvatarUrl} initials={thread.partnerInitials} size="medium" />
                   {thread.unreadCount > 0 && <span className="dm-thread-unread-dot" />}
                 </div>
 
                 {/* Name + preview */}
                 <div className="dm-thread-body">
-                  <div className="dm-thread-name">{friend.username}</div>
+                  <div className="dm-thread-name">{thread.partnerUsername}</div>
                   <div className={`dm-thread-preview${thread.unreadCount > 0 ? ' unread' : ''}`}>
                     {preview}
                   </div>

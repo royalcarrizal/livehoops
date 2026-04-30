@@ -160,15 +160,16 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
     const courtId = localStorage.getItem('lh_focus_court');
     if (!courtId) return;
 
-    // Clear it right away so a future visit to this tab doesn't re-trigger
-    localStorage.removeItem('lh_focus_court');
-
-    // Find the matching court in the parks list and fly to it
+    // Find the matching court in the parks list and fly to it.
+    // If parks haven't arrived yet, leave the key in localStorage —
+    // the effect re-runs when parks updates and we'll find it on the next pass.
     const park = parks.find(p => p.id === courtId);
-    if (park) {
-      // flyToPark moves the camera AND opens the bottom detail sheet
-      flyToPark(park);
-    }
+    if (!park) return;
+
+    // Only clear once we've confirmed the court exists
+    localStorage.removeItem('lh_focus_court');
+    // flyToPark moves the camera AND opens the bottom detail sheet
+    flyToPark(park);
   }, [flyToPark, mapLoaded, parks]);
 
   // ── Filter the chip row by whatever the user typed ────────────────────────
