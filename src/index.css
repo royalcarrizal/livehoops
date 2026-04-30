@@ -6,8 +6,10 @@
 }
 
 :root {
-  --nav-height: 80px;
-  --status-height: 50px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --nav-height: calc(80px + var(--safe-bottom));
+  --status-height: 0px;
   --font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', system-ui, sans-serif;
 }
 
@@ -89,6 +91,14 @@ body {
   box-shadow: 0 0 80px rgba(0,0,0,0.8);
 }
 
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100svh;
+  padding-top: var(--safe-top);
+  background: var(--bg);
+}
+
 /* ── Scrollable screen area ── */
 .screen-content {
   flex: 1;
@@ -101,29 +111,6 @@ body {
 
 .screen-content::-webkit-scrollbar {
   display: none;
-}
-
-/* ── Status Bar ── */
-.status-bar {
-  height: var(--status-height);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 20px 0;
-  flex-shrink: 0;
-}
-
-.status-bar .time {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text-primary);
-  letter-spacing: -0.3px;
-}
-
-.status-icons {
-  display: flex;
-  align-items: center;
-  gap: 6px;
 }
 
 /* ── Screen headers ── */
@@ -453,7 +440,7 @@ body {
   display: flex;
   align-items: flex-start;
   justify-content: space-around;
-  padding: 10px 8px 0;
+  padding: 10px 8px var(--safe-bottom);
   z-index: 100;
 }
 

@@ -5,7 +5,6 @@ import { useProfile } from './hooks/useProfile';
 import { useCourts } from './hooks/useCourts';
 import { useCheckIn } from './hooks/useCheckIn';
 import { supabase } from './lib/supabase';
-import StatusBar from './components/StatusBar';
 import BottomNav from './components/BottomNav';
 import HomeScreen from './screens/HomeScreen';
 import MapScreen from './screens/MapScreen';
@@ -206,8 +205,7 @@ export default function App() {
   // They can't access any part of the app without an account.
   if (!user) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100svh', background: 'var(--bg)' }}>
-        <StatusBar />
+      <div className="app-shell">
         <AuthScreen
           onSignUp={signUp}
           onSignIn={signIn}
@@ -236,10 +234,8 @@ export default function App() {
   // ── Screen 4: Main App ─────────────────────────────────────────────────
   // User is authenticated — show the full app with all screens.
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100svh', background: 'var(--bg)' }}>
+    <div className="app-shell">
       <OfflineBanner />
-
-      <StatusBar />
 
       {activeTab === 'home'    && <HomeScreen    {...screenProps} />}
       {activeTab === 'map'     && <MapScreen      {...screenProps} />}
