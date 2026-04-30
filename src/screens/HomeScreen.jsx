@@ -320,7 +320,9 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
                 <div className="crew-chip-name">
                   {(friend.username ?? 'Player').split('_')[0]}
                 </div>
-                <div className="crew-chip-court">On the court</div>
+                <div className={`crew-chip-court${friend.isActive ? ' active' : ' offline'}`}>
+                  {friend.isActive ? '🏀 On the court' : 'Offline'}
+                </div>
               </button>
             ))}
           </div>

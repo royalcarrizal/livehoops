@@ -1618,6 +1618,9 @@ body {
   line-height: 1.2;
 }
 
+.crew-chip-court.active  { color: var(--orange); }
+.crew-chip-court.offline { color: var(--text-secondary); }
+
 /* Friend card */
 .friend-card {
   background: var(--bg-card);
