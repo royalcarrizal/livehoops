@@ -53,13 +53,13 @@ export function useDirectMessages() {
     if (!userId || !friendId) return;
     setLoading(true);
 
+    // RLS already restricts to messages where auth.uid() is sender or recipient.
+    // We additionally filter to rows where the friend is also involved —
+    // the intersection gives us exactly this two-person conversation.
     const { data, error } = await supabase
       .from('direct_messages')
       .select('*')
-      .or(
-        `and(sender_id.eq.${userId},recipient_id.eq.${friendId}),` +
-        `and(sender_id.eq.${friendId},recipient_id.eq.${userId})`
-      )
+      .or(`sender_id.eq.${friendId},recipient_id.eq.${friendId}`)
       .order('created_at', { ascending: true })
       .limit(50);
 
@@ -152,11 +152,11 @@ export function useDirectMessages() {
   // to conversation, increment unread count).
   //
   // Returns a cleanup function to close the channel on unmount.
-  const subscribeToMessages = useCallback((userId, onNewMessage) => {
+  const subscribeToMessages = useCallback((userId, onNewMessage, channelSuffix = 'inbox') => {
     if (!userId) return () => {};
 
     const channel = supabase
-      .channel('direct-messages')
+      .channel(`direct-messages-${channelSuffix}-${userId}`)
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'direct_messages' },

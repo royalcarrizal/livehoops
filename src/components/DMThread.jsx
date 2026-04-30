@@ -42,7 +42,7 @@ export default function DMThread({ friend, currentUser, onClose }) {
         // Mark as read immediately since the thread is open
         markRead(currentUser.id, friend.userId);
       }
-    });
+    }, 'thread');
     return unsubscribe;
   }, [currentUser.id, friend.userId]); // eslint-disable-line react-hooks/exhaustive-deps
 

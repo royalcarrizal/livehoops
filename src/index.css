@@ -4234,22 +4234,26 @@ body {
   inset: 0;
   z-index: 500;
   background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: flex-end;
   animation: fadeIn 0.2s ease;
 }
 
 .dm-thread {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 501;
   width: 100%;
   max-width: 390px;
   margin: 0 auto;
   height: 92svh;
-  background: var(--bg);
+  background: var(--bg-card);
   border-radius: 20px 20px 0 0;
+  border-top: 1px solid var(--separator-strong);
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  animation: slideUp 0.3s ease;
+  animation: sheetSlideUp 0.28s ease;
 }
 
 /* ── DM Header ─────────────────────────────────────────────────────────── */
