@@ -343,6 +343,39 @@ export function usePosts() {
     return next;
   }, []);
 
+  // ── Subscribe to new posts in real time ────────────────────────────────
+  // Opens a Supabase Realtime channel that fires whenever a new row is
+  // inserted into the posts table. Calls onNewPost() if the post is from
+  // the logged-in user or one of their friends.
+  //
+  // Returns a cleanup function — call it to close the channel (e.g. on unmount).
+  //
+  // Requires Realtime to be enabled on the posts table in the Supabase dashboard:
+  //   Database → Replication → posts → toggle ON
+  const subscribeToNewPosts = useCallback((userId, friendIds, onNewPost) => {
+    if (!userId) return () => {};
+
+    // Build a Set of user IDs whose posts we care about
+    const relevantIds = new Set([userId, ...(friendIds ?? [])]);
+
+    const channel = supabase
+      .channel('feed-new-posts')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'posts' },
+        (payload) => {
+          // Only notify for posts from the user or their friends
+          if (relevantIds.has(payload.new.user_id)) {
+            onNewPost(payload.new);
+          }
+        }
+      )
+      .subscribe();
+
+    // Return cleanup so HomeScreen can close the channel on unmount
+    return () => supabase.removeChannel(channel);
+  }, []);
+
   return {
     feed,
     loading,
@@ -353,5 +386,6 @@ export function usePosts() {
     createRepost,
     likePost,
     unlikePost,
+    subscribeToNewPosts,
   };
 }

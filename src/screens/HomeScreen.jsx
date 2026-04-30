@@ -30,9 +30,10 @@ import { usePosts } from '../hooks/usePosts';
 //   user         — the logged-in Supabase user object (has .id)
 //   profile      — the user's profile row from Supabase (username, avatar_url, etc.)
 export default function HomeScreen({ setActiveTab, user, profile, parks, onViewProfile, onCheckIn, activeCheckIn, checkOut, cityLabel = 'Houston, TX' }) {
-  const [feedTab, setFeedTab]   = useState('following');
-  const [photoUrl, setPhotoUrl] = useState(null);
-  const [showPanel, setShowPanel] = useState(false);
+  const [feedTab, setFeedTab]       = useState('following');
+  const [photoUrl, setPhotoUrl]     = useState(null);
+  const [showPanel, setShowPanel]   = useState(false);
+  const [newPostCount, setNewPostCount] = useState(0);
 
   // Court tapped from a feed post — opens CourtDetailSheet
   const [tappedCourtId, setTappedCourtId] = useState(null);
@@ -64,6 +65,7 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
     createRepost,
     likePost,
     unlikePost,
+    subscribeToNewPosts,
   } = usePosts();
 
   // ── Load the Following feed when friends list is ready ──────────────────
@@ -83,6 +85,23 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
       fetchAllFeed(user?.id).then(posts => setNearbyFeed(posts ?? []));
     }
   }, [feedTab, user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Real-time subscription for new posts ────────────────────────────────
+  // Listens for INSERT events on the posts table. When a new post arrives
+  // from a friend or the logged-in user, increments the newPostCount so the
+  // "↑ N new posts" pill appears at the top of the Following feed.
+  // The subscription is closed cleanly when the component unmounts or when
+  // the friends list changes (a new friend means a new relevant user ID set).
+  useEffect(() => {
+    if (!user?.id || friendsLoading) return;
+    const friendIds = friends.map(f => f.userId);
+    const unsubscribe = subscribeToNewPosts(
+      user.id,
+      friendIds,
+      () => setNewPostCount(n => n + 1)
+    );
+    return unsubscribe;
+  }, [friends, friendsLoading, user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Bell button handler ─────────────────────────────────────────────────
   const handleBellClick = () => {
@@ -193,6 +212,22 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
           Nearby
         </button>
       </div>
+
+      {/* ── New posts pill ───────────────────────────────────────────────────── */}
+      {/* Appears when Supabase Realtime detects a new post from a friend.      */}
+      {/* Tapping it re-fetches the feed and resets the counter.                */}
+      {newPostCount > 0 && feedTab === 'following' && (
+        <button
+          className="feed-new-posts-pill"
+          onClick={() => {
+            const friendIds = friends.map(f => f.userId);
+            fetchFriendsFeed(user.id, friendIds);
+            setNewPostCount(0);
+          }}
+        >
+          ↑ {newPostCount} new {newPostCount === 1 ? 'post' : 'posts'}
+        </button>
+      )}
 
       {/* ── Feed area ────────────────────────────────────────────────────────── */}
 
