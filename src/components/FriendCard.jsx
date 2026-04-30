@@ -1,6 +1,6 @@
 import Avatar from './Avatar';
 
-export default function FriendCard({ friend, onViewProfile }) {
+export default function FriendCard({ friend, onViewProfile, onMessage }) {
   return (
     <div className="friend-card">
       <div className="friend-card-main">
@@ -32,13 +32,21 @@ export default function FriendCard({ friend, onViewProfile }) {
           </div>
         </div>
 
-        {/* Profile button */}
-        <button
-          className="btn-view"
-          onClick={() => onViewProfile?.(friend.userId)}
-        >
-          Profile
-        </button>
+        {/* Action buttons */}
+        <div className="friend-card-actions">
+          <button
+            className="btn-message"
+            onClick={() => onMessage?.(friend)}
+          >
+            Message
+          </button>
+          <button
+            className="btn-view"
+            onClick={() => onViewProfile?.(friend.userId)}
+          >
+            Profile
+          </button>
+        </div>
       </div>
     </div>
   );

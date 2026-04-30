@@ -58,7 +58,8 @@ export default function App() {
   );
 
   // ── App State ───────────────────────────────────────────────────────────
-  const [splashDone, setSplashDone] = useState(false);
+  const [splashDone,  setSplashDone]  = useState(false);
+  const [unreadDMs,   setUnreadDMs]   = useState(0);
   const [onboardingDone, setOnboardingDone] = useState(
     () => localStorage.getItem('lh_onboarded') === 'true'
   );
@@ -240,7 +241,13 @@ export default function App() {
       {activeTab === 'home'    && <HomeScreen    {...screenProps} />}
       {activeTab === 'map'     && <MapScreen      {...screenProps} />}
       {activeTab === 'checkin' && <CheckInScreen  {...screenProps} />}
-      {activeTab === 'friends' && <FriendsScreen  {...screenProps} />}
+      {activeTab === 'friends' && (
+        <FriendsScreen
+          {...screenProps}
+          profile={profile}
+          onUnreadDMs={setUnreadDMs}
+        />
+      )}
       {activeTab === 'profile' && (
         <ProfileScreen
           signOut={signOut}
@@ -256,6 +263,7 @@ export default function App() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         checkedIn={!!activeCheckIn}
+        unreadDMs={unreadDMs}
       />
 
       <InstallPrompt />

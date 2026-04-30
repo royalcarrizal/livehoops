@@ -1,6 +1,6 @@
 import { Home, Map, Plus, Users, User } from 'lucide-react';
 
-export default function BottomNav({ activeTab, setActiveTab, checkedIn }) {
+export default function BottomNav({ activeTab, setActiveTab, checkedIn, unreadDMs = 0 }) {
   const tabs = [
     { id: 'home', label: 'Home', Icon: Home },
     { id: 'map', label: 'Map', Icon: Map },
@@ -38,6 +38,11 @@ export default function BottomNav({ activeTab, setActiveTab, checkedIn }) {
             <div className="nav-icon">
               <tab.Icon size={22} strokeWidth={isActive ? 2.5 : 2} />
               {isActive && <span className="nav-active-dot" />}
+              {tab.id === 'friends' && unreadDMs > 0 && (
+                <span className="nav-unread-badge">
+                  {unreadDMs > 9 ? '9+' : unreadDMs}
+                </span>
+              )}
             </div>
             <span className="nav-label">{tab.label}</span>
           </button>

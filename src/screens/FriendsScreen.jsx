@@ -8,12 +8,16 @@
 import { useState, useEffect } from 'react';
 import { UserPlus, X } from 'lucide-react';
 import { useFriends } from '../hooks/useFriends';
+import { useDirectMessages } from '../hooks/useDirectMessages';
 import FriendCard from '../components/FriendCard';
+import DMThread from '../components/DMThread';
 import Avatar from '../components/Avatar';
 
 // Props:
-//   user — the logged-in Supabase user object (has .id)
-export default function FriendsScreen({ user, onViewProfile }) {
+//   user         — the logged-in Supabase user object (has .id)
+//   profile      — the logged-in user's profile row (username, avatar_url)
+//   onUnreadDMs  — called with the current unread DM count so App can badge BottomNav
+export default function FriendsScreen({ user, profile, onViewProfile, onUnreadDMs }) {
   // ── Real friendship data from Supabase ───────────────────────────────────
   const {
     friends,
@@ -24,6 +28,37 @@ export default function FriendsScreen({ user, onViewProfile }) {
     acceptFriendRequest,
     declineFriendRequest,
   } = useFriends(user?.id);
+
+  // ── Direct messaging ─────────────────────────────────────────────────────
+  // dmFriend — the friend whose thread is currently open (null = closed)
+  const [dmFriend,    setDmFriend]    = useState(null);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const { fetchUnreadCount, subscribeToMessages } = useDirectMessages();
+
+  // Fetch unread count on mount and propagate to App for BottomNav badge
+  useEffect(() => {
+    if (!user?.id) return;
+    fetchUnreadCount(user.id).then(count => {
+      setUnreadCount(count);
+      onUnreadDMs?.(count);
+    });
+  }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Real-time: bump unread count when a new message arrives while thread is closed
+  useEffect(() => {
+    if (!user?.id) return;
+    const unsubscribe = subscribeToMessages(user.id, (newMsg) => {
+      // Only increment if the thread for this sender isn't open
+      if (!dmFriend || newMsg.senderId !== dmFriend.userId) {
+        setUnreadCount(n => {
+          const next = n + 1;
+          onUnreadDMs?.(next);
+          return next;
+        });
+      }
+    });
+    return unsubscribe;
+  }, [user?.id, dmFriend]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Search modal state ───────────────────────────────────────────────────
   const [showModal, setShowModal] = useState(false);
@@ -74,12 +109,17 @@ export default function FriendsScreen({ user, onViewProfile }) {
             <UserPlus size={18} strokeWidth={2} />
           </button>
         </div>
-        {/* Shows how many accepted friends the user has */}
+        {/* Shows how many accepted friends the user has + unread DM count */}
         <div className="crew-summary">
           <div className="crew-summary-dot" />
           <span className="crew-summary-text">
             {friends.length} {friends.length === 1 ? 'player' : 'players'} in your crew
           </span>
+          {unreadCount > 0 && (
+            <span className="crew-unread-badge">
+              {unreadCount > 9 ? '9+' : unreadCount} new {unreadCount === 1 ? 'message' : 'messages'}
+            </span>
+          )}
         </div>
       </div>
 
@@ -186,6 +226,7 @@ export default function FriendsScreen({ user, onViewProfile }) {
                     hoursOnCourt:  friend.hoursOnCourt,
                   }}
                   onViewProfile={onViewProfile}
+                  onMessage={(f) => setDmFriend(f)}
                 />
               ))}
             </div>
@@ -194,6 +235,27 @@ export default function FriendsScreen({ user, onViewProfile }) {
       )}
 
       <div style={{ height: 24 }} />
+
+      {/* ── DM Thread ────────────────────────────────────────────────────────── */}
+      {/* Slides up when the user taps "Message" on a FriendCard */}
+      {dmFriend && (
+        <DMThread
+          friend={dmFriend}
+          currentUser={{
+            id:        user?.id,
+            username:  profile?.username ?? 'Player',
+            avatarUrl: profile?.avatar_url ?? null,
+          }}
+          onClose={() => {
+            setDmFriend(null);
+            // Refresh unread count after closing a thread
+            fetchUnreadCount(user?.id).then(count => {
+              setUnreadCount(count);
+              onUnreadDMs?.(count);
+            });
+          }}
+        />
+      )}
 
       {/* ── Add Friend Modal ─────────────────────────────────────────────────── */}
       {showModal && (
