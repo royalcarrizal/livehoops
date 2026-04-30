@@ -67,6 +67,9 @@ function normalizeCourt(row, userPos = null) {
     lat:          row.lat,
     lng:          row.lng,
     distance,
+    // Denormalized rating data kept in sync by the sync_court_rating DB trigger
+    avgRating:   row.avg_rating   ?? null,  // null = no reviews yet
+    reviewCount: row.review_count ?? 0,
     // Per-court check-in avatars are future work
     checkins:     [],
   };

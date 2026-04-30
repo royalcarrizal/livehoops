@@ -4543,3 +4543,199 @@ body {
   color: var(--text-secondary);
   cursor: default;
 }
+
+/* ── Court Ratings & Reviews ────────────────────────────────────────────────── */
+
+/* Make the bottom sheet scrollable when reviews expand */
+.map-bottom-sheet--scrollable {
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+/* ── Star display ───────────────────────────────────────────── */
+.stars-row {
+  display: flex;
+  gap: 1px;
+}
+
+.star {
+  color: var(--orange);
+  line-height: 1;
+}
+
+.star.empty {
+  color: var(--text-tertiary);
+}
+
+/* ── Average rating summary row ────────────────────────────── */
+.court-avg-rating {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 0 4px;
+}
+
+.court-avg-number {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-family: var(--font);
+}
+
+.court-avg-count {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* ── Section toggle header ─────────────────────────────────── */
+.reviews-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 0 8px;
+  background: none;
+  border: none;
+  border-top: 1px solid var(--separator);
+  cursor: pointer;
+  text-align: left;
+  margin-top: 4px;
+}
+
+.reviews-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-family: var(--font);
+}
+
+.reviews-section-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ── Review composer ───────────────────────────────────────── */
+.review-composer {
+  background: var(--bg-elevated);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+}
+
+.review-star-picker {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.review-star-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-size: 28px;
+  line-height: 1;
+  transition: transform 0.1s ease;
+}
+
+.review-star-btn:active {
+  transform: scale(0.9);
+}
+
+.review-textarea {
+  width: 100%;
+  background: var(--bg-card);
+  border: none;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+  color: var(--text-primary);
+  font-family: var(--font);
+  resize: none;
+  outline: none;
+  display: block;
+}
+
+.review-textarea::placeholder {
+  color: var(--text-secondary);
+}
+
+.review-submit-btn {
+  margin-top: 10px;
+  background: var(--orange);
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 22px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.review-submit-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.review-submit-btn:not(:disabled):active {
+  opacity: 0.75;
+}
+
+/* ── Individual review items ───────────────────────────────── */
+.review-item {
+  display: flex;
+  gap: 10px;
+  padding: 12px 0;
+  border-top: 1px solid var(--separator);
+}
+
+.review-item-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.review-item-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 2px;
+}
+
+.review-item-username {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-family: var(--font);
+}
+
+.review-item-time {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-left: auto;
+}
+
+.review-item-text {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+.review-delete-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  transition: color 0.15s ease;
+}
+
+.review-delete-btn:hover {
+  color: #ef4444;
+}

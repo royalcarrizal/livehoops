@@ -49,6 +49,12 @@ export default function ParkCard({ park, isCheckedIn, onCheckIn, style }) {
             <MapPin size={13} />
             <span>{park.surface}</span>
           </div>
+          {park.reviewCount > 0 && (
+            <div className="meta-item" style={{ color: 'var(--orange)' }}>
+              <span>★ {Number(park.avgRating).toFixed(1)}</span>
+              <span style={{ color: 'var(--text-secondary)' }}>({park.reviewCount})</span>
+            </div>
+          )}
         </div>
       </div>
 

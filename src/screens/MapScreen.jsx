@@ -256,6 +256,11 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
               <span className="map-sheet-meta-item">
                 {selectedPark.lighting ? '💡 Lit' : 'No lights'}
               </span>
+              {selectedPark.reviewCount > 0 && (
+                <span className="map-sheet-meta-item" style={{ color: 'var(--orange)' }}>
+                  ★ {Number(selectedPark.avgRating).toFixed(1)} ({selectedPark.reviewCount})
+                </span>
+              )}
             </div>
 
             {/* Action buttons */}
@@ -338,6 +343,11 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
                 {park.players > 0
                   ? `🏀 ${park.players} players · ${park.distance}`
                   : `Empty · ${park.distance}`}
+                {park.reviewCount > 0 && (
+                  <span style={{ color: 'var(--orange)', marginLeft: 4 }}>
+                    · ★ {Number(park.avgRating).toFixed(1)}
+                  </span>
+                )}
               </div>
             </div>
           ))}
