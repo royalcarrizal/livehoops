@@ -11,13 +11,14 @@
 // Mock data is no longer used.
 
 import { useState, useEffect } from 'react';
-import { MapPin, Bell } from 'lucide-react';
+import { MapPin, Bell, Search } from 'lucide-react';
 import Avatar from '../components/Avatar';
 import FeedPost from '../components/FeedPost';
 import ActiveFriendsRow from '../components/ActiveFriendsRow';
 import PostComposer from '../components/PostComposer';
 import PhotoViewer from '../components/PhotoViewer';
 import CourtDetailSheet from '../components/CourtDetailSheet';
+import DiscoverSheet from '../components/DiscoverSheet';
 import Toast from '../components/Toast';
 import NotificationPanel from '../components/NotificationPanel';
 import { useToast } from '../hooks/useToast';
@@ -30,9 +31,10 @@ import { usePosts } from '../hooks/usePosts';
 //   user         — the logged-in Supabase user object (has .id)
 //   profile      — the user's profile row from Supabase (username, avatar_url, etc.)
 export default function HomeScreen({ setActiveTab, user, profile, parks, onViewProfile, onCheckIn, activeCheckIn, checkOut, cityLabel = 'Houston, TX' }) {
-  const [feedTab, setFeedTab]       = useState('following');
-  const [photoUrl, setPhotoUrl]     = useState(null);
-  const [showPanel, setShowPanel]   = useState(false);
+  const [feedTab, setFeedTab]           = useState('following');
+  const [photoUrl, setPhotoUrl]         = useState(null);
+  const [showPanel, setShowPanel]       = useState(false);
+  const [showDiscover, setShowDiscover] = useState(false);
   const [newPostCount, setNewPostCount] = useState(0);
 
   // Court tapped from a feed post — opens CourtDetailSheet
@@ -161,6 +163,16 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
         <div className="header-row">
           <h1 className="app-title">Live<span>Hoops</span></h1>
 
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {/* Search / Discover icon */}
+          <button
+            className="icon-btn"
+            onClick={() => setShowDiscover(true)}
+            aria-label="Search players"
+          >
+            <Search size={18} strokeWidth={2} />
+          </button>
+
           {/* Bell icon — shows unread count badge */}
           <button
             className="icon-btn"
@@ -175,6 +187,7 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
               </span>
             )}
           </button>
+          </div>
         </div>
         <div className="location-row">
           <MapPin size={13} color="var(--orange)" />
@@ -333,6 +346,15 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
       <div style={{ height: 24 }} />
 
       {/* ── Modals & overlays ────────────────────────────────────────────────── */}
+
+      {showDiscover && (
+        <DiscoverSheet
+          userId={user?.id}
+          onClose={() => setShowDiscover(false)}
+          onViewProfile={(uid) => { setShowDiscover(false); onViewProfile?.(uid); }}
+        />
+      )}
+
       <PhotoViewer url={photoUrl} onClose={() => setPhotoUrl(null)} />
 
       {tappedCourt && (
