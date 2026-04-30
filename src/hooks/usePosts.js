@@ -238,10 +238,9 @@ export function usePosts() {
     if (!userId || (!content?.trim() && !imageUrl && !courtId)) return;
 
     const row = {
-      user_id:    userId,
-      content:    content?.trim() ?? '',
+      user_id: userId,
+      content: content?.trim() ?? '',
       type,
-      like_count: 0,
     };
     if (imageUrl)   row.image_url   = imageUrl;
     if (courtId)    row.court_id    = courtId;
@@ -291,7 +290,6 @@ export function usePosts() {
         user_id: userId,
         type: 'repost',
         content: '',
-        like_count: 0,
         repost_of_post_id: postId,
       })
       .select(POST_SELECT)
