@@ -90,10 +90,15 @@ function normPost(row, likedIds) {
   };
 }
 
+const BASIC_POST_SELECT = `
+  *,
+  profiles(*)
+`;
+
 const POST_SELECT = `
   *,
   profiles(*),
-  original_post:repost_of_post_id(
+  original_post:posts!posts_repost_of_post_id_fkey(
     *,
     profiles(*)
   )
@@ -252,11 +257,19 @@ export function usePosts() {
       .from('posts')
       .insert(row)
       // Return the newly created row so we can add it to the feed
-      .select(POST_SELECT)
+      .select(BASIC_POST_SELECT)
       .single();
 
     if (error) {
-      console.error('createPost error:', error);
+      console.error('createPost error:', {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        postType: type,
+        hasImage: !!imageUrl,
+        hasCourt: !!courtId,
+      });
       throw error; // Let the caller show an error message
     }
 

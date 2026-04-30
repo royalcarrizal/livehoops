@@ -145,6 +145,57 @@ export function useDirectMessages() {
     return count ?? 0;
   }, []);
 
+  // ── Fetch inbox (all conversations, latest message per thread) ───────────
+  // Queries the last 500 messages for this user (sent + received), then groups
+  // them client-side by conversation partner so each thread shows one row.
+  // Returns threads sorted by most-recent message descending.
+  const fetchInbox = useCallback(async (userId) => {
+    if (!userId) return [];
+
+    const { data, error } = await supabase
+      .from('direct_messages')
+      .select('id, sender_id, recipient_id, content, created_at, read_at')
+      .or(`sender_id.eq.${userId},recipient_id.eq.${userId}`)
+      .order('created_at', { ascending: false })
+      .limit(500);
+
+    if (error) {
+      console.error('fetchInbox error:', error);
+      return [];
+    }
+
+    // Build one entry per unique conversation partner.
+    // Since messages are sorted newest-first, the first time we see a partnerId
+    // is that thread's last message. We also count unreads in the same pass.
+    const threadMap = {};
+
+    for (const msg of data ?? []) {
+      const partnerId = msg.sender_id === userId ? msg.recipient_id : msg.sender_id;
+
+      if (!threadMap[partnerId]) {
+        // First (= most recent) message for this partner
+        threadMap[partnerId] = {
+          partnerId,
+          lastMessage:   msg.content,
+          lastCreatedAt: msg.created_at,
+          lastTimeAgo:   toTimeAgo(msg.created_at),
+          isMine:        msg.sender_id === userId,
+          unreadCount:   0,
+        };
+      }
+
+      // Count every unread message addressed to the current user in this thread
+      if (msg.recipient_id === userId && !msg.read_at) {
+        threadMap[partnerId].unreadCount++;
+      }
+    }
+
+    // Sort threads by most-recent message
+    return Object.values(threadMap).sort(
+      (a, b) => new Date(b.lastCreatedAt) - new Date(a.lastCreatedAt)
+    );
+  }, []);
+
   // ── Subscribe to incoming messages in real time ───────────────────────────
   // Opens a Supabase Realtime channel that fires on every INSERT to
   // direct_messages where the current user is the recipient.
@@ -180,6 +231,7 @@ export function useDirectMessages() {
     sendMessage,
     markRead,
     fetchUnreadCount,
+    fetchInbox,
     subscribeToMessages,
   };
 }
