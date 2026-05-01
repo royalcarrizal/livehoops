@@ -136,6 +136,54 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
   // True while an avatar photo is uploading — shows a spinner over the avatar
   const [avatarUploading, setAvatarUploading] = useState(false);
 
+  // ── Mutual friends + courts (visitor mode only) ───────────────────────────
+  const [mutualFriends, setMutualFriends] = useState([]);
+  const [mutualCourts,  setMutualCourts]  = useState([]);
+
+  useEffect(() => {
+    if (isOwner || !profile?.id || !user?.id) return;
+
+    async function loadMutuals() {
+      // Viewed user's accepted friendships
+      const { data: viewedFriendships } = await supabase
+        .from('friendships')
+        .select('requester_id, addressee_id')
+        .eq('status', 'accepted')
+        .or(`requester_id.eq.${profile.id},addressee_id.eq.${profile.id}`);
+
+      const viewedFriendIds = new Set(
+        (viewedFriendships ?? []).map(f =>
+          f.requester_id === profile.id ? f.addressee_id : f.requester_id
+        )
+      );
+
+      // Intersect with logged-in user's already-loaded friends list
+      setMutualFriends(myFriends.filter(f => viewedFriendIds.has(f.userId)));
+
+      // Courts both users have checked into
+      const [myRes, theirRes] = await Promise.all([
+        supabase.from('checkins').select('court_id, courts(name)').eq('user_id', user.id),
+        supabase.from('checkins').select('court_id').eq('user_id', profile.id),
+      ]);
+
+      const myCourtIds    = new Set((myRes.data   ?? []).map(c => c.court_id));
+      const theirCourtIds = new Set((theirRes.data ?? []).map(c => c.court_id));
+
+      const nameMap = {};
+      (myRes.data ?? []).forEach(c => {
+        if (c.court_id && c.courts?.name) nameMap[c.court_id] = c.courts.name;
+      });
+
+      setMutualCourts(
+        [...myCourtIds]
+          .filter(id => theirCourtIds.has(id) && nameMap[id])
+          .map(id => ({ id, name: nameMap[id] }))
+      );
+    }
+
+    loadMutuals();
+  }, [profile?.id, isOwner, myFriends]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── Check-in history state ────────────────────────────────────────────────
   // Loaded from Supabase when the user taps the "Check-ins" tab.
   const [checkInHistory, setCheckInHistory]     = useState([]);
@@ -364,6 +412,45 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
           )}
         </div>
       </div>
+
+      {/* ── Mutual friends + courts — visitor mode only ─────────────────────── */}
+      {!isOwner && (mutualFriends.length > 0 || mutualCourts.length > 0) && (
+        <div className="mutual-section">
+
+          {mutualFriends.length > 0 && (
+            <div className="mutual-block">
+              <div className="mutual-label">
+                {mutualFriends.length} mutual {mutualFriends.length === 1 ? 'friend' : 'friends'}
+              </div>
+              <div className="mutual-avatars">
+                {mutualFriends.slice(0, 5).map(f => (
+                  <Avatar key={f.userId} avatarUrl={f.avatarUrl} initials={f.initials} size="small" />
+                ))}
+                {mutualFriends.length > 5 && (
+                  <div className="mutual-overflow">+{mutualFriends.length - 5}</div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {mutualCourts.length > 0 && (
+            <div className="mutual-block">
+              <div className="mutual-label">
+                {mutualCourts.length} court{mutualCourts.length !== 1 ? 's' : ''} in common
+              </div>
+              <div className="mutual-courts-list">
+                {mutualCourts.slice(0, 3).map(court => (
+                  <span key={court.id} className="mutual-court-chip">🏀 {court.name}</span>
+                ))}
+                {mutualCourts.length > 3 && (
+                  <span className="mutual-court-chip">+{mutualCourts.length - 3} more</span>
+                )}
+              </div>
+            </div>
+          )}
+
+        </div>
+      )}
 
       {/* ── Tab row: Posts | Check-ins ──────────────────────────────────────── */}
       <div className="profile-tabs">
