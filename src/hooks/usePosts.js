@@ -90,14 +90,35 @@ function normPost(row, likedIds) {
   };
 }
 
-const POST_SELECT = `
-  *,
-  profiles(*),
-  original_post:posts!posts_repost_of_post_id_fkey(
-    *,
-    profiles(*)
-  )
-`;
+// Simple select — no self-referential repost join.
+// Repost originals are fetched separately below to avoid depending on
+// PostgREST knowing the FK (schema cache issues cause the whole query
+// to fail if the FK was added after the last schema reload).
+const POST_SELECT = `*, profiles(*)`;
+
+// Fetch the original posts for any reposts in the list, then attach them.
+// This avoids the self-referential FK join which fails when PostgREST's
+// schema cache hasn't been reloaded after reposts.sql was run.
+async function attachOriginalPosts(rows) {
+  const repostIds = rows
+    .filter(r => r.repost_of_post_id)
+    .map(r => r.repost_of_post_id);
+
+  if (repostIds.length === 0) return rows;
+
+  const { data: originals } = await supabase
+    .from('posts')
+    .select('*, profiles(*)')
+    .in('id', repostIds);
+
+  const originalsMap = {};
+  (originals ?? []).forEach(o => { originalsMap[o.id] = o; });
+
+  return rows.map(r => ({
+    ...r,
+    original_post: r.repost_of_post_id ? (originalsMap[r.repost_of_post_id] ?? null) : null,
+  }));
+}
 
 async function fetchLikedIds(userId, postIds) {
   if (!userId || !postIds?.length) return new Set();
@@ -175,11 +196,9 @@ export function usePosts() {
       return;
     }
 
-    // Load which posts the current user has liked
-    const likedIds = await fetchLikedIds(userId, (data ?? []).map(row => row.id));
-
-    // Transform every database row into the shape FeedPost expects
-    setFeed((data ?? []).map(row => normPost(row, likedIds)));
+    const rows = await attachOriginalPosts(data ?? []);
+    const likedIds = await fetchLikedIds(userId, rows.map(r => r.id));
+    setFeed(rows.map(row => normPost(row, likedIds)));
     setLoading(false);
   }, []);
 
@@ -198,8 +217,9 @@ export function usePosts() {
       return [];
     }
 
-    const likedIds = await fetchLikedIds(userId, (data ?? []).map(row => row.id));
-    return (data ?? []).map(row => normPost(row, likedIds));
+    const rows = await attachOriginalPosts(data ?? []);
+    const likedIds = await fetchLikedIds(userId, rows.map(r => r.id));
+    return rows.map(row => normPost(row, likedIds));
   }, []);
 
   // ── Fetch posts by a specific user (for profile pages) ──────────────────
@@ -220,8 +240,9 @@ export function usePosts() {
       return [];
     }
 
-    const likedIds = await fetchLikedIds(viewerUserId, (data ?? []).map(row => row.id));
-    return (data ?? []).map(row => normPost(row, likedIds));
+    const rows = await attachOriginalPosts(data ?? []);
+    const likedIds = await fetchLikedIds(viewerUserId, rows.map(r => r.id));
+    return rows.map(row => normPost(row, likedIds));
   }, []);
 
   // ── Create a new post ───────────────────────────────────────────────────
@@ -292,7 +313,7 @@ export function usePosts() {
         content: '',
         repost_of_post_id: postId,
       })
-      .select(POST_SELECT)
+      .select('*, profiles(*)')
       .single();
 
     // 23505 = unique violation from posts_user_repost_unique.
@@ -305,7 +326,8 @@ export function usePosts() {
       throw error;
     }
 
-    const newPost = normPost(data, new Set());
+    const [enriched] = await attachOriginalPosts([data]);
+    const newPost = normPost(enriched, new Set());
     setFeed(prev => [newPost, ...prev]);
     return { post: newPost };
   }, []);
