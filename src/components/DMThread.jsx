@@ -9,6 +9,7 @@
 //   onClose     — called when the user taps the back button
 
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronLeft, Send } from 'lucide-react';
 import Avatar from './Avatar';
 import { useDirectMessages } from '../hooks/useDirectMessages';
@@ -96,7 +97,7 @@ export default function DMThread({ friend, currentUser, onClose }) {
     }
   };
 
-  return (
+  return createPortal(
     <div className="dm-overlay">
       <div
         ref={threadRef}
@@ -171,6 +172,7 @@ export default function DMThread({ friend, currentUser, onClose }) {
         </div>
 
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
