@@ -10,7 +10,7 @@
 // Data is now loaded from Supabase using the useFriends and usePosts hooks.
 // Mock data is no longer used.
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { MapPin, Bell, Search } from 'lucide-react';
 import Avatar from '../components/Avatar';
 import FeedPost from '../components/FeedPost';
@@ -25,6 +25,7 @@ import { useToast } from '../hooks/useToast';
 import { useNotifications } from '../hooks/useNotifications';
 import { useFriends } from '../hooks/useFriends';
 import { usePosts } from '../hooks/usePosts';
+import { usePullToRefresh } from '../hooks/usePullToRefresh';
 
 // Props:
 //   setActiveTab — lets this screen switch to another tab (e.g. Friends tab)
@@ -105,6 +106,19 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
     return unsubscribe;
   }, [friends, friendsLoading, user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ── Pull-to-refresh ────────────────────────────────────────────────────
+  const handleRefresh = useCallback(async () => {
+    const friendIds = friends.map(f => f.userId);
+    if (feedTab === 'following') {
+      await fetchFriendsFeed(user.id, friendIds);
+    } else {
+      const posts = await fetchAllFeed(user?.id);
+      setNearbyFeed(posts ?? []);
+    }
+  }, [feedTab, friends, user?.id, fetchFriendsFeed, fetchAllFeed]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const { containerRef, pullDistance, refreshing } = usePullToRefresh(handleRefresh);
+
   // ── Bell button handler ─────────────────────────────────────────────────
   const handleBellClick = () => {
     if (!showPanel) markAllRead();
@@ -156,7 +170,18 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
   const isLoading = feedLoading || (feedTab === 'following' && friendsLoading);
 
   return (
-    <div className="screen-content">
+    <div className="screen-content" ref={containerRef}>
+
+      {/* ── Pull-to-refresh indicator ──────────────────────────────────────── */}
+      {(pullDistance > 0 || refreshing) && (
+        <div
+          className="ptr-indicator"
+          style={{ height: refreshing ? 52 : pullDistance * 0.6 }}
+        >
+          <div className={`ptr-spinner${refreshing ? ' spinning' : ''}`}
+               style={{ opacity: refreshing ? 1 : pullDistance / 72 }} />
+        </div>
+      )}
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="screen-header">
@@ -253,23 +278,48 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
         </div>
       )}
 
-      {/* Empty state for Following tab: shown when loaded but no posts found */}
+      {/* Empty state for Following tab */}
       {!isLoading && feedTab === 'following' && currentFeed.length === 0 && (
-        <div className="feed-empty">
-          <div style={{ fontSize: 48 }}>🏀</div>
-          <div className="feed-empty-title">Your feed is empty</div>
-          <div className="feed-empty-sub">
-            Add friends to see their check-ins and posts here
+        friends.length === 0 ? (
+          // No friends yet — onboarding prompt
+          <div className="feed-empty">
+            <div style={{ fontSize: 48 }}>🏀</div>
+            <div className="feed-empty-title">Welcome to LiveHoops!</div>
+            <div className="feed-empty-sub">
+              Connect with players to see their check-ins and posts here
+            </div>
+            <div className="feed-empty-steps">
+              <div className="feed-empty-step">
+                <span className="feed-empty-step-num">1</span>
+                <span>Find players by username</span>
+              </div>
+              <div className="feed-empty-step">
+                <span className="feed-empty-step-num">2</span>
+                <span>Send a friend request</span>
+              </div>
+              <div className="feed-empty-step">
+                <span className="feed-empty-step-num">3</span>
+                <span>See their courts &amp; posts</span>
+              </div>
+            </div>
+            <button
+              className="auth-submit-btn"
+              style={{ marginTop: 20, maxWidth: 220 }}
+              onClick={() => setActiveTab('friends')}
+            >
+              Find Players
+            </button>
           </div>
-          {/* Takes the user directly to the Friends tab */}
-          <button
-            className="auth-submit-btn"
-            style={{ marginTop: 16, maxWidth: 200 }}
-            onClick={() => setActiveTab('friends')}
-          >
-            Find Friends
-          </button>
-        </div>
+        ) : (
+          // Has friends but they haven't posted yet
+          <div className="feed-empty">
+            <div style={{ fontSize: 48 }}>🏀</div>
+            <div className="feed-empty-title">Nothing posted yet</div>
+            <div className="feed-empty-sub">
+              Your crew hasn't posted anything — be the first!
+            </div>
+          </div>
+        )
       )}
 
       {/* Empty state for Nearby tab */}

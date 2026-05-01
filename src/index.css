@@ -3894,6 +3894,64 @@ body {
   line-height: 1.5;
 }
 
+.feed-empty-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+  width: 100%;
+  max-width: 260px;
+  text-align: left;
+}
+
+.feed-empty-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.feed-empty-step-num {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--orange);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* ── Pull-to-refresh indicator ── */
+.ptr-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: height 0.2s ease;
+}
+
+.ptr-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2.5px solid var(--separator-strong);
+  border-top-color: var(--orange);
+  border-radius: 50%;
+  transition: opacity 0.2s ease;
+}
+
+.ptr-spinner.spinning {
+  animation: ptr-spin 0.7s linear infinite;
+}
+
+@keyframes ptr-spin {
+  to { transform: rotate(360deg); }
+}
+
 /* ── Search Results in Add Friend Modal ── */
 /* Each matching user that appears as you type in the search box */
 .search-result-row {
