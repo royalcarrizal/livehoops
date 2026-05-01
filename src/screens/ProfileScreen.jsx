@@ -69,6 +69,15 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
       : displayUser.avatarUrl
   );
 
+  // Reset avatarUrl when the profile being viewed changes (e.g. navigating between players)
+  useEffect(() => {
+    setAvatarUrl(
+      isOwner
+        ? (localStorage.getItem('livehoops_avatar') || (profile?.avatar_url ?? null))
+        : (profile?.avatar_url ?? null)
+    );
+  }, [profile?.id, profile?.avatar_url, isOwner]);
+
   // Which feed tab is selected — "posts" or "checkins"
   const [activeTab, setActiveTab]               = useState('posts');
 

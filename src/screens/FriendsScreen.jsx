@@ -67,16 +67,17 @@ export default function FriendsScreen({ user, profile, onViewProfile, onUnreadDM
 
   // ── Refresh inbox helper (called after receiving a new message) ───────────
   const refreshInbox = useCallback(() => {
-    if (!user?.id) return;
-    fetchInbox(user.id).then(setThreads);
-  }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+    const uid = user?.id;
+    if (!uid) return;
+    fetchInbox(uid).then(setThreads);
+  }, [user, fetchInbox]);
 
   // ── Real-time: bump unread count + refresh inbox preview ─────────────────
   useEffect(() => {
     if (!user?.id) return;
     const unsubscribe = subscribeToMessages(user.id, (newMsg) => {
-      // Only increment total badge if the thread for this sender isn't open
-      if (!dmFriend || newMsg.senderId !== dmFriend.userId) {
+      // Only increment when we are the recipient and the thread isn't open
+      if (newMsg.recipientId === user.id && (!dmFriend || newMsg.senderId !== dmFriend.userId)) {
         setUnreadCount(n => {
           const next = n + 1;
           onUnreadDMs?.(next);
@@ -241,7 +242,7 @@ export default function FriendsScreen({ user, profile, onViewProfile, onUnreadDM
                         currentCourt:  friend.currentCourt,
                         location:      'LiveHoops player',
                         checkinCount:  friend.checkinCount,
-                        courtsVisited: friend.coursesVisited,
+                        courtsVisited: friend.courtsVisited,
                         hoursOnCourt:  friend.hoursOnCourt,
                       }}
                       onViewProfile={onViewProfile}

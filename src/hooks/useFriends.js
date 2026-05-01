@@ -110,7 +110,7 @@ export function useFriends(userId) {
         initials:       toInitials(prof.username),
         // Real stats from profiles table — no more hardcoded zeros
         checkinCount:   prof.checkin_count   ?? 0,
-        coursesVisited: prof.courts_visited  ?? 0,
+        courtsVisited:  prof.courts_visited  ?? 0,
         hoursOnCourt:   prof.hours_played    ?? 0,
         // Real "playing now" status from checkins table
         isActive:       !!active,
