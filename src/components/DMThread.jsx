@@ -14,9 +14,11 @@ import Avatar from './Avatar';
 import { useDirectMessages } from '../hooks/useDirectMessages';
 
 export default function DMThread({ friend, currentUser, onClose }) {
-  const [text,      setText]      = useState('');
-  const [isSending, setIsSending] = useState(false);
+  const [text,          setText]          = useState('');
+  const [isSending,     setIsSending]     = useState(false);
+  const [bottomOffset,  setBottomOffset]  = useState(0);
   const bottomRef = useRef(null);
+  const threadRef = useRef(null);
 
   const {
     messages,
@@ -52,6 +54,24 @@ export default function DMThread({ friend, currentUser, onClose }) {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // ── Lift the panel above the virtual keyboard on iOS Safari ──────────────
+  // iOS doesn't resize fixed elements when the keyboard opens; it just overlays
+  // them. The Visual Viewport API tells us exactly how much the keyboard covers.
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const onViewport = () => {
+      const keyboardHeight = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      setBottomOffset(keyboardHeight);
+    };
+    vv.addEventListener('resize', onViewport);
+    vv.addEventListener('scroll', onViewport);
+    return () => {
+      vv.removeEventListener('resize', onViewport);
+      vv.removeEventListener('scroll', onViewport);
+    };
+  }, []);
+
   // ── Send handler ──────────────────────────────────────────────────────────
   const handleSend = async () => {
     const trimmed = text.trim();
@@ -79,7 +99,11 @@ export default function DMThread({ friend, currentUser, onClose }) {
 
   return (
     <div className="dm-overlay">
-      <div className="dm-thread">
+      <div
+        ref={threadRef}
+        className="dm-thread"
+        style={bottomOffset > 0 ? { bottom: bottomOffset, height: `calc(92svh - ${bottomOffset}px)` } : undefined}
+      >
 
         {/* ── Header ──────────────────────────────────────────────────────── */}
         <div className="dm-header">

@@ -193,26 +193,28 @@ export function useDirectMessages() {
       (a, b) => new Date(b.lastCreatedAt) - new Date(a.lastCreatedAt)
     );
 
-    // Fetch partner profiles so threads render even for non-friends
+    // Fetch partner profiles so the inbox shows real names and avatars
     const partnerIds = threads.map(t => t.partnerId);
-    if (partnerIds.length > 0) {
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, username, avatar_url')
-        .in('id', partnerIds);
+    if (partnerIds.length === 0) return threads;
 
-      const profileMap = {};
-      for (const p of profiles ?? []) profileMap[p.id] = p;
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, username, avatar_url')
+      .in('id', partnerIds);
 
-      for (const thread of threads) {
-        const p = profileMap[thread.partnerId];
-        thread.partnerUsername  = p?.username ?? 'Player';
-        thread.partnerAvatarUrl = p?.avatar_url ?? null;
-        thread.partnerInitials  = (p?.username ?? 'PL').slice(0, 2).toUpperCase();
-      }
-    }
+    const profileMap = {};
+    (profiles ?? []).forEach(p => { profileMap[p.id] = p; });
 
-    return threads;
+    return threads.map(t => {
+      const prof = profileMap[t.partnerId] ?? {};
+      const username = prof.username ?? 'Player';
+      return {
+        ...t,
+        partnerUsername:  username,
+        partnerAvatarUrl: prof.avatar_url ?? null,
+        partnerInitials:  username.slice(0, 2).toUpperCase(),
+      };
+    });
   }, []);
 
   // ── Subscribe to incoming messages in real time ───────────────────────────
