@@ -14,6 +14,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import mapboxgl from 'mapbox-gl';
 import { supabase } from '../lib/supabase';
 import { usePosts } from '../hooks/usePosts';
+import { useCourtFavorites } from '../hooks/useCourtFavorites';
 import MapPostModal from '../components/MapPostModal';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
@@ -47,6 +48,7 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
 
   const { createPost } = usePosts();
   const { toast, showToast } = useToast();
+  const { favoriteIds, toggleFavorite } = useCourtFavorites(user?.id);
 
   // ── Fetch this user's check-in history ───────────────────────────────────
   useEffect(() => {
@@ -151,7 +153,7 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
     parks.forEach(park => {
       if (park.lng == null || park.lat == null) return;
 
-      const el = createMarkerEl(park, !!visitMap[park.id]);
+      const el = createMarkerEl(park, !!visitMap[park.id], favoriteIds.has(park.id));
       el.addEventListener('click', () => setSelectedPark(park));
 
       // Place the marker at the court's real GPS coordinates
@@ -163,7 +165,7 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
       // Keep a reference so we can clean it up later
       markersRef.current.push(marker);
     });
-  }, [mapLoaded, parks, visitMap]);
+  }, [mapLoaded, parks, visitMap, favoriteIds]);
 
   // ── Handle navigation from the Active Friends row ────────────────────────
   // When a user taps a friend's card on the Home screen, that court's ID is
@@ -192,9 +194,9 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
 
   // ── Filter the chip row by whatever the user typed ────────────────────────
   // No API calls needed — we just filter the local array
-  const filteredParks = parks.filter(p =>
-    p.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredParks = parks
+    .filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    .sort((a, b) => (favoriteIds.has(b.id) ? 1 : 0) - (favoriteIds.has(a.id) ? 1 : 0));
 
   return (
     <div className="map-screen">
@@ -266,9 +268,16 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
 
           {/* The sliding sheet with court details */}
           <div className="map-bottom-sheet">
-            {/* Drag handle row with close button */}
+            {/* Drag handle row with favorite + close buttons */}
             <div className="map-sheet-top-row">
               <div className="map-sheet-drag-handle" />
+              <button
+                className={`map-sheet-favorite${favoriteIds.has(selectedPark.id) ? ' is-favorited' : ''}`}
+                onClick={() => toggleFavorite(selectedPark.id)}
+                aria-label={favoriteIds.has(selectedPark.id) ? 'Remove from favorites' : 'Add to favorites'}
+              >
+                ♥
+              </button>
               <button
                 className="map-sheet-close"
                 onClick={() => setSelectedPark(null)}
@@ -394,10 +403,11 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
           {filteredParks.map(park => (
             <div
               key={park.id}
-              className={`map-court-chip ${park.players > 0 ? 'has-players' : ''} ${visitMap[park.id] ? 'visited' : ''}`}
+              className={`map-court-chip${park.players > 0 ? ' has-players' : ''}${visitMap[park.id] ? ' visited' : ''}${favoriteIds.has(park.id) ? ' is-favorite' : ''}`}
               onClick={() => flyToPark(park)}
             >
               <div className="map-court-chip-name">
+                {favoriteIds.has(park.id) && <span className="chip-fav-badge">♥ </span>}
                 {park.name}
                 {visitMap[park.id] > 0 && (
                   <span className="map-court-visited-badge">✓ Visited</span>
@@ -457,7 +467,7 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
 // The marker is an orange circle when the court is live (has players),
 // or a darker circle when it's empty. A green pulsing dot appears on
 // top-right to signal "live" status.
-function createMarkerEl(park, visited = false) {
+function createMarkerEl(park, visited = false, isFavorited = false) {
   const el = document.createElement('div');
   el.className = [
     'mb-marker',
@@ -481,6 +491,14 @@ function createMarkerEl(park, visited = false) {
     const check = document.createElement('div');
     check.className = 'mb-visited-dot';
     el.appendChild(check);
+  }
+
+  // Gold star badge for favorited courts (bottom-left corner)
+  if (isFavorited) {
+    const star = document.createElement('div');
+    star.className = 'mb-fav-star';
+    star.textContent = '★';
+    el.appendChild(star);
   }
 
   return el;

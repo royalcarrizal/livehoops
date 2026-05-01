@@ -732,6 +732,27 @@ body {
 
 .map-sheet-close:active { opacity: 0.7; }
 
+/* Favorite heart button — absolute left in the sheet top row, mirrors close on right */
+.map-sheet-favorite {
+  position: absolute;
+  left: 0;
+  top: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  border: none;
+  color: var(--text-secondary);
+  font-size: 15px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s ease;
+}
+.map-sheet-favorite:active { opacity: 0.7; }
+.map-sheet-favorite.is-favorited { color: var(--orange); }
+
 /* Court name — large and bold */
 .map-sheet-name {
   font-size: 20px;
@@ -1024,6 +1045,24 @@ body {
   box-shadow: 0 4px 14px rgba(255, 107, 26, 0.55);
 }
 
+/* Gold star badge on bottom-left corner of favorited court markers */
+.mb-fav-star {
+  position: absolute;
+  bottom: -3px;
+  left: -3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #FFD700;
+  border: 1.5px solid #000;
+  font-size: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #000;
+  pointer-events: none;
+}
+
 /* Small teal checkmark dot on bottom-left corner of visited markers */
 .mb-visited-dot {
   position: absolute;
@@ -1126,6 +1165,17 @@ body {
 
 .map-court-chip.visited {
   border-color: rgba(48, 209, 88, 0.4);
+}
+
+/* Orange left accent on a favorited chip */
+.map-court-chip.is-favorite {
+  border-left: 3px solid var(--orange);
+}
+
+/* Orange heart prefix inside a favorited chip's name */
+.chip-fav-badge {
+  color: var(--orange);
+  font-size: 11px;
 }
 
 /* "✓ Visited" label next to the court name in chips */
