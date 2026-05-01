@@ -13,6 +13,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import mapboxgl from 'mapbox-gl';
 import { supabase } from '../lib/supabase';
+import { usePosts } from '../hooks/usePosts';
+import MapPostModal from '../components/MapPostModal';
+import Toast from '../components/Toast';
+import { useToast } from '../hooks/useToast';
 
 import 'mapbox-gl/dist/mapbox-gl.css';
 
@@ -25,7 +29,7 @@ mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
 // Mapbox uses [longitude, latitude] order (opposite of Google Maps)
 const HOUSTON_CENTER = [-95.3698, 29.7604];
 
-export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, user, isCheckingIn = false }) {
+export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, user, profile, isCheckingIn = false }) {
   // ── Refs (don't trigger re-renders when they change) ──────────────────────
   // The div element that Mapbox renders the map canvas into
   const mapContainerRef = useRef(null);
@@ -35,11 +39,14 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
   const markersRef = useRef([]);
 
   // ── State (these DO trigger re-renders) ───────────────────────────────────
-  const [mapLoaded,    setMapLoaded]    = useState(false);
-  const [selectedPark, setSelectedPark] = useState(null);
-  const [searchQuery,  setSearchQuery]  = useState('');
-  // court_id → number of times this user has checked in there
-  const [visitMap, setVisitMap] = useState({});
+  const [mapLoaded,       setMapLoaded]       = useState(false);
+  const [selectedPark,    setSelectedPark]    = useState(null);
+  const [searchQuery,     setSearchQuery]     = useState('');
+  const [showPostModal,   setShowPostModal]   = useState(false);
+  const [visitMap,        setVisitMap]        = useState({});
+
+  const { createPost } = usePosts();
+  const { toast, showToast } = useToast();
 
   // ── Fetch this user's check-in history ───────────────────────────────────
   useEffect(() => {
@@ -308,7 +315,7 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
             </div>
 
             {/* Action buttons */}
-            <div className="map-sheet-buttons">
+            <div className="map-sheet-buttons" style={{ flexWrap: 'wrap' }}>
               {/* Three check-in states:
                   1. Checked in HERE     → green "Checked In ✓" button that checks out
                   2. Checked in ELSEWHERE → orange "Switch Courts" button
@@ -353,7 +360,6 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
                 </button>
               )}
 
-              {/* Opens Apple Maps or Google Maps with the court's coordinates */}
               <a
                 className="map-directions-btn"
                 href={`https://maps.google.com/?q=${selectedPark.lat},${selectedPark.lng}`}
@@ -362,6 +368,15 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
               >
                 Get Directions
               </a>
+
+              {/* Post tagged to this court */}
+              <button
+                className="map-directions-btn"
+                style={{ flex: 1 }}
+                onClick={() => setShowPostModal(true)}
+              >
+                ✏️ Post Here
+              </button>
             </div>
           </div>
         </>
@@ -402,6 +417,34 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
           ))}
         </div>
       </div>
+
+      {/* ── Post from map modal ───────────────────────────────────────────── */}
+      {showPostModal && selectedPark && (
+        <MapPostModal
+          court={{ id: selectedPark.id, name: selectedPark.name }}
+          currentUser={{
+            id:        user?.id,
+            username:  profile?.username ?? 'Player',
+            avatarUrl: profile?.avatar_url ?? null,
+          }}
+          onPost={async (data) => {
+            await createPost(
+              user.id,
+              data.content,
+              data.type,
+              data.image_url,
+              data.court_id,
+              data.court_name,
+              profile,
+            );
+            setShowPostModal(false);
+            showToast('✅ Posted!');
+          }}
+          onClose={() => setShowPostModal(false)}
+        />
+      )}
+
+      <Toast message={toast} />
 
     </div>
   );

@@ -828,6 +828,166 @@ body {
 
 .map-directions-btn:active { opacity: 0.7; }
 
+/* ── Map post modal ────────────────────────────────────────────────────────── */
+.map-post-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 600;
+  background: rgba(0, 0, 0, 0.55);
+  animation: fadeIn 0.2s ease;
+}
+
+.map-post-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 601;
+  max-width: 390px;
+  margin: 0 auto;
+  background: var(--bg-card);
+  border-radius: 20px 20px 0 0;
+  border-top: 1px solid var(--separator-strong);
+  padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
+  animation: sheetSlideUp 0.28s ease;
+  transition: bottom 0.15s ease;
+}
+
+.map-post-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.map-post-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.map-post-close {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  padding: 4px;
+}
+
+.map-post-court-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(255, 107, 26, 0.12);
+  border: 1px solid rgba(255, 107, 26, 0.3);
+  border-radius: 20px;
+  padding: 5px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--orange);
+  margin-bottom: 14px;
+}
+
+.map-post-compose-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.map-post-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.map-post-image-wrap {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.map-post-image {
+  width: 100%;
+  max-height: 160px;
+  object-fit: cover;
+  display: block;
+  border-radius: 10px;
+}
+
+.map-post-image-remove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: rgba(0, 0, 0, 0.6);
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  cursor: pointer;
+}
+
+.map-post-input {
+  width: 100%;
+  background: var(--bg-elevated);
+  border: 1px solid var(--separator-strong);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: var(--font);
+  color: var(--text-primary);
+  resize: none;
+  outline: none;
+  line-height: 1.5;
+  box-sizing: border-box;
+}
+
+.map-post-input::placeholder { color: var(--text-secondary); }
+
+.map-post-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid var(--separator);
+  padding-top: 12px;
+}
+
+.map-post-media-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 6px;
+}
+
+.map-post-submit {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--orange);
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 18px;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.map-post-submit:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
 /* ── Custom Mapbox court markers ── */
 /* Orange circle with a basketball emoji — one per court on the map */
 .mb-marker {
