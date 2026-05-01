@@ -190,10 +190,32 @@ export function useDirectMessages() {
       }
     }
 
-    // Sort threads by most-recent message
-    return Object.values(threadMap).sort(
+    const threads = Object.values(threadMap).sort(
       (a, b) => new Date(b.lastCreatedAt) - new Date(a.lastCreatedAt)
     );
+
+    // Fetch partner profiles so the inbox shows real names and avatars
+    const partnerIds = threads.map(t => t.partnerId);
+    if (partnerIds.length === 0) return threads;
+
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, username, avatar_url')
+      .in('id', partnerIds);
+
+    const profileMap = {};
+    (profiles ?? []).forEach(p => { profileMap[p.id] = p; });
+
+    return threads.map(t => {
+      const prof = profileMap[t.partnerId] ?? {};
+      const username = prof.username ?? 'Player';
+      return {
+        ...t,
+        partnerUsername:  username,
+        partnerAvatarUrl: prof.avatar_url ?? null,
+        partnerInitials:  username.slice(0, 2).toUpperCase(),
+      };
+    });
   }, []);
 
   // ── Subscribe to incoming messages in real time ───────────────────────────
