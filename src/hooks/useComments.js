@@ -54,6 +54,9 @@ export function useComments() {
   // True while a new comment is being written to Supabase
   const [submitting, setSubmitting] = useState(false);
 
+  // True when the last fetchComments call failed
+  const [fetchError, setFetchError] = useState(false);
+
   // ── Fetch all comments for a post ───────────────────────────────────────
   // Joins the profiles table so each comment carries the author's
   // username and avatar URL. Comments are shown oldest-first.
@@ -69,10 +72,12 @@ export function useComments() {
 
     if (error) {
       console.error('fetchComments error:', error);
+      setFetchError(true);
       setLoading(false);
       return;
     }
 
+    setFetchError(false);
     setComments((data ?? []).map(normComment));
     setLoading(false);
   }, []);
@@ -120,5 +125,5 @@ export function useComments() {
     setComments(prev => prev.filter(c => c.id !== commentId));
   }, []);
 
-  return { comments, loading, submitting, fetchComments, addComment, deleteComment };
+  return { comments, loading, submitting, fetchError, fetchComments, addComment, deleteComment };
 }

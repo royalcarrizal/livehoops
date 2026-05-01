@@ -45,6 +45,7 @@ export default function FeedPost({
     comments,
     loading:    commentsLoading,
     submitting,
+    fetchError: commentsFetchError,
     fetchComments,
     addComment,
     deleteComment,
@@ -107,7 +108,7 @@ export default function FeedPost({
         onToast?.('❤️ Liked');
 
         // Fire a notification when liking someone else's post
-        if (post.userId !== currentUser?.id) {
+        if (currentUser?.id && post.userId !== currentUser.id) {
           sendLocalNotification(
             `You liked ${post.userName}'s post ❤️`,
             post.content
@@ -370,8 +371,21 @@ export default function FeedPost({
             <div className="feed-comments-loading">Loading comments…</div>
           )}
 
-          {/* Empty state — only show after loading is done */}
-          {!commentsLoading && comments.length === 0 && (
+          {/* Error state */}
+          {!commentsLoading && commentsFetchError && (
+            <div className="feed-comments-empty">
+              Failed to load comments —{' '}
+              <button
+                style={{ background: 'none', border: 'none', color: 'var(--orange)', cursor: 'pointer', padding: 0, font: 'inherit' }}
+                onClick={() => fetchComments(post.id)}
+              >
+                tap to retry
+              </button>
+            </div>
+          )}
+
+          {/* Empty state — only show after loading is done and no error */}
+          {!commentsLoading && !commentsFetchError && comments.length === 0 && (
             <div className="feed-comments-empty">
               No comments yet. Be the first!
             </div>

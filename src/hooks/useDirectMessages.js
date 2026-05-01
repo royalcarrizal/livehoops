@@ -53,13 +53,12 @@ export function useDirectMessages() {
     if (!userId || !friendId) return;
     setLoading(true);
 
-    // RLS already restricts to messages where auth.uid() is sender or recipient.
-    // We additionally filter to rows where the friend is also involved —
-    // the intersection gives us exactly this two-person conversation.
+    // Explicitly scope to only the two-person conversation by requiring both
+    // participants in every row — prevents cross-contamination if RLS is loose.
     const { data, error } = await supabase
       .from('direct_messages')
       .select('*')
-      .or(`sender_id.eq.${friendId},recipient_id.eq.${friendId}`)
+      .or(`and(sender_id.eq.${userId},recipient_id.eq.${friendId}),and(sender_id.eq.${friendId},recipient_id.eq.${userId})`)
       .order('created_at', { ascending: true })
       .limit(50);
 

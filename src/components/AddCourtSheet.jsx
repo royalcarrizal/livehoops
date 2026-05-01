@@ -188,9 +188,14 @@ export default function AddCourtSheet({ isOpen, onClose, user }) {
           throw new Error('Address lookup is not configured');
         }
 
+        const controller = new AbortController();
+        const timeoutId  = setTimeout(() => controller.abort(), 5000);
+
         const res = await fetch(
-          `https://api.mapbox.com/geocoding/v5/mapbox.places/${query}.json?access_token=${token}&limit=1`
+          `https://api.mapbox.com/geocoding/v5/mapbox.places/${query}.json?access_token=${token}&limit=1`,
+          { signal: controller.signal }
         );
+        clearTimeout(timeoutId);
 
         if (!res.ok) {
           throw new Error('Address lookup failed');

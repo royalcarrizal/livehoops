@@ -87,15 +87,17 @@ export function useFriends(userId) {
     if (profilesRes.error) return [];
 
     // Build a lookup of active check-ins keyed by user ID
-    // Only one active check-in per user is allowed, but we map by user_id
-    // so we can look it up quickly when building the friend list.
     const activeMap = {};
-    (checkinsRes.data ?? []).forEach(c => {
-      activeMap[c.user_id] = {
-        courtId:   c.court_id,
-        courtName: c.courts?.name ?? null,
-      };
-    });
+    if (checkinsRes.error) {
+      console.error('fetchFriends: checkins query failed, online status unavailable:', checkinsRes.error);
+    } else {
+      (checkinsRes.data ?? []).forEach(c => {
+        activeMap[c.user_id] = {
+          courtId:   c.court_id,
+          courtName: c.courts?.name ?? null,
+        };
+      });
+    }
 
     // Combine friendship + profile + check-in status into one clean object
     return (profilesRes.data ?? []).map(prof => {
