@@ -199,6 +199,31 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
             onChange={e => setSearchQuery(e.target.value)}
             className="map-search-input"
           />
+          {/* Dropdown results — shown while the user is typing so results
+              appear above the keyboard instead of in the hidden bottom panel */}
+          {searchQuery.trim().length > 0 && (
+            <div className="map-search-dropdown">
+              {filteredParks.length === 0 ? (
+                <div className="map-search-no-results">No courts found</div>
+              ) : (
+                filteredParks.map(park => (
+                  <button
+                    key={park.id}
+                    className="map-search-result-row"
+                    onClick={() => {
+                      flyToPark(park);
+                      setSearchQuery('');
+                    }}
+                  >
+                    <span className="map-search-result-name">{park.name}</span>
+                    <span className="map-search-result-sub">
+                      {park.players > 0 ? `🏀 ${park.players} playing` : 'Empty'} · {park.distance}
+                    </span>
+                  </button>
+                ))
+              )}
+            </div>
+          )}
         </div>
 
         {/* Loading overlay — absolutely positioned over the map until it's ready */}

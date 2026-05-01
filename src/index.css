@@ -573,6 +573,62 @@ body {
 
 .map-search-input::placeholder { color: var(--text-secondary); }
 
+/* Search results dropdown — appears below the input while typing */
+.map-search-dropdown {
+  margin-top: 6px;
+  background: rgba(28, 28, 30, 0.96);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--separator-strong);
+  border-radius: 12px;
+  overflow: hidden;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.map-search-result-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  padding: 12px 14px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--separator);
+  cursor: pointer;
+  text-align: left;
+}
+
+.map-search-result-row:last-child {
+  border-bottom: none;
+}
+
+.map-search-result-row:active {
+  background: var(--bg-elevated);
+}
+
+.map-search-result-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-family: var(--font);
+}
+
+.map-search-result-sub {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-family: var(--font);
+}
+
+.map-search-no-results {
+  padding: 16px 14px;
+  font-size: 14px;
+  color: var(--text-secondary);
+  font-family: var(--font);
+  text-align: center;
+}
+
 /* Loading overlay — shown while the map tiles download for the first time */
 .map-loading {
   position: absolute;
