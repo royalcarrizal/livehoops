@@ -49,7 +49,8 @@ export default function CourtDetailSheet({
 
   const {
     reviews,
-    loading: reviewsLoading,
+    loading:    reviewsLoading,
+    fetchError: reviewsFetchError,
     fetchReviews,
     submitReview,
     deleteReview,
@@ -237,7 +238,19 @@ export default function CourtDetailSheet({
               </div>
             )}
 
-            {!reviewsLoading && reviews.length === 0 && (
+            {!reviewsLoading && reviewsFetchError && (
+              <div style={{ color: 'var(--text-secondary)', fontSize: 13, textAlign: 'center', padding: '8px 0' }}>
+                Failed to load reviews —{' '}
+                <button
+                  style={{ background: 'none', border: 'none', color: 'var(--orange)', cursor: 'pointer', padding: 0, font: 'inherit' }}
+                  onClick={() => fetchReviews(court.id, user?.id)}
+                >
+                  tap to retry
+                </button>
+              </div>
+            )}
+
+            {!reviewsLoading && !reviewsFetchError && reviews.length === 0 && (
               <div style={{ color: 'var(--text-secondary)', fontSize: 13, textAlign: 'center', padding: '8px 0' }}>
                 Be the first to rate this court!
               </div>

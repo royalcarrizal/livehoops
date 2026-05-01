@@ -46,8 +46,9 @@ function normReview(row, currentUserId) {
 }
 
 export function useCourtReviews() {
-  const [reviews, setReviews] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [reviews,    setReviews]    = useState([]);
+  const [loading,    setLoading]    = useState(false);
+  const [fetchError, setFetchError] = useState(false);
 
   // ── Fetch all reviews for a court ────────────────────────────────────────
   // Called lazily the first time the "Ratings & Reviews" section expands.
@@ -65,10 +66,12 @@ export function useCourtReviews() {
 
     if (error) {
       console.error('fetchReviews error:', error);
+      setFetchError(true);
       setLoading(false);
       return;
     }
 
+    setFetchError(false);
     setReviews((data ?? []).map(row => normReview(row, userId)));
     setLoading(false);
   }, []);
@@ -145,5 +148,5 @@ export function useCourtReviews() {
     }
   }, []);
 
-  return { reviews, loading, fetchReviews, submitReview, deleteReview };
+  return { reviews, loading, fetchError, fetchReviews, submitReview, deleteReview };
 }

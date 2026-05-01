@@ -118,10 +118,8 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
   const viewedUserId = profile?.id;
   const alreadyFriends = myFriends.some(f => f.userId === viewedUserId);
   const requestPending = mySentRequests.includes(viewedUserId);
-  const [addedLocally, setAddedLocally] = useState(false);
 
   const handleAddFriend = async () => {
-    setAddedLocally(true);
     await sendFriendRequest(viewedUserId);
     showToast('Friend request sent!');
   };
@@ -346,7 +344,7 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
             <button className="profile-action-btn filled" disabled>
               Friends ✓
             </button>
-          ) : (requestPending || addedLocally) ? (
+          ) : requestPending ? (
             <button className="profile-action-btn filled" disabled style={{ opacity: 0.6 }}>
               Pending
             </button>
