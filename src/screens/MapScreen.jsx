@@ -12,9 +12,8 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import mapboxgl from 'mapbox-gl';
+import { supabase } from '../lib/supabase';
 
-// Import Mapbox's own stylesheet — this makes the map controls look right
-// (the zoom buttons, geolocate button, etc.)
 import 'mapbox-gl/dist/mapbox-gl.css';
 
 // ── Set your Mapbox access token ──────────────────────────────────────────
@@ -36,12 +35,27 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
   const markersRef = useRef([]);
 
   // ── State (these DO trigger re-renders) ───────────────────────────────────
-  // True once the map tiles have finished downloading (hides the loading screen)
-  const [mapLoaded, setMapLoaded] = useState(false);
-  // The court the user tapped — drives the detail sheet at the bottom
+  const [mapLoaded,    setMapLoaded]    = useState(false);
   const [selectedPark, setSelectedPark] = useState(null);
-  // Text the user types in the search bar — filters the court chips
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery,  setSearchQuery]  = useState('');
+  // court_id → number of times this user has checked in there
+  const [visitMap, setVisitMap] = useState({});
+
+  // ── Fetch this user's check-in history ───────────────────────────────────
+  useEffect(() => {
+    if (!user?.id) return;
+    supabase
+      .from('checkins')
+      .select('court_id')
+      .eq('user_id', user.id)
+      .then(({ data }) => {
+        const map = {};
+        (data ?? []).forEach(c => {
+          if (c.court_id) map[c.court_id] = (map[c.court_id] || 0) + 1;
+        });
+        setVisitMap(map);
+      });
+  }, [user?.id]);
 
   // ── Fly the map camera to a specific court ────────────────────────────────
   // Called when the user taps a chip at the bottom or selects a court
@@ -130,10 +144,7 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
     parks.forEach(park => {
       if (park.lng == null || park.lat == null) return;
 
-      // Build the custom orange marker element
-      const el = createMarkerEl(park);
-
-      // When the marker is tapped, show the detail sheet for that court
+      const el = createMarkerEl(park, !!visitMap[park.id]);
       el.addEventListener('click', () => setSelectedPark(park));
 
       // Place the marker at the court's real GPS coordinates
@@ -145,7 +156,7 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
       // Keep a reference so we can clean it up later
       markersRef.current.push(marker);
     });
-  }, [mapLoaded, parks]);
+  }, [mapLoaded, parks, visitMap]);
 
   // ── Handle navigation from the Active Friends row ────────────────────────
   // When a user taps a friend's card on the Home screen, that court's ID is
@@ -266,6 +277,13 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
             {/* Address */}
             <div className="map-sheet-address">{selectedPark.shortAddress}</div>
 
+            {/* Visited badge */}
+            {visitMap[selectedPark.id] > 0 && (
+              <div className="map-sheet-visited">
+                ✓ You've played here {visitMap[selectedPark.id]} {visitMap[selectedPark.id] === 1 ? 'time' : 'times'}
+              </div>
+            )}
+
             {/* Info pills: live status + court details */}
             <div className="map-sheet-meta">
               {selectedPark.players > 0 ? (
@@ -361,10 +379,15 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
           {filteredParks.map(park => (
             <div
               key={park.id}
-              className={`map-court-chip ${park.players > 0 ? 'has-players' : ''}`}
+              className={`map-court-chip ${park.players > 0 ? 'has-players' : ''} ${visitMap[park.id] ? 'visited' : ''}`}
               onClick={() => flyToPark(park)}
             >
-              <div className="map-court-chip-name">{park.name}</div>
+              <div className="map-court-chip-name">
+                {park.name}
+                {visitMap[park.id] > 0 && (
+                  <span className="map-court-visited-badge">✓ Visited</span>
+                )}
+              </div>
               <div className="map-court-chip-info">
                 {park.players > 0
                   ? `🏀 ${park.players} players · ${park.distance}`
@@ -391,22 +414,30 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
 // The marker is an orange circle when the court is live (has players),
 // or a darker circle when it's empty. A green pulsing dot appears on
 // top-right to signal "live" status.
-function createMarkerEl(park) {
-  // The outer circle
+function createMarkerEl(park, visited = false) {
   const el = document.createElement('div');
-  el.className = `mb-marker${park.players > 0 ? ' live' : ''}`;
+  el.className = [
+    'mb-marker',
+    park.players > 0 ? 'live' : '',
+    visited ? 'visited' : '',
+  ].filter(Boolean).join(' ');
 
-  // Basketball emoji in the center
   const emoji = document.createElement('span');
   emoji.className = 'mb-marker-emoji';
   emoji.textContent = '🏀';
   el.appendChild(emoji);
 
-  // Green pulsing dot — only show when players are present
   if (park.players > 0) {
     const dot = document.createElement('div');
     dot.className = 'mb-live-dot';
     el.appendChild(dot);
+  }
+
+  // Checkmark badge for courts the user has visited
+  if (visited) {
+    const check = document.createElement('div');
+    check.className = 'mb-visited-dot';
+    el.appendChild(check);
   }
 
   return el;
