@@ -29,14 +29,13 @@ export default function InstallPrompt() {
     // This fires automatically when Chrome decides the PWA is installable
     // (after the user has visited the site at least once).
     const handlePrompt = (e) => {
-      // Prevent Chrome from showing its own default mini-infobar at the
-      // bottom of the screen — we'll show our custom banner instead.
+      // Chrome can re-fire this event; skip it if the user already dismissed
+      if (localStorage.getItem('lh_install_dismissed')) return;
+
+      // Prevent Chrome from showing its own default mini-infobar
       e.preventDefault();
 
-      // Save the event object so we can call it later on button click
       setInstallEvent(e);
-
-      // Now show our custom banner
       setVisible(true);
     };
 
