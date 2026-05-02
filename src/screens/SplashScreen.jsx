@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 const styles = `
   .splash-screen {
@@ -262,20 +262,23 @@ export default function SplashScreen({ onComplete, ready = true }) {
   const [fadingOut, setFadingOut] = useState(false);
   const [introComplete, setIntroComplete] = useState(false);
 
+  // Keep a stable ref so re-renders in App.jsx that create a new onComplete
+  // function don't cancel the fade-out timer via effect cleanup.
+  const onCompleteRef = useRef(onComplete);
+  useEffect(() => { onCompleteRef.current = onComplete; }, [onComplete]);
+
   useEffect(() => {
     const introTimer = setTimeout(() => setIntroComplete(true), 2450);
-    return () => {
-      clearTimeout(introTimer);
-    };
+    return () => clearTimeout(introTimer);
   }, []);
 
   useEffect(() => {
     if (!ready || !introComplete || fadingOut) return undefined;
 
     setFadingOut(true);
-    const doneTimer = setTimeout(() => onComplete(), 560);
+    const doneTimer = setTimeout(() => onCompleteRef.current(), 560);
     return () => clearTimeout(doneTimer);
-  }, [fadingOut, introComplete, onComplete, ready]);
+  }, [fadingOut, introComplete, ready]); // onComplete intentionally excluded — use ref
 
   return (
     <>
