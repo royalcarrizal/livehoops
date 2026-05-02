@@ -12,30 +12,23 @@
 import { useState, useEffect } from 'react';
 
 export function useOnlineStatus() {
-  // Initialize with the current online state when the hook first runs.
-  // navigator.onLine returns true if connected, false if offline.
-  const [isOnline, setIsOnline] = useState(() => navigator.onLine);
+  // Always start as online — iOS Safari sometimes incorrectly reports
+  // navigator.onLine as false on PWA launch, causing a false offline flash.
+  // We trust the browser's live events instead of the initial value.
+  const [isOnline, setIsOnline] = useState(true);
 
   useEffect(() => {
-    // These handlers update our state when the connection changes.
-    // 'online' fires when the browser regains internet access.
-    // 'offline' fires when the browser loses internet access.
     const goOnline  = () => setIsOnline(true);
     const goOffline = () => setIsOnline(false);
 
-    // Register both event listeners on the window object
     window.addEventListener('online',  goOnline);
     window.addEventListener('offline', goOffline);
 
-    // Cleanup function: React calls this when the component using this hook
-    // is removed from the page. Removing listeners prevents memory leaks.
     return () => {
       window.removeEventListener('online',  goOnline);
       window.removeEventListener('offline', goOffline);
     };
-  }, []); // empty array = set up the listeners once, on mount
+  }, []);
 
-  // Return the current online status so any component can use it:
-  //   const { isOnline } = useOnlineStatus();
   return { isOnline };
 }
