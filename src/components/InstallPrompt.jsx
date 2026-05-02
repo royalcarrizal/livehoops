@@ -9,6 +9,7 @@
 // 'beforeinstallprompt'. The IOSInstallBanner component handles iOS instead.
 
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 export default function InstallPrompt() {
   // We store the browser's install event here so we can trigger it later
@@ -72,15 +73,15 @@ export default function InstallPrompt() {
   // Don't render anything if there's nothing to show
   if (!visible) return null;
 
-  return (
+  return createPortal(
     <div
       style={{
-        // Fixed position means it stays in place even when the page scrolls
         position: 'fixed',
-        // 70px from the bottom clears the navigation bar (which is 80px tall)
-        bottom: 70,
-        left: 12,
-        right: 12,
+        // 88px clears the nav bar (80px) with extra breathing room
+        bottom: 88,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: 'calc(min(480px, 100vw) - 24px)',
         zIndex: 800,
 
         // Match the app's card style using CSS variables from index.css
@@ -150,6 +151,7 @@ export default function InstallPrompt() {
       >
         ×
       </button>
-    </div>
+    </div>,
+    document.body
   );
 }
