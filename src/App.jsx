@@ -190,29 +190,33 @@ export default function App() {
     isCheckingIn,     // true while a check-in is in flight — disables buttons
   };
 
+  const splashOverlay = !splashDone ? (
+    <SplashScreen
+      ready={!authLoading}
+      onComplete={() => setSplashDone(true)}
+    />
+  ) : null;
+
   // ── Screen 1: Splash ────────────────────────────────────────────────────
   // The splash screen always shows first (the animated LiveHoops logo).
   // It also shows while we're checking if the user has an existing session.
-  if (!splashDone || authLoading) {
-    return (
-      <SplashScreen
-        onComplete={() => setSplashDone(true)}
-      />
-    );
-  }
+  if (authLoading) return splashOverlay;
 
   // ── Screen 2: Auth ──────────────────────────────────────────────────────
   // If no user is logged in, show the login / sign-up screen.
   // They can't access any part of the app without an account.
   if (!user) {
     return (
-      <div className="app-shell">
-        <AuthScreen
-          onSignUp={signUp}
-          onSignIn={signIn}
-          onResetPassword={resetPassword}
-        />
-      </div>
+      <>
+        <div className={`app-shell${!splashDone ? ' app-shell-enter' : ''}`}>
+          <AuthScreen
+            onSignUp={signUp}
+            onSignIn={signIn}
+            onResetPassword={resetPassword}
+          />
+        </div>
+        {splashOverlay}
+      </>
     );
   }
 
@@ -235,39 +239,42 @@ export default function App() {
   // ── Screen 4: Main App ─────────────────────────────────────────────────
   // User is authenticated — show the full app with all screens.
   return (
-    <div className="app-shell">
-      <OfflineBanner />
+    <>
+      <div className={`app-shell${!splashDone ? ' app-shell-enter' : ''}`}>
+        <OfflineBanner />
 
-      {activeTab === 'home'    && <HomeScreen    {...screenProps} />}
-      {activeTab === 'map'     && <MapScreen      {...screenProps} />}
-      {activeTab === 'checkin' && <CheckInScreen  {...screenProps} />}
-      {activeTab === 'friends' && (
-        <FriendsScreen
-          {...screenProps}
-          profile={profile}
-          onUnreadDMs={setUnreadDMs}
+        {activeTab === 'home'    && <HomeScreen    {...screenProps} />}
+        {activeTab === 'map'     && <MapScreen      {...screenProps} />}
+        {activeTab === 'checkin' && <CheckInScreen  {...screenProps} />}
+        {activeTab === 'friends' && (
+          <FriendsScreen
+            {...screenProps}
+            profile={profile}
+            onUnreadDMs={setUnreadDMs}
+          />
+        )}
+        {activeTab === 'profile' && (
+          <ProfileScreen
+            signOut={signOut}
+            profile={viewedProfile ?? profile}
+            updateProfile={updateProfile}
+            user={user}
+            onBack={viewedProfile ? handleBackFromProfile : null}
+            onViewProfile={handleViewProfile}
+          />
+        )}
+
+        <BottomNav
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          checkedIn={!!activeCheckIn}
+          unreadDMs={unreadDMs}
         />
-      )}
-      {activeTab === 'profile' && (
-        <ProfileScreen
-          signOut={signOut}
-          profile={viewedProfile ?? profile}
-          updateProfile={updateProfile}
-          user={user}
-          onBack={viewedProfile ? handleBackFromProfile : null}
-          onViewProfile={handleViewProfile}
-        />
-      )}
 
-      <BottomNav
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        checkedIn={!!activeCheckIn}
-        unreadDMs={unreadDMs}
-      />
-
-      <InstallPrompt />
-      <IOSInstallBanner />
-    </div>
+        <InstallPrompt />
+        <IOSInstallBanner />
+      </div>
+      {splashOverlay}
+    </>
   );
 }

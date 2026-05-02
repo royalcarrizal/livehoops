@@ -100,6 +100,29 @@ body {
   background: var(--bg);
 }
 
+.app-shell-enter {
+  animation: appShellEnter 0.72s cubic-bezier(0.16, 1, 0.3, 1) 2.22s both;
+}
+
+@keyframes appShellEnter {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+    filter: blur(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-shell-enter {
+    animation-duration: 0.01ms;
+  }
+}
+
 /* ── Scrollable screen area ── */
 .screen-content {
   flex: 1;
