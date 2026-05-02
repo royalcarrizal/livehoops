@@ -39,9 +39,7 @@ export default function BottomNav({ activeTab, setActiveTab, checkedIn, unreadDM
               <tab.Icon size={22} strokeWidth={isActive ? 2.5 : 2} />
               {isActive && <span className="nav-active-dot" />}
               {tab.id === 'friends' && unreadDMs > 0 && (
-                <span className="nav-unread-badge">
-                  {unreadDMs > 9 ? '9+' : unreadDMs}
-                </span>
+                <span className="nav-unread-dot" />
               )}
             </div>
             <span className="nav-label">{tab.label}</span>
