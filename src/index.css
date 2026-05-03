@@ -98,7 +98,6 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100svh;
-  padding-top: var(--safe-top);
   background: var(--bg);
 }
 
@@ -548,7 +547,7 @@ body {
 .map-screen {
   display: flex;
   flex-direction: column;
-  height: calc(100svh - var(--status-height) - var(--nav-height));
+  height: calc(100svh - var(--safe-top) - var(--nav-height));
 }
 
 /* ── Map area wrapper ── */
