@@ -6,6 +6,7 @@ const styles = `
     inset: 0;
     isolation: isolate;
     overflow: hidden;
+    pointer-events: none;
     background:
       radial-gradient(circle at 50% 44%, rgba(255, 107, 0, 0.16), transparent 32%),
       radial-gradient(circle at 50% 78%, rgba(255, 128, 64, 0.12), transparent 36%),
