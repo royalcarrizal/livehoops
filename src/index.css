@@ -2221,7 +2221,10 @@ body {
   font-weight: 700;
   font-family: var(--font);
   cursor: pointer;
+  min-width: 60px;
+  transition: opacity 0.15s;
 }
+.btn-accept:disabled { opacity: 0.5; cursor: default; }
 
 .btn-decline {
   background: var(--bg-elevated);
@@ -2233,7 +2236,10 @@ body {
   font-weight: 600;
   font-family: var(--font);
   cursor: pointer;
+  min-width: 60px;
+  transition: opacity 0.15s;
 }
+.btn-decline:disabled { opacity: 0.5; cursor: default; }
 
 /* Add Friend modal */
 .modal-overlay {
@@ -4089,6 +4095,16 @@ body {
   padding: 16px 0;
   font-size: 13px;
   color: var(--text-secondary);
+}
+
+/* Result count shown above search results */
+.modal-result-count {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
 }
 
 /* ── Post Composer — image preview ── */

@@ -94,6 +94,25 @@ export default function FriendsScreen({ user, profile, onViewProfile, onUnreadDM
   const [showModal,     setShowModal]     = useState(false);
   const [localStatuses, setLocalStatuses] = useState({});
 
+  // ── Friend request loading state ──────────────────────────────────────────
+  // Tracks which friendship IDs have an in-flight accept/decline so buttons
+  // can disable immediately and prevent double-taps.
+  const [pendingActions, setPendingActions] = useState(new Set());
+
+  const handleAccept = async (friendshipId) => {
+    if (pendingActions.has(friendshipId)) return;
+    setPendingActions(prev => new Set([...prev, friendshipId]));
+    await acceptFriendRequest(friendshipId);
+    setPendingActions(prev => { const next = new Set(prev); next.delete(friendshipId); return next; });
+  };
+
+  const handleDecline = async (friendshipId) => {
+    if (pendingActions.has(friendshipId)) return;
+    setPendingActions(prev => new Set([...prev, friendshipId]));
+    await declineFriendRequest(friendshipId);
+    setPendingActions(prev => { const next = new Set(prev); next.delete(friendshipId); return next; });
+  };
+
   const getStatus = (resultUserId) => {
     if (localStatuses[resultUserId]) return localStatuses[resultUserId];
     if (friends.some(f => f.userId === resultUserId)) return 'accepted';
@@ -186,11 +205,19 @@ export default function FriendsScreen({ user, profile, onViewProfile, onUnreadDM
                       <div className="friend-location">Wants to join your crew</div>
                     </div>
                     <div className="friend-request-actions">
-                      <button className="btn-accept" onClick={() => acceptFriendRequest(req.friendshipId)}>
-                        Accept
+                      <button
+                        className="btn-accept"
+                        onClick={() => handleAccept(req.friendshipId)}
+                        disabled={pendingActions.has(req.friendshipId)}
+                      >
+                        {pendingActions.has(req.friendshipId) ? '...' : 'Accept'}
                       </button>
-                      <button className="btn-decline" onClick={() => declineFriendRequest(req.friendshipId)}>
-                        Decline
+                      <button
+                        className="btn-decline"
+                        onClick={() => handleDecline(req.friendshipId)}
+                        disabled={pendingActions.has(req.friendshipId)}
+                      >
+                        {pendingActions.has(req.friendshipId) ? '...' : 'Decline'}
                       </button>
                     </div>
                   </div>
@@ -415,6 +442,9 @@ function SearchModal({ userId, onClose, getStatus, onSend }) {
         )}
         {results.length > 0 && (
           <div style={{ marginTop: 12 }}>
+            <div className="modal-result-count">
+              {results.length} {results.length === 1 ? 'player' : 'players'} found
+            </div>
             {results.map(result => {
               const status = getStatus(result.id);
               return (

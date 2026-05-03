@@ -49,11 +49,12 @@ export default function Onboarding({ profile, onComplete }) {
   const handleAllowLocation = () => {
     setLocationLoading(true);
 
-    // The same callback (advance) handles both success and error.
-    // This way the user always moves forward, even if they tap "Block".
     const advance = () => setStep(2);
 
-    navigator.geolocation.getCurrentPosition(advance, advance);
+    navigator.geolocation.getCurrentPosition(advance, advance, {
+      timeout: 8000,
+      maximumAge: 60000,
+    });
   };
 
   // ── Completion handler ────────────────────────────────────────────────────
