@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTheme } from './hooks/useTheme';
 import { useAuth } from './hooks/useAuth';
 import { useProfile } from './hooks/useProfile';
@@ -59,6 +59,12 @@ export default function App() {
 
   // ── App State ───────────────────────────────────────────────────────────
   const [splashDone,  setSplashDone]  = useState(false);
+
+  // As soon as auth resolves (either logged in or not), mark the splash done.
+  // This prevents the SplashScreen from ever blocking the auth form or the app.
+  useEffect(() => {
+    if (!authLoading) setSplashDone(true);
+  }, [authLoading]);
   const [unreadDMs,   setUnreadDMs]   = useState(0);
   const [onboardingDone, setOnboardingDone] = useState(
     () => localStorage.getItem('lh_onboarded') === 'true'
@@ -271,8 +277,6 @@ export default function App() {
           unreadDMs={unreadDMs}
         />
 
-        <InstallPrompt />
-        <IOSInstallBanner />
       </div>
       {splashOverlay}
     </>
