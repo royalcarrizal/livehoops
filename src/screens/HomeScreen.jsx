@@ -26,6 +26,7 @@ import { useNotifications } from '../hooks/useNotifications';
 import { useFriends } from '../hooks/useFriends';
 import { usePosts } from '../hooks/usePosts';
 import { usePullToRefresh } from '../hooks/usePullToRefresh';
+import { supabase } from '../lib/supabase';
 
 // Props:
 //   setActiveTab — lets this screen switch to another tab (e.g. Friends tab)
@@ -68,6 +69,7 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
     createRepost,
     likePost,
     unlikePost,
+    deletePost,
     subscribeToNewPosts,
   } = usePosts();
 
@@ -352,6 +354,12 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
               onLike={handleLikePost}
               onUnlike={handleUnlikePost}
               onRepost={handleRepost}
+              onDelete={deletePost}
+              onReport={async (postId) => {
+                try {
+                  await supabase.from('post_reports').insert({ post_id: postId, reported_by: user.id });
+                } catch { /* silent — toast shown by FeedPost */ }
+              }}
             />
           ))}
         </div>

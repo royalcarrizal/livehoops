@@ -375,6 +375,20 @@ export function usePosts() {
     return next;
   }, []);
 
+  // ── Delete a post ──────────────────────────────────────────────────────
+  // Removes the post row from Supabase. The posts_delete_own RLS policy
+  // ensures only the post owner can delete their own rows.
+  const deletePost = useCallback(async (postId) => {
+    if (!postId) return;
+    const { error } = await supabase
+      .from('posts')
+      .delete()
+      .eq('id', postId);
+    if (error) throw error;
+    // Optimistically remove from local feed state
+    setFeed(prev => prev.filter(p => p.id !== postId));
+  }, []);
+
   // ── Subscribe to new posts in real time ────────────────────────────────
   // Opens a Supabase Realtime channel that fires whenever a new row is
   // inserted into the posts table. Calls onNewPost() if the post is from
@@ -418,6 +432,7 @@ export function usePosts() {
     createRepost,
     likePost,
     unlikePost,
+    deletePost,
     subscribeToNewPosts,
   };
 }

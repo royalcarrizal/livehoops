@@ -110,7 +110,7 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
   const { toast, showToast } = useToast();
 
   // Posts hook — gives us feed loading + real per-user like handlers
-  const { fetchUserPosts, createRepost, likePost, unlikePost } = usePosts();
+  const { fetchUserPosts, createRepost, likePost, unlikePost, deletePost } = usePosts();
 
   // Storage hook — gives us uploadAvatar to save photos to Supabase Storage
   const { uploadAvatar } = useStorage();
@@ -498,6 +498,15 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
                   onLike={handleLikePost}
                   onUnlike={handleUnlikePost}
                   onRepost={handleRepost}
+                  onDelete={async (postId) => {
+                    await deletePost(postId);
+                    setUserPosts(prev => prev.filter(p => p.id !== postId));
+                  }}
+                  onReport={async (postId) => {
+                    try {
+                      await supabase.from('post_reports').insert({ post_id: postId, reported_by: user.id });
+                    } catch { /* silent — toast shown by FeedPost */ }
+                  }}
                 />
               ))}
             </div>

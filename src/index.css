@@ -3272,6 +3272,58 @@ body {
   cursor: not-allowed;
 }
 
+/* ── Post options action sheet ── */
+.feed-options-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 500;
+}
+
+.feed-options-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: var(--app-width);
+  background: var(--bg-card);
+  border-radius: 20px 20px 0 0;
+  border-top: 1px solid var(--separator-strong);
+  padding: 0 16px calc(var(--safe-bottom) + 16px);
+  z-index: 501;
+  animation: sheetSlideUp 0.22s ease;
+}
+
+.feed-options-handle {
+  width: 36px;
+  height: 4px;
+  background: var(--separator-strong);
+  border-radius: 2px;
+  margin: 12px auto 8px;
+}
+
+.feed-options-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 4px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--separator);
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 500;
+  font-family: var(--font);
+  cursor: pointer;
+  text-align: left;
+}
+.feed-options-btn:last-child { border-bottom: none; }
+.feed-options-btn.destructive { color: #FF3B30; }
+.feed-options-btn.cancel { color: var(--text-secondary); font-weight: 400; }
+.feed-options-btn:active { opacity: 0.6; }
+
 /* ── Photo Viewer ── */
 .photo-viewer-overlay {
   position: fixed;

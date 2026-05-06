@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Heart, MessageCircle, Share2, MoreHorizontal, Play, MapPin, Send, Trash2 } from 'lucide-react';
+import { Heart, MessageCircle, Share2, MoreHorizontal, Play, MapPin, Send, Trash2, Flag } from 'lucide-react';
 import Avatar from './Avatar';
 import { sendLocalNotification } from '../utils/notificationStore';
 import { useComments } from '../hooks/useComments';
@@ -24,6 +24,8 @@ export default function FeedPost({
   onLike,
   onUnlike,
   onRepost,
+  onDelete,
+  onReport,
 }) {
   const [liked, setLiked]             = useState(post.isLiked);
   const [likeCount, setLikeCount]     = useState(post.likes);
@@ -31,6 +33,8 @@ export default function FeedPost({
   const [repostBusy, setRepostBusy]   = useState(false);
   const [expanded, setExpanded]       = useState(false);
   const [showComments, setShowComments] = useState(false);
+  const [showOptions, setShowOptions] = useState(false);
+  const [deleteBusy,  setDeleteBusy]  = useState(false);
 
   // Local comment count — starts from whatever the post row says.
   // Gets overwritten with the real count once comments are fetched.
@@ -182,6 +186,33 @@ export default function FeedPost({
     }
   };
 
+  // ── Ownership + options handlers ─────────────────────────────────────────
+  const isOwner = !!(currentUser?.id && post.userId === currentUser.id);
+
+  const handleDelete = async () => {
+    if (deleteBusy) return;
+    setDeleteBusy(true);
+    setShowOptions(false);
+    try {
+      await onDelete?.(post.id);
+      onToast?.('Post deleted');
+    } catch {
+      onToast?.('Failed to delete post');
+    } finally {
+      setDeleteBusy(false);
+    }
+  };
+
+  const handleReport = async () => {
+    setShowOptions(false);
+    try {
+      await onReport?.(post.id);
+      onToast?.('Post reported — thanks for keeping it clean 🙏');
+    } catch {
+      onToast?.('Failed to report post');
+    }
+  };
+
   const actionText = ACTION_TEXT[post.type]?.(post.courtName) ?? '';
   const hasContent = !!post.content;
   const needsTrunc = hasContent && post.content.length > 120;
@@ -216,7 +247,11 @@ export default function FeedPost({
           <span className="feed-post-action">{actionText}</span>
           <span className="feed-post-time">{post.timeAgo}</span>
         </div>
-        <button className="feed-more-btn" aria-label="More options">
+        <button
+          className="feed-more-btn"
+          aria-label="More options"
+          onClick={() => setShowOptions(true)}
+        >
           <MoreHorizontal size={18} strokeWidth={2} color="var(--text-secondary)" />
         </button>
       </div>
@@ -361,6 +396,34 @@ export default function FeedPost({
           <Share2 size={20} strokeWidth={2} color="var(--text-secondary)" />
         </button>
       </div>
+
+      {/* ── More options action sheet ───────────────────────────────────── */}
+      {showOptions && (
+        <>
+          <div className="feed-options-overlay" onClick={() => setShowOptions(false)} />
+          <div className="feed-options-sheet">
+            <div className="feed-options-handle" />
+            {isOwner ? (
+              <button
+                className="feed-options-btn destructive"
+                onClick={handleDelete}
+                disabled={deleteBusy}
+              >
+                <Trash2 size={18} strokeWidth={2} />
+                {deleteBusy ? 'Deleting…' : 'Delete Post'}
+              </button>
+            ) : (
+              <button className="feed-options-btn" onClick={handleReport}>
+                <Flag size={18} strokeWidth={2} />
+                Report Post
+              </button>
+            )}
+            <button className="feed-options-btn cancel" onClick={() => setShowOptions(false)}>
+              Cancel
+            </button>
+          </div>
+        </>
+      )}
 
       {/* ── Comments section ────────────────────────────────────────────── */}
       {showComments && (
