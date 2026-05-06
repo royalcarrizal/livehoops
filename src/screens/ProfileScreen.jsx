@@ -449,6 +449,9 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
       )}
 
       {/* ── Tab row: Posts | Check-ins ──────────────────────────────────────── */}
+      {/* Check-ins tab is only shown to the profile owner — check-in history   */}
+      {/* is personal data (reveals where/when you go) and the checkins RLS     */}
+      {/* policy blocks reading another user's rows anyway.                     */}
       <div className="profile-tabs">
         <button
           className={`profile-tab${activeTab === 'posts' ? ' active' : ''}`}
@@ -456,12 +459,14 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
         >
           Posts
         </button>
-        <button
-          className={`profile-tab${activeTab === 'checkins' ? ' active' : ''}`}
-          onClick={() => setActiveTab('checkins')}
-        >
-          Check-ins
-        </button>
+        {isOwner && (
+          <button
+            className={`profile-tab${activeTab === 'checkins' ? ' active' : ''}`}
+            onClick={() => setActiveTab('checkins')}
+          >
+            Check-ins
+          </button>
+        )}
       </div>
 
       {/* ── Posts tab content ────────────────────────────────────────────────── */}
