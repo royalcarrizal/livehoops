@@ -294,11 +294,18 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
   };
 
   // ── Save profile changes (owner only) ─────────────────────────────────────
-  // Sends updated fields to Supabase via the updateProfile prop
+  // Sends updated fields to Supabase via the updateProfile prop.
+  // Guard: username must be at least 2 characters — an empty or single-character
+  // username would break search and make the user appear as "Player" everywhere.
   const handleSaveProfile = async () => {
+    const trimmedUsername = editUsername.trim();
+    if (trimmedUsername.length < 2) {
+      showToast('❌ Username must be at least 2 characters');
+      return;
+    }
     setSaving(true);
     const { error } = await updateProfile({
-      username:       editUsername.trim(),
+      username:       trimmedUsername,
       favorite_court: editFavCourt.trim(),
     });
     setSaving(false);
