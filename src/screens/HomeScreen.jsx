@@ -380,7 +380,7 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
               <button
                 key={friend.userId}
                 className="crew-chip"
-                onClick={() => setActiveTab('friends')}
+                onClick={() => onViewProfile?.(friend.userId)}
               >
                 <Avatar
                   avatarUrl={friend.avatarUrl}

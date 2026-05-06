@@ -3,7 +3,12 @@ import Avatar from './Avatar';
 export default function FriendCard({ friend, onViewProfile, onMessage }) {
   return (
     <div className="friend-card">
-      <div className="friend-card-main">
+      {/* Tapping anywhere on the card main area opens the friend's profile */}
+      <button
+        className="friend-card-main"
+        onClick={() => onViewProfile?.(friend.userId)}
+        style={{ width: '100%', background: 'none', border: 'none', padding: 0, textAlign: 'left', cursor: 'pointer' }}
+      >
         <Avatar
           avatarUrl={friend.avatarUrl}
           initials={friend.initials}
@@ -31,22 +36,22 @@ export default function FriendCard({ friend, onViewProfile, onMessage }) {
             <span>{friend.hoursOnCourt ?? 0}h played</span>
           </div>
         </div>
+      </button>
 
-        {/* Action buttons */}
-        <div className="friend-card-actions">
-          <button
-            className="btn-message"
-            onClick={() => onMessage?.(friend)}
-          >
-            Message
-          </button>
-          <button
-            className="btn-view"
-            onClick={() => onViewProfile?.(friend.userId)}
-          >
-            Profile
-          </button>
-        </div>
+      {/* Action buttons — rendered outside the tappable area so they don't nest */}
+      <div className="friend-card-actions">
+        <button
+          className="btn-message"
+          onClick={() => onMessage?.(friend)}
+        >
+          Message
+        </button>
+        <button
+          className="btn-view"
+          onClick={() => onViewProfile?.(friend.userId)}
+        >
+          Profile
+        </button>
       </div>
     </div>
   );

@@ -2038,6 +2038,9 @@ body {
   border-radius: 14px;
   overflow: hidden;
   box-shadow: var(--card-shadow);
+  display: flex;
+  align-items: center;
+  padding-right: 14px;
 }
 
 .friend-card-main {
@@ -2045,7 +2048,10 @@ body {
   align-items: center;
   gap: 12px;
   padding: 12px 14px;
+  flex: 1;
+  min-width: 0;
 }
+.friend-card-main:active { opacity: 0.75; }
 
 .friend-avatar-wrap {
   position: relative;
