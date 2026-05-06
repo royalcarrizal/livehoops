@@ -3,6 +3,18 @@
   margin: 0;
   padding: 0;
   -webkit-tap-highlight-color: transparent;
+  /* Eliminate 300ms tap delay on all interactive elements */
+  touch-action: manipulation;
+  /* Prevent accidental text selection on long-press */
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Re-enable text selection and default touch handling inside inputs */
+input, textarea, select, [contenteditable] {
+  -webkit-user-select: text;
+  user-select: text;
+  touch-action: auto;
 }
 
 :root {
@@ -63,12 +75,20 @@
   --map-road: rgba(0, 0, 0, 0.06);
 }
 
+html {
+  /* Prevent iOS from auto-scaling text on orientation change */
+  -webkit-text-size-adjust: 100%;
+  /* Stop the whole page rubber-banding on iOS */
+  overscroll-behavior: none;
+}
+
 html, body {
   background: #000;
   min-height: 100svh;
   font-family: var(--font);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior: none;
 }
 
 body.theme-light {
@@ -130,8 +150,10 @@ body {
   overflow-y: auto;
   overflow-x: hidden;
   padding-bottom: var(--nav-height);
-  scroll-behavior: smooth;
+  /* No scroll-behavior:smooth — it feels sluggish on iOS during pull-to-refresh */
   -webkit-overflow-scrolling: touch;
+  /* Contain scroll within the screen so it doesn't bleed to the body */
+  overscroll-behavior-y: contain;
 }
 
 .screen-content::-webkit-scrollbar {
@@ -1676,7 +1698,9 @@ body {
   z-index: 300;
   height: calc(100vh - 60px);
   overflow-y: auto;
-  transition: transform 0.3s ease;
+  transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  will-change: transform;
+  overscroll-behavior: contain;
 }
 .settings-sheet.open {
   transform: translateX(-50%) translateY(0);
@@ -2509,6 +2533,9 @@ body {
   overflow-x: auto;
   padding-bottom: 4px;
   scrollbar-width: none;
+  /* Snap cards into place for a satisfying swipe feel */
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
 }
 .active-friends-scroll::-webkit-scrollbar { display: none; }
 
@@ -2526,6 +2553,7 @@ body {
   gap: 4px;
   cursor: pointer;
   transition: transform 0.15s;
+  scroll-snap-align: start;
   /* Slides in from the right on mount; animationDelay is set inline per card */
   animation: slideInFromRight 0.3s ease both;
 }
@@ -2757,6 +2785,7 @@ body {
   cursor: pointer;
   flex-shrink: 0;
 }
+.feed-post-author-btn:active { opacity: 0.65; }
 
 .feed-post-name-btn {
   background: none;
@@ -2770,6 +2799,7 @@ body {
   font-family: var(--font);
   text-align: left;
 }
+.feed-post-name-btn:active { opacity: 0.65; }
 
 .feed-post-name-btn:hover {
   text-decoration: underline;
@@ -5294,4 +5324,111 @@ body {
 
 .review-delete-btn:hover {
   color: #ef4444;
+}
+
+/* ── DM Inbox thread rows (FriendsScreen Messages tab) ──────────────────── */
+.dm-thread-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--separator);
+  background: none;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+  cursor: pointer;
+  font-family: var(--font);
+  text-align: left;
+  transition: opacity 0.12s ease;
+}
+.dm-thread-row:active { opacity: 0.6; }
+
+.dm-thread-avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.dm-thread-unread-dot {
+  position: absolute;
+  bottom: 1px;
+  right: 1px;
+  width: 10px;
+  height: 10px;
+  background: var(--orange);
+  border-radius: 50%;
+  border: 2px solid var(--bg);
+}
+
+.dm-thread-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.dm-thread-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dm-thread-preview {
+  font-size: 13px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dm-thread-preview.unread {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.dm-thread-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.dm-thread-time {
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.dm-thread-count {
+  background: var(--orange);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--font);
+  border-radius: 10px;
+  padding: 1px 6px;
+  min-width: 18px;
+  text-align: center;
+}
+
+/* ── Mobile smoothness — will-change on animated sheets ─────────────────── */
+/* Promotes sheets to their own GPU layer before the slide-up animation    */
+.feed-options-sheet,
+.map-sheet,
+.court-detail-sheet,
+.dm-thread {
+  will-change: transform;
+}
+
+/* Trap scroll within the DM thread so pulling up doesn't bounce the page  */
+.dm-thread {
+  overscroll-behavior: contain;
+}
+
+/* Trap scroll within sheets that are scrollable */
+.dm-message-list {
+  overscroll-behavior: contain;
 }
