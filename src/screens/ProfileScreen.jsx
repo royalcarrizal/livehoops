@@ -160,24 +160,13 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
       // Intersect with logged-in user's already-loaded friends list
       setMutualFriends(myFriends.filter(f => viewedFriendIds.has(f.userId)));
 
-      // Courts both users have checked into
-      const [myRes, theirRes] = await Promise.all([
-        supabase.from('checkins').select('court_id, courts(name)').eq('user_id', user.id),
-        supabase.from('checkins').select('court_id').eq('user_id', profile.id),
-      ]);
-
-      const myCourtIds    = new Set((myRes.data   ?? []).map(c => c.court_id));
-      const theirCourtIds = new Set((theirRes.data ?? []).map(c => c.court_id));
-
-      const nameMap = {};
-      (myRes.data ?? []).forEach(c => {
-        if (c.court_id && c.courts?.name) nameMap[c.court_id] = c.courts.name;
-      });
+      // Courts both users have checked into — computed server-side via
+      // SECURITY DEFINER RPC so the checkins RLS policy isn't violated.
+      const { data: mutualData } = await supabase
+        .rpc('get_mutual_courts', { p_other_user_id: profile.id });
 
       setMutualCourts(
-        [...myCourtIds]
-          .filter(id => theirCourtIds.has(id) && nameMap[id])
-          .map(id => ({ id, name: nameMap[id] }))
+        (mutualData ?? []).map(r => ({ id: r.court_id, name: r.court_name }))
       );
     }
 
