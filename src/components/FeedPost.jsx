@@ -157,7 +157,7 @@ export default function FeedPost({
   };
 
   // ── Delete a comment ─────────────────────────────────────────────────────
-  const handleDelete = async (commentId) => {
+  const handleDeleteComment = async (commentId) => {
     try {
       await deleteComment(commentId);
       onToast?.('Comment deleted');
@@ -469,7 +469,7 @@ export default function FeedPost({
               {c.userId === currentUser?.id && (
                 <button
                   className="feed-comment-delete"
-                  onClick={() => handleDelete(c.id)}
+                  onClick={() => handleDeleteComment(c.id)}
                   aria-label="Delete comment"
                 >
                   <Trash2 size={13} strokeWidth={2} />
