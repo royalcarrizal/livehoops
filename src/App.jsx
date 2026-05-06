@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useTheme } from './hooks/useTheme';
 import { useAuth } from './hooks/useAuth';
 import { useProfile } from './hooks/useProfile';
@@ -59,12 +59,10 @@ export default function App() {
 
   // ── App State ───────────────────────────────────────────────────────────
   const [splashDone,  setSplashDone]  = useState(false);
-
-  // As soon as auth resolves (either logged in or not), mark the splash done.
-  // This prevents the SplashScreen from ever blocking the auth form or the app.
-  useEffect(() => {
-    if (!authLoading) setSplashDone(true);
-  }, [authLoading]);
+  // splashDone is set to true by SplashScreen's onComplete callback after its
+  // full animation plays (~2.45s intro + 0.56s fade-out). We don't force it
+  // true early because SplashScreen already has pointer-events:none, so it
+  // never blocks taps on the auth form or the app underneath it.
   const [unreadDMs,   setUnreadDMs]   = useState(0);
   const [onboardingDone, setOnboardingDone] = useState(
     () => localStorage.getItem('lh_onboarded') === 'true'
