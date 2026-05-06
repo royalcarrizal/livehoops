@@ -71,17 +71,15 @@ export function useFriends(userId) {
       friendshipMap[friendId] = row.id;
     });
 
-    // Fetch full profiles (with stats) and active check-ins in parallel for speed
+    // Fetch full profiles (with stats) and active check-ins in parallel for speed.
+    // Active check-ins use an RPC because the checkins RLS policy blocks direct reads
+    // of other users' rows — the SECURITY DEFINER function bypasses that safely.
     const [profilesRes, checkinsRes] = await Promise.all([
       supabase
         .from('profiles')
         .select('id, username, avatar_url, checkin_count, hours_played, courts_visited')
         .in('id', friendIds),
-      supabase
-        .from('checkins')
-        .select('user_id, court_id, courts(name)')
-        .in('user_id', friendIds)
-        .eq('is_active', true),
+      supabase.rpc('get_friends_active_checkins', { p_friend_ids: friendIds }),
     ]);
 
     if (profilesRes.error) return [];
@@ -94,7 +92,7 @@ export function useFriends(userId) {
       (checkinsRes.data ?? []).forEach(c => {
         activeMap[c.user_id] = {
           courtId:   c.court_id,
-          courtName: c.courts?.name ?? null,
+          courtName: c.court_name ?? null,
         };
       });
     }
