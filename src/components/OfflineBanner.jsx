@@ -18,7 +18,7 @@ export default function OfflineBanner() {
         // Fixed position keeps the banner anchored to the top of the screen
         // regardless of scroll position
         position: 'fixed',
-        top: 0,
+        top: 'var(--safe-top)',
         left: 0,
         right: 0,
         zIndex: 9999, // very high z-index so it appears above everything else
@@ -28,7 +28,7 @@ export default function OfflineBanner() {
         textAlign: 'center',
         fontSize: 13,
         fontWeight: 600,
-        padding: '10px 16px',
+        padding: '8px 16px',
 
         // Slide animation: when online, move the banner up off-screen (-100%).
         // When offline, slide it down to its natural position (translateY 0).

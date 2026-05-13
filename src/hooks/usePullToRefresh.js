@@ -19,6 +19,10 @@ export function usePullToRefresh(onRefresh) {
   const containerRef = useRef(null);
   const startY       = useRef(0);
   const pulling      = useRef(false);
+  // Mirror pullDistance into a ref so handleTouchEnd stays stable. Without
+  // this, the effect that attaches touch listeners tears down and re-attaches
+  // on every frame of the pull (once per setPullDistance call).
+  const pullDistanceRef = useRef(0);
   // Keep a stable ref to the latest onRefresh so the touch handlers don't
   // need to re-register every time the caller's function identity changes.
   const onRefreshRef = useRef(onRefresh);
@@ -35,13 +39,20 @@ export function usePullToRefresh(onRefresh) {
     if (!pulling.current) return;
     const el = containerRef.current;
     // If the container scrolled since touch started, abort the pull gesture
-    if (!el || el.scrollTop > 0) { pulling.current = false; setPullDistance(0); return; }
+    if (!el || el.scrollTop > 0) {
+      pulling.current = false;
+      pullDistanceRef.current = 0;
+      setPullDistance(0);
+      return;
+    }
 
     const delta = e.touches[0].clientY - startY.current;
     if (delta > 0) {
       // Prevent the browser's native overscroll/bounce while we're pulling
       e.preventDefault();
-      setPullDistance(Math.min(delta, MAX_PULL));
+      const next = Math.min(delta, MAX_PULL);
+      pullDistanceRef.current = next;
+      setPullDistance(next);
     }
   }, []);
 
@@ -49,7 +60,8 @@ export function usePullToRefresh(onRefresh) {
     if (!pulling.current) return;
     pulling.current = false;
 
-    const dist = pullDistance;
+    const dist = pullDistanceRef.current;
+    pullDistanceRef.current = 0;
     setPullDistance(0);
 
     if (dist >= THRESHOLD) {
@@ -60,7 +72,7 @@ export function usePullToRefresh(onRefresh) {
         setRefreshing(false);
       }
     }
-  }, [pullDistance]);
+  }, []);
 
   // Attach with { passive: false } on touchmove so preventDefault() is allowed.
   // React's synthetic touch events are passive by default, so we go direct.

@@ -4,7 +4,7 @@ export default function BottomNav({ activeTab, setActiveTab, checkedIn, unreadDM
   const tabs = [
     { id: 'home', label: 'Home', Icon: Home },
     { id: 'map', label: 'Map', Icon: Map },
-    { id: 'checkin', label: 'Check In', Icon: Plus, special: true },
+    { id: 'checkin', label: 'Check', Icon: Plus, special: true },
     { id: 'friends', label: 'Friends', Icon: Users },
     { id: 'profile', label: 'Profile', Icon: User },
   ];
