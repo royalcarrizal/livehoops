@@ -413,13 +413,6 @@ body {
   margin-left: 0;
 }
 
-.avatar-a { background: #FF6B1A; }
-.avatar-b { background: #30D158; }
-.avatar-c { background: #0A84FF; }
-.avatar-d { background: #BF5AF2; }
-.avatar-e { background: #FF375F; }
-.avatar-f { background: #FFD60A; color: #000; }
-
 /* ── Check In Button ── */
 .btn-checkin {
   background: var(--orange);
@@ -527,6 +520,7 @@ body {
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.1px;
+  white-space: nowrap;
 }
 
 /* Check In center button */
@@ -2088,16 +2082,6 @@ body {
   font-size: 15px;
 }
 
-.friend-status-dot {
-  position: absolute;
-  bottom: 1px;
-  right: 1px;
-  width: 11px;
-  height: 11px;
-  border-radius: 50%;
-  border: 2px solid var(--bg-card);
-}
-
 .friend-info {
   flex: 1;
   min-width: 0;
@@ -2521,7 +2505,7 @@ body {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #FF6B00;
+  background: var(--orange);
   flex-shrink: 0;
   animation: pulse 1.5s ease-in-out infinite;
 }
