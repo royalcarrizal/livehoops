@@ -17,7 +17,6 @@ import Onboarding from './components/Onboarding';
 import OfflineBanner from './components/OfflineBanner';
 import InstallPrompt from './components/InstallPrompt';
 import IOSInstallBanner from './components/IOSInstallBanner';
-import NetDebug from './components/NetDebug'; // TEMP: remove once offline banner issue is resolved
 
 export default function App() {
   useTheme(); // applies theme-dark/theme-light class to document.body
@@ -247,7 +246,6 @@ export default function App() {
     <>
       <div className={`app-shell${!splashDone ? ' app-shell-enter' : ''}`}>
         <OfflineBanner />
-        <NetDebug />
 
         {activeTab === 'home'    && <HomeScreen    {...screenProps} />}
         {activeTab === 'map'     && <MapScreen      {...screenProps} />}
