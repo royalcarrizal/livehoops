@@ -20,6 +20,7 @@ const PROBE_URLS = ['/favicon.svg', '/apple-touch-icon.png'];
 const PROBE_TIMEOUT_MS  = 4000;
 const FIRST_PROBE_DELAY = 1500;
 const SECOND_PROBE_GAP  = 2500;
+const RECOVERY_INTERVAL = 8000;
 const LOG_MAX = 12;
 
 async function probeOnline() {
@@ -43,6 +44,7 @@ export function useOnlineStatus() {
   const [isOnline, setIsOnline] = useState(true);
   const [log, setLog] = useState([]);
   const timersRef = useRef([]);
+  const recoveryRef = useRef(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -62,6 +64,26 @@ export function useOnlineStatus() {
       timersRef.current = [];
     };
 
+    const stopRecovery = () => {
+      if (recoveryRef.current) {
+        clearInterval(recoveryRef.current);
+        recoveryRef.current = null;
+      }
+    };
+
+    const startRecovery = () => {
+      stopRecovery();
+      recoveryRef.current = setInterval(async () => {
+        if (cancelled) { stopRecovery(); return; }
+        const ok = await probeOnline();
+        push(`recovery probe ${ok ? 'OK → online' : 'FAIL'}`);
+        if (ok) {
+          stopRecovery();
+          if (!cancelled) setIsOnline(true);
+        }
+      }, RECOVERY_INTERVAL);
+    };
+
     const confirmOffline = () => {
       clearTimers();
       push('offline event → probing in 1.5s');
@@ -78,12 +100,14 @@ export function useOnlineStatus() {
           if (cancelled) return;
           push(`probe2 ${second ? 'OK' : 'FAIL'} → online=${second}`);
           setIsOnline(second);
+          if (!second) startRecovery();
         }, SECOND_PROBE_GAP));
       }, FIRST_PROBE_DELAY));
     };
 
     const goOnline = () => {
       clearTimers();
+      stopRecovery();
       push('online event');
       if (!cancelled) setIsOnline(true);
     };
@@ -102,6 +126,7 @@ export function useOnlineStatus() {
     return () => {
       cancelled = true;
       clearTimers();
+      stopRecovery();
       window.removeEventListener('online', goOnline);
       window.removeEventListener('offline', goOffline);
       document.removeEventListener('visibilitychange', onVisibility);
