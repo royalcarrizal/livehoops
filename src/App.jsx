@@ -14,7 +14,6 @@ import FriendsScreen from './screens/FriendsScreen';
 import SplashScreen from './screens/SplashScreen';
 import AuthScreen from './components/AuthScreen';
 import Onboarding from './components/Onboarding';
-import OfflineBanner from './components/OfflineBanner';
 import InstallPrompt from './components/InstallPrompt';
 import IOSInstallBanner from './components/IOSInstallBanner';
 
@@ -245,8 +244,6 @@ export default function App() {
   return (
     <>
       <div className={`app-shell${!splashDone ? ' app-shell-enter' : ''}`}>
-        <OfflineBanner />
-
         {activeTab === 'home'    && <HomeScreen    {...screenProps} />}
         {activeTab === 'map'     && <MapScreen      {...screenProps} />}
         {activeTab === 'checkin' && <CheckInScreen  {...screenProps} />}
