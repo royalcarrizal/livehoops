@@ -15,8 +15,9 @@
 // The sheet uses the same slide-up animation pattern as SettingsSheet —
 // it stays in the DOM at all times and slides up/down via CSS transform.
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
+import { useStorage } from '../hooks/useStorage';
 import { useToast } from '../hooks/useToast';
 import Toast from './Toast';
 
@@ -68,6 +69,8 @@ function courtSubmitErrorMessage(error) {
 
 export default function AddCourtSheet({ isOpen, onClose, user }) {
 
+  const { uploadCourtPhoto } = useStorage();
+
   // ── Form state ─────────────────────────────────────────────────────────────
   // step tracks which screen the user is on (1, 2, or 3)
   const [step, setStep]           = useState(1);
@@ -96,6 +99,13 @@ export default function AddCourtSheet({ isOpen, onClose, user }) {
   // true while the Supabase insert is in flight
   const [submitting, setSubmitting] = useState(false);
 
+  // ── Photo state ────────────────────────────────────────────────────────────
+  // photoFile is the raw File object from the file picker (or null)
+  // photoPreview is a temporary object URL for showing the thumbnail
+  const [photoFile,    setPhotoFile]    = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
+  const photoInputRef = useRef(null);
+
   // The sheet has its own toast so messages show on top of the overlay
   const { toast, showToast } = useToast();
 
@@ -116,8 +126,12 @@ export default function AddCourtSheet({ isOpen, onClose, user }) {
       setLocLoading(false);
       setLocDenied(false);
       setSubmitting(false);
+      // Clean up the photo preview object URL to free browser memory
+      if (photoPreview) URL.revokeObjectURL(photoPreview);
+      setPhotoFile(null);
+      setPhotoPreview(null);
     }
-  }, [isOpen]);
+  }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Step 1 handler: pick a court type ──────────────────────────────────────
   // When the user taps a type card, we highlight it immediately and then
@@ -217,7 +231,7 @@ export default function AddCourtSheet({ isOpen, onClose, user }) {
       // Insert the new court into the Supabase `courts` table as pending.
       // Public court queries only show verified rows, so this stays hidden
       // until it is manually approved in Supabase.
-      const { error } = await supabase
+      const { data: insertedCourt, error } = await supabase
         .from('courts')
         .insert({
           name,
@@ -233,9 +247,28 @@ export default function AddCourtSheet({ isOpen, onClose, user }) {
           player_count: 0,
           submitted_by: user.id,
           verified: false,
-        });
+        })
+        .select('id')
+        .single();
 
       if (error) throw error;
+
+      // If the user attached a photo, upload it now that we have the court ID.
+      // We upload after insert so we can use the real court ID in the storage path.
+      if (photoFile && insertedCourt?.id) {
+        try {
+          const photoUrl = await uploadCourtPhoto(photoFile, insertedCourt.id);
+          // Save the public URL back onto the court row
+          await supabase
+            .from('courts')
+            .update({ photo_url: photoUrl })
+            .eq('id', insertedCourt.id);
+        } catch (photoErr) {
+          // Photo upload failing shouldn't block the court submission —
+          // the court is already saved, just without a photo
+          console.warn('[LiveHoops] Court photo upload failed:', photoErr.message);
+        }
+      }
 
       // Close the sheet and let the user know it worked
       onClose();
@@ -247,6 +280,23 @@ export default function AddCourtSheet({ isOpen, onClose, user }) {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  // ── Photo picker handler ───────────────────────────────────────────────────
+  const handlePhotoChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    // Revoke the previous preview URL before creating a new one
+    if (photoPreview) URL.revokeObjectURL(photoPreview);
+    setPhotoFile(file);
+    setPhotoPreview(URL.createObjectURL(file));
+  };
+
+  const handleRemovePhoto = () => {
+    if (photoPreview) URL.revokeObjectURL(photoPreview);
+    setPhotoFile(null);
+    setPhotoPreview(null);
+    if (photoInputRef.current) photoInputRef.current.value = '';
   };
 
   // ── Can the user advance from Step 2 to Step 3? ───────────────────────────
@@ -403,6 +453,42 @@ export default function AddCourtSheet({ isOpen, onClose, user }) {
                   </button>
                 ))}
               </div>
+
+              {/* Court photo — optional */}
+              <label className="add-court-field-label">Photo <span style={{ color: 'var(--text-secondary)', fontWeight: 400 }}>(optional)</span></label>
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={handlePhotoChange}
+              />
+
+              {photoPreview ? (
+                <div className="add-court-photo-preview">
+                  <img
+                    src={photoPreview}
+                    alt="Court preview"
+                    className="add-court-photo-img"
+                  />
+                  <button
+                    className="add-court-photo-remove"
+                    onClick={handleRemovePhoto}
+                    type="button"
+                    aria-label="Remove photo"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : (
+                <button
+                  className="add-court-photo-btn"
+                  onClick={() => photoInputRef.current?.click()}
+                  type="button"
+                >
+                  📷 Add a photo of the court
+                </button>
+              )}
             </>
           )}
 

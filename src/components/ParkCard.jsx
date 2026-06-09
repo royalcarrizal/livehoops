@@ -23,6 +23,14 @@ export default function ParkCard({ park, isCheckedIn, onCheckIn, style }) {
 
   return (
     <div className="park-card" style={style}>
+      {/* Court photo thumbnail — only shown when a photo exists */}
+      {park.photoUrl && (
+        <img
+          src={park.photoUrl}
+          alt={`${park.name}`}
+          className="park-card-photo"
+        />
+      )}
       <div className="park-card-top">
         <div className="park-name-row">
           <span className="park-name">{park.name}</span>

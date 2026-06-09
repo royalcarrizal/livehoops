@@ -70,6 +70,8 @@ function normalizeCourt(row, userPos = null) {
     // Denormalized rating data kept in sync by the sync_court_rating DB trigger
     avgRating:   row.avg_rating   ?? null,  // null = no reviews yet
     reviewCount: row.review_count ?? 0,
+    // Optional photo submitted by the user who added the court
+    photoUrl:    row.photo_url    ?? null,
     // Per-court check-in avatars are future work
     checkins:     [],
   };

@@ -103,6 +103,17 @@ export default function CourtDetailSheet({
           <button className="map-sheet-close" onClick={onClose} aria-label="Close">✕</button>
         </div>
 
+        {/* ── Court photo hero ──────────────────────────────────────────────── */}
+        {court.photoUrl && (
+          <div className="court-detail-photo">
+            <img
+              src={court.photoUrl}
+              alt={`${court.name} court`}
+              className="court-detail-photo-img"
+            />
+          </div>
+        )}
+
         <div className="map-sheet-name">{court.name}</div>
         <div className="map-sheet-address">{court.shortAddress}</div>
 

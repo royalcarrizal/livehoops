@@ -169,6 +169,33 @@ export function useStorage() {
     return data.publicUrl;
   };
 
+  // ── uploadCourtPhoto(file, courtId) ──────────────────────────────────────
+  //
+  // Compresses a court photo to max 1200×900 px (landscape-friendly) and
+  // uploads it to the "courts" Supabase Storage bucket under:
+  //   courts/<courtId>/photo.jpg
+  //
+  // Using a fixed path per court means re-submitting overwrites the old photo.
+  //
+  // Returns: the full HTTPS public URL of the uploaded photo (string)
+  // Throws:  an error object if the upload fails — callers should try/catch
+  const uploadCourtPhoto = async (file, courtId) => {
+    const compressed = await compressImage(file, 1200, 900, 0.82);
+    const path = `${courtId}/photo.jpg`;
+
+    const { error } = await supabase.storage
+      .from('courts')
+      .upload(path, compressed, {
+        contentType: 'image/jpeg',
+        upsert: true, // overwrite if a photo already exists for this court
+      });
+
+    if (error) throw error;
+
+    const { data } = supabase.storage.from('courts').getPublicUrl(path);
+    return data.publicUrl;
+  };
+
   // ── getPublicUrl(bucket, path) ────────────────────────────────────────────
   //
   // A utility for building the public URL of any file already in Storage
@@ -182,5 +209,5 @@ export function useStorage() {
     return data.publicUrl;
   };
 
-  return { uploadAvatar, uploadPostImage, getPublicUrl };
+  return { uploadAvatar, uploadPostImage, uploadCourtPhoto, getPublicUrl };
 }
