@@ -225,14 +225,21 @@ export default function AuthScreen({ onSignUp, onSignIn, onResetPassword }) {
 
         {/* ── Forgot password link — only on login form ──────────────────── */}
         {mode === 'login' && (
-          <button
-            type="button"
-            className="auth-link"
-            onClick={handleForgotPassword}
-            disabled={submitting}
-          >
-            Forgot password?
-          </button>
+          <>
+            <button
+              type="button"
+              className="auth-link"
+              onClick={handleForgotPassword}
+              disabled={submitting}
+            >
+              {submitting ? 'Sending…' : 'Forgot password?'}
+            </button>
+            {resetSent && (
+              <div className="auth-success">
+                ✅ Reset email sent! Check your inbox (and spam folder).
+              </div>
+            )}
+          </>
         )}
       </form>
     </div>

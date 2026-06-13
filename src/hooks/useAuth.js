@@ -134,7 +134,9 @@ export function useAuth() {
   // the email sending — the user clicks a link and sets a new password.
   const resetPassword = useCallback(async (email) => {
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
       if (error) return { error: friendlyError(error.message) };
       return { error: null };
     } catch {
