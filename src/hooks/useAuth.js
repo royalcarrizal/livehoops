@@ -39,6 +39,12 @@ export function useAuth() {
   // We show the splash screen during this time.
   const [loading, setLoading] = useState(true);
 
+  // True when the user arrived via a password-reset email link.
+  // Supabase logs them in with a temporary "recovery" session and fires the
+  // PASSWORD_RECOVERY event — App.jsx shows the Set New Password screen
+  // instead of the main app until they save a new password (or skip).
+  const [passwordRecovery, setPasswordRecovery] = useState(false);
+
   useEffect(() => {
     // ── Step 1: Check for an existing session ───────────────────────────
     // When the app first loads, check if the user was already logged in
@@ -54,8 +60,13 @@ export function useAuth() {
     // their session refreshes. This keeps our React state perfectly in
     // sync with what Supabase knows about the user.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (event, session) => {
         setUser(session?.user ?? null);
+        // Fired when the user lands here from a password-reset email link.
+        // We flag it so App.jsx can show the Set New Password screen.
+        if (event === 'PASSWORD_RECOVERY') {
+          setPasswordRecovery(true);
+        }
       }
     );
 
@@ -130,12 +141,15 @@ export function useAuth() {
   }, []);
 
   // ── Reset Password ──────────────────────────────────────────────────────
-  // Sends a password reset email to the given address. Supabase handles
-  // the email sending — the user clicks a link and sets a new password.
+  // Sends a password reset email to the given address. The link in the email
+  // brings the user back to the app root, where Supabase fires the
+  // PASSWORD_RECOVERY event and App.jsx shows the Set New Password screen.
+  // (We redirect to the root — not a sub-path — because the app is a
+  // single-page app with no routes; a sub-path could 404 on some hosts.)
   const resetPassword = useCallback(async (email) => {
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: window.location.origin,
       });
       if (error) return { error: friendlyError(error.message) };
       return { error: null };
@@ -144,7 +158,36 @@ export function useAuth() {
     }
   }, []);
 
-  return { user, loading, signUp, signIn, signOut, resetPassword };
+  // ── Update Password ─────────────────────────────────────────────────────
+  // Saves a new password for the currently logged-in user. Used by the
+  // Set New Password screen after the user clicks a reset email link
+  // (they're logged in with a temporary recovery session at that point).
+  const updatePassword = useCallback(async (newPassword) => {
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) return { error: friendlyError(error.message) };
+      return { error: null };
+    } catch {
+      return { error: 'Something went wrong. Please try again.' };
+    }
+  }, []);
+
+  // ── Clear the recovery flag ─────────────────────────────────────────────
+  // Called after the new password is saved (or the user skips) so App.jsx
+  // returns to the normal app.
+  const clearPasswordRecovery = useCallback(() => setPasswordRecovery(false), []);
+
+  return {
+    user,
+    loading,
+    signUp,
+    signIn,
+    signOut,
+    resetPassword,
+    updatePassword,
+    passwordRecovery,
+    clearPasswordRecovery,
+  };
 }
 
 // ── Helper: Convert Supabase error messages to plain English ──────────────

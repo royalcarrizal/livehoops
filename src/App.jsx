@@ -13,9 +13,8 @@ import ProfileScreen from './screens/ProfileScreen';
 import FriendsScreen from './screens/FriendsScreen';
 import SplashScreen from './screens/SplashScreen';
 import AuthScreen from './components/AuthScreen';
+import ResetPasswordScreen from './components/ResetPasswordScreen';
 import Onboarding from './components/Onboarding';
-import InstallPrompt from './components/InstallPrompt';
-import IOSInstallBanner from './components/IOSInstallBanner';
 
 export default function App() {
   useTheme(); // applies theme-dark/theme-light class to document.body
@@ -24,7 +23,17 @@ export default function App() {
   // useAuth checks if anyone is logged in and provides sign-up / sign-in /
   // sign-out functions. 'loading' is true while the initial session check
   // is in progress (we show the splash screen during this time).
-  const { user, loading: authLoading, signUp, signIn, signOut, resetPassword } = useAuth();
+  const {
+    user,
+    loading: authLoading,
+    signUp,
+    signIn,
+    signOut,
+    resetPassword,
+    updatePassword,
+    passwordRecovery,
+    clearPasswordRecovery,
+  } = useAuth();
 
   // ── User Profile ────────────────────────────────────────────────────────
   // Once we know who's logged in (user.id), fetch their profile data from
@@ -204,6 +213,24 @@ export default function App() {
   // The splash screen always shows first (the animated LiveHoops logo).
   // It also shows while we're checking if the user has an existing session.
   if (authLoading) return splashOverlay;
+
+  // ── Screen 1.5: Set New Password ────────────────────────────────────────
+  // The user arrived from a password-reset email link. Supabase logged them
+  // in with a temporary recovery session — show the Set New Password screen
+  // before anything else so they can finish resetting their password.
+  if (passwordRecovery) {
+    return (
+      <>
+        <div className={`app-shell${!splashDone ? ' app-shell-enter' : ''}`}>
+          <ResetPasswordScreen
+            onUpdatePassword={updatePassword}
+            onDone={clearPasswordRecovery}
+          />
+        </div>
+        {splashOverlay}
+      </>
+    );
+  }
 
   // ── Screen 2: Auth ──────────────────────────────────────────────────────
   // If no user is logged in, show the login / sign-up screen.

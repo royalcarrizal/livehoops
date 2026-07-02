@@ -140,11 +140,14 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
   };
 
   // ── Handler: Change password ────────────────────────────────────────────
-  // Sends a password reset email via Supabase — the user clicks the link in
-  // that email to set a new password. No new screen needed here.
+  // Sends a password reset email via Supabase. The link brings the user back
+  // to the app root, where the PASSWORD_RECOVERY event (handled in useAuth)
+  // shows the Set New Password screen.
   const handleChangePassword = async () => {
     try {
-      await supabase.auth.resetPasswordForEmail(user?.email);
+      await supabase.auth.resetPasswordForEmail(user?.email, {
+        redirectTo: window.location.origin,
+      });
       showToast('Password reset email sent to ' + user?.email);
     } catch {
       showToast('❌ Failed to send reset email');
