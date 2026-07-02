@@ -85,9 +85,11 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
   }, [friends, friendsLoading, user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Load the Nearby feed when the user switches to that tab ────────────
+  // friendIds let the feed include friends-only posts from your friends.
   useEffect(() => {
     if (feedTab === 'nearby' && nearbyFeed.length === 0) {
-      fetchAllFeed(user?.id).then(posts => setNearbyFeed(posts ?? []));
+      const friendIds = friends.map(f => f.userId);
+      fetchAllFeed(user?.id, friendIds).then(posts => setNearbyFeed(posts ?? []));
     }
   }, [feedTab, user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -114,7 +116,7 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
     if (feedTab === 'following') {
       await fetchFriendsFeed(user.id, friendIds);
     } else {
-      const posts = await fetchAllFeed(user?.id);
+      const posts = await fetchAllFeed(user?.id, friendIds);
       setNearbyFeed(posts ?? []);
     }
   }, [feedTab, friends, user?.id, fetchFriendsFeed, fetchAllFeed]); // eslint-disable-line react-hooks/exhaustive-deps

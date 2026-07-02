@@ -139,8 +139,10 @@ export default function App() {
       // Step 1 — save check-in via existing RPC
       const result = await checkIn(courtId, user.id);
 
-      // Step 2 — reverse geocode once if the browser gave us GPS coords
-      if (userPos) {
+      // Step 2 — reverse geocode once if the browser gave us GPS coords.
+      // Skipped entirely when the user turned off "Show My Location" in
+      // Settings — their check-in row then carries no GPS coords or city.
+      if (userPos && profile?.show_location !== false) {
         const token = import.meta.env.VITE_MAPBOX_TOKEN;
         const url   = `https://api.mapbox.com/geocoding/v5/mapbox.places/${userPos.lng},${userPos.lat}.json?types=place&limit=1&access_token=${token}`;
 

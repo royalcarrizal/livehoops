@@ -44,7 +44,7 @@ function Toggle({ on, onToggle }) {
   );
 }
 
-export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditProfile }) {
+export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditProfile, profile, updateProfile }) {
 
   // ── Notification toggles ────────────────────────────────────────────────
   // Read from localStorage so the values survive page refreshes.
@@ -61,13 +61,25 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
   );
 
   // ── Privacy settings ────────────────────────────────────────────────────
-  // Location is ON by default. Visibility defaults to 'Public'.
-  const [showLocation, setShowLocation] = useState(
-    () => localStorage.getItem('lh_show_location') !== 'false'
-  );
-  const [profileVis, setProfileVis] = useState(
-    () => localStorage.getItem('lh_profile_visibility') || 'Public'
-  );
+  // These are REAL settings stored on the user's profile row in Supabase
+  // (see supabase/privacy_settings.sql), not just local preferences:
+  //   show_location       — off = friends can't see which court you're at,
+  //                         and check-ins stop saving your GPS coordinates
+  //   profile_visibility  — 'public' | 'friends' | 'private'
+  // We read the current values from the profile prop and save changes with
+  // updateProfile. Defaults match the database defaults (on / public).
+  const showLocation = profile?.show_location ?? true;
+  const profileVis   = profile?.profile_visibility ?? 'public';
+
+  // Human-readable labels for the visibility values stored in the database
+  const VISIBILITY_LABELS = {
+    public:  'Public',
+    friends: 'Friends only',
+    private: 'Private',
+  };
+
+  // True while a privacy setting save is in flight (prevents double-taps)
+  const [privacySaving, setPrivacySaving] = useState(false);
 
   // ── Change Email form ───────────────────────────────────────────────────
   // showEmailForm controls whether the inline email input expands below the row
@@ -124,19 +136,36 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
   };
 
   // ── Handler: Show my location toggle ───────────────────────────────────
-  const handleLocationToggle = () => {
+  // Saves to the profiles table. The get_friends_active_checkins RPC
+  // (supabase/privacy_settings.sql) hides your active check-in from friends
+  // when this is off, and App.jsx stops saving GPS coords on check-in.
+  const handleLocationToggle = async () => {
+    if (privacySaving) return;
+    setPrivacySaving(true);
     const next = !showLocation;
-    setShowLocation(next);
-    localStorage.setItem('lh_show_location', String(next));
+    const { error } = await updateProfile({ show_location: next });
+    setPrivacySaving(false);
+    if (error) {
+      showToast('❌ Failed to save — try again');
+    } else {
+      showToast(next
+        ? 'Friends can see which court you\'re at'
+        : 'Your court location is now hidden from friends');
+    }
   };
 
   // ── Handler: Profile visibility cycle ──────────────────────────────────
-  // Each tap cycles: Public → Friends only → Private → Public → …
-  const cycleVisibility = () => {
-    const options = ['Public', 'Friends only', 'Private'];
+  // Each tap cycles: public → friends → private → public → …
+  // Saved to the profiles table; enforced in search (private users are
+  // hidden), the Nearby feed, and on the profile page itself.
+  const cycleVisibility = async () => {
+    if (privacySaving) return;
+    setPrivacySaving(true);
+    const options = ['public', 'friends', 'private'];
     const next = options[(options.indexOf(profileVis) + 1) % options.length];
-    setProfileVis(next);
-    localStorage.setItem('lh_profile_visibility', next);
+    const { error } = await updateProfile({ profile_visibility: next });
+    setPrivacySaving(false);
+    if (error) showToast('❌ Failed to save — try again');
   };
 
   // ── Handler: Change password ────────────────────────────────────────────
@@ -363,10 +392,15 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
                 <div className="settings-row-icon" style={{ background: '#5856D6' }}>👁</div>
                 <div className="settings-row-content">
                   <div className="settings-row-title">Profile Visibility</div>
+                  <div className="settings-row-desc">
+                    {profileVis === 'public'  && 'Anyone can see your posts and stats'}
+                    {profileVis === 'friends' && 'Only friends see your posts and stats'}
+                    {profileVis === 'private' && 'Hidden from search · friends only'}
+                  </div>
                 </div>
                 {/* Show current value in muted text + arrow */}
                 <div className="settings-row-right" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <span>{profileVis}</span>
+                  <span>{VISIBILITY_LABELS[profileVis]}</span>
                   <ChevronRight size={16} />
                 </div>
               </button>
@@ -376,7 +410,7 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
                 <div className="settings-row-icon" style={{ background: '#30D158' }}>📍</div>
                 <div className="settings-row-content">
                   <div className="settings-row-title">Show My Location</div>
-                  <div className="settings-row-desc">Visible during court check-ins</div>
+                  <div className="settings-row-desc">Friends can see which court you're at</div>
                 </div>
                 <Toggle on={showLocation} onToggle={handleLocationToggle} />
               </div>

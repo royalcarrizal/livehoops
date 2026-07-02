@@ -27,6 +27,11 @@ const STORAGE_KEYS_TO_CLEAR = [
   'lh_ios_dismissed',
   'lh_notified_requests',
   'lh_active_checkin',
+  // Legacy keys — privacy settings used to live in localStorage before they
+  // moved to the profiles table (show_location / profile_visibility).
+  // Cleared here so stale values don't linger on devices.
+  'lh_show_location',
+  'lh_profile_visibility',
 ];
 
 export function useAuth() {

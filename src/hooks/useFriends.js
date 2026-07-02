@@ -279,8 +279,10 @@ export function useFriends(userId) {
   }, []);
 
   // ── Search for users by username ────────────────────────────────────────
-  // Used in the "Add Friend" modal. Returns up to 10 matching profiles,
-  // excluding the current user so you can't add yourself.
+  // Used in the "Add Friend" modal and the Discover sheet. Returns up to 10
+  // matching profiles, excluding the current user so you can't add yourself.
+  // Users who set their Profile Visibility to 'private' are hidden from
+  // search entirely (see supabase/privacy_settings.sql).
   const searchUsers = useCallback(async (searchTerm) => {
     if (!searchTerm?.trim()) return [];
 
@@ -291,6 +293,8 @@ export function useFriends(userId) {
       .ilike('username', `%${searchTerm.trim()}%`)
       // Don't show the current user in their own search results
       .neq('id', userId)
+      // Respect the Profile Visibility privacy setting
+      .neq('profile_visibility', 'private')
       .limit(10);
 
     if (error) return [];

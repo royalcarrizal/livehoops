@@ -128,6 +128,17 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
   const alreadyFriends = myFriends.some(f => f.userId === viewedUserId);
   const requestPending = mySentRequests.includes(viewedUserId);
 
+  // ── Profile visibility gate ───────────────────────────────────────────────
+  // Respects the viewed user's Profile Visibility privacy setting:
+  //   'public'  — everyone sees posts, stats, achievements, mutuals
+  //   'friends' — only their friends (and themselves) see that content
+  //   'private' — same as friends, plus they're hidden from search
+  // When locked, visitors see only the avatar, username, and an Add Friend
+  // button — posts, stats, and mutuals are replaced by a locked message.
+  const viewedVisibility = profile?.profile_visibility ?? 'public';
+  const canViewContent =
+    isOwner || viewedVisibility === 'public' || alreadyFriends;
+
   const handleAddFriend = async () => {
     await sendFriendRequest(viewedUserId);
     showToast('Friend request sent!');
@@ -141,7 +152,9 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
   const [mutualCourts,  setMutualCourts]  = useState([]);
 
   useEffect(() => {
-    if (isOwner || !profile?.id || !user?.id) return;
+    // Skip when the viewed profile is locked to us (friends-only/private) —
+    // mutual courts reveal where someone plays, which is what they've hidden.
+    if (isOwner || !profile?.id || !user?.id || !canViewContent) return;
 
     async function loadMutuals() {
       // Viewed user's accepted friendships
@@ -171,7 +184,7 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
     }
 
     loadMutuals();
-  }, [profile?.id, isOwner, myFriends]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [profile?.id, isOwner, myFriends, canViewContent]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Check-in history state ────────────────────────────────────────────────
   // Loaded from Supabase when the user taps the "Check-ins" tab.
@@ -182,13 +195,15 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
   // We use profile?.id (the viewed user), NOT user.id (the logged-in user),
   // so visiting someone else's profile shows their posts, not the viewer's.
   useEffect(() => {
-    if (!profile?.id) return;
+    // Don't fetch posts for a profile that's locked to us — the locked
+    // state below is rendered instead of the posts list.
+    if (!profile?.id || !canViewContent) return;
     setPostsLoading(true);
     fetchUserPosts(profile.id, user?.id).then(posts => {
       setUserPosts(posts);
       setPostsLoading(false);
     });
-  }, [profile?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [profile?.id, canViewContent]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const patchUserPostLike = (postId, next) => {
     if (!next) return;
@@ -359,31 +374,36 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
         {/* Username — large bold text */}
         <div className="profile-username">{displayUser.name}</div>
 
-        {/* 3 stat pills showing the user's key numbers */}
-        <div className="profile-stats-row">
-          <div className="profile-stat-pill">
-            <div className="profile-stat-value">{displayUser.checkinCount}</div>
-            <div className="profile-stat-label">Check-ins</div>
+        {/* 3 stat pills showing the user's key numbers.
+            Hidden when the profile is locked to us (friends-only/private). */}
+        {canViewContent && (
+          <div className="profile-stats-row">
+            <div className="profile-stat-pill">
+              <div className="profile-stat-value">{displayUser.checkinCount}</div>
+              <div className="profile-stat-label">Check-ins</div>
+            </div>
+            <div className="profile-stat-pill">
+              <div className="profile-stat-value">{displayUser.courtsVisited}</div>
+              <div className="profile-stat-label">Courts</div>
+            </div>
+            <div className="profile-stat-pill">
+              <div className="profile-stat-value">{displayUser.hoursOnCourt}h</div>
+              <div className="profile-stat-label">Hours</div>
+            </div>
           </div>
-          <div className="profile-stat-pill">
-            <div className="profile-stat-value">{displayUser.courtsVisited}</div>
-            <div className="profile-stat-label">Courts</div>
-          </div>
-          <div className="profile-stat-pill">
-            <div className="profile-stat-value">{displayUser.hoursOnCourt}h</div>
-            <div className="profile-stat-label">Hours</div>
-          </div>
-        </div>
+        )}
 
         {/* Two action buttons side by side */}
         <div className="profile-action-row">
-          {/* Achievements — shown to everyone */}
-          <button
-            className="profile-action-btn outlined"
-            onClick={() => setShowAchievements(true)}
-          >
-            Achievements
-          </button>
+          {/* Achievements — derived from stats, so hidden on locked profiles */}
+          {canViewContent && (
+            <button
+              className="profile-action-btn outlined"
+              onClick={() => setShowAchievements(true)}
+            >
+              Achievements
+            </button>
+          )}
 
           {/* Edit Profile — owner only. Visitors see friend status button instead. */}
           {isOwner ? (
@@ -409,8 +429,21 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
         </div>
       </div>
 
+      {/* ── Locked profile state — friends-only/private and we're not friends ── */}
+      {!canViewContent && (
+        <div className="feed-empty" style={{ marginTop: 8 }}>
+          <div style={{ fontSize: 48 }}>🔒</div>
+          <div className="feed-empty-title">This profile is {viewedVisibility === 'private' ? 'private' : 'friends only'}</div>
+          <div className="feed-empty-sub">
+            {requestPending
+              ? 'Your friend request is pending'
+              : 'Add them as a friend to see their posts and stats'}
+          </div>
+        </div>
+      )}
+
       {/* ── Mutual friends + courts — visitor mode only ─────────────────────── */}
-      {!isOwner && (mutualFriends.length > 0 || mutualCourts.length > 0) && (
+      {canViewContent && !isOwner && (mutualFriends.length > 0 || mutualCourts.length > 0) && (
         <div className="mutual-section">
 
           {mutualFriends.length > 0 && (
@@ -452,25 +485,27 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
       {/* Check-ins tab is only shown to the profile owner — check-in history   */}
       {/* is personal data (reveals where/when you go) and the checkins RLS     */}
       {/* policy blocks reading another user's rows anyway.                     */}
-      <div className="profile-tabs">
-        <button
-          className={`profile-tab${activeTab === 'posts' ? ' active' : ''}`}
-          onClick={() => setActiveTab('posts')}
-        >
-          Posts
-        </button>
-        {isOwner && (
+      {canViewContent && (
+        <div className="profile-tabs">
           <button
-            className={`profile-tab${activeTab === 'checkins' ? ' active' : ''}`}
-            onClick={() => setActiveTab('checkins')}
+            className={`profile-tab${activeTab === 'posts' ? ' active' : ''}`}
+            onClick={() => setActiveTab('posts')}
           >
-            Check-ins
+            Posts
           </button>
-        )}
-      </div>
+          {isOwner && (
+            <button
+              className={`profile-tab${activeTab === 'checkins' ? ' active' : ''}`}
+              onClick={() => setActiveTab('checkins')}
+            >
+              Check-ins
+            </button>
+          )}
+        </div>
+      )}
 
       {/* ── Posts tab content ────────────────────────────────────────────────── */}
-      {activeTab === 'posts' && (
+      {canViewContent && activeTab === 'posts' && (
         <div className="profile-posts">
 
           {/* Loading state: 2 pulsing skeleton cards */}
@@ -529,7 +564,7 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
       {/* ── Check-ins tab content ────────────────────────────────────────────── */}
       {/* Shows real past check-in sessions loaded from the checkins table.    */}
       {/* Each row shows the court name, date, and how long the session lasted. */}
-      {activeTab === 'checkins' && (
+      {canViewContent && activeTab === 'checkins' && (
         <div className="profile-posts">
           {historyLoading ? (
             // Same pulsing skeleton cards used on the feed while loading
@@ -720,12 +755,16 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
           />
 
           {/* Settings slide-up sheet */}
+          {/* profile + updateProfile power the real privacy settings
+              (show_location, profile_visibility) saved to Supabase */}
           <SettingsSheet
             isOpen={showSettings}
             onClose={() => setShowSettings(false)}
             user={user}
             signOut={signOut}
             onEditProfile={openEditProfile}
+            profile={profile}
+            updateProfile={updateProfile}
           />
         </>
       )}

@@ -203,9 +203,13 @@ export function usePosts() {
   }, []);
 
   // ── Fetch the Nearby (all posts) feed ──────────────────────────────────
-  // Shows every post regardless of friendship — used for the Nearby tab.
+  // Shows posts from everyone — used for the Nearby tab.
   // Returns the result so the caller can store it in a separate state variable.
-  const fetchAllFeed = useCallback(async (userId) => {
+  //
+  // Privacy: posts by users whose Profile Visibility is 'friends' or
+  // 'private' only appear to their friends (friendIds) and to themselves.
+  // The author's visibility comes along for free via the profiles(*) join.
+  const fetchAllFeed = useCallback(async (userId, friendIds = []) => {
     const { data, error } = await supabase
       .from('posts')
       .select(POST_SELECT)
@@ -217,7 +221,15 @@ export function usePosts() {
       return [];
     }
 
-    const rows = await attachOriginalPosts(data ?? []);
+    // Drop posts from non-public authors the viewer isn't friends with
+    const friendSet = new Set(friendIds ?? []);
+    const visible = (data ?? []).filter(row => {
+      const visibility = row.profiles?.profile_visibility ?? 'public';
+      if (visibility === 'public') return true;
+      return row.user_id === userId || friendSet.has(row.user_id);
+    });
+
+    const rows = await attachOriginalPosts(visible);
     const likedIds = await fetchLikedIds(userId, rows.map(r => r.id));
     return rows.map(row => normPost(row, likedIds));
   }, []);
