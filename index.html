@@ -6,8 +6,11 @@
     <!-- The favicon shown in browser tabs -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
-    <!-- Makes the page fill the full phone screen without zooming -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!-- Makes the page fill the full phone screen without zooming.
+         maximum-scale=1 + user-scalable=no lock the layout at its natural size
+         so tapping into a text box never zooms/reframes the screen (app-like
+         feel). iOS still allows accessibility pinch-zoom regardless. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 
     <title>LiveHoops</title>
 

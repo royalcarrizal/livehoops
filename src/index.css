@@ -17,6 +17,19 @@ input, textarea, select, [contenteditable] {
   touch-action: auto;
 }
 
+/* ── iOS input zoom prevention ──
+   iOS Safari auto-zooms the whole page when the user taps into any input
+   whose text is smaller than 16px — and often doesn't zoom back out,
+   leaving the app half-zoomed and ugly. Enforcing a 16px minimum on touch
+   devices removes the trigger entirely. !important is required because
+   several inputs set smaller sizes via CSS classes or inline styles.
+   Desktop (pointer: fine) is unaffected and keeps the original sizes. */
+@media (pointer: coarse) {
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+}
+
 :root {
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
