@@ -8,13 +8,30 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
 import App from './App.jsx';
+import ErrorBoundary from './components/ErrorBoundary.jsx';
+
+// ── Silence chatty logs in production ───────────────────────────────────────
+// The app has many console.log/info/debug calls that are helpful in
+// development but shouldn't ship to users (noise + one logs an FCM push
+// token). We no-op them in production builds only, while KEEPING
+// console.warn and console.error so real problems still surface (and a
+// future error-reporting tool can capture them).
+if (import.meta.env.PROD) {
+  console.log = () => {};
+  console.info = () => {};
+  console.debug = () => {};
+}
 
 // Mount the React app into the <div id="root"> element in index.html.
 // StrictMode is a development tool — it runs each component twice to help
 // catch bugs early. It has no effect in the production build.
+// ErrorBoundary catches any crash below it and shows a recovery screen
+// instead of a blank page.
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <App />
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
   </StrictMode>,
 );
 

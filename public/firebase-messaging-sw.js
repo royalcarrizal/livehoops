@@ -22,7 +22,7 @@ importScripts('https://www.gstatic.com/firebasejs/12.12.0/firebase-messaging-com
 // cannot import from src/firebase.js. You must paste the same config values
 // here so the service worker can authenticate with Firebase independently.
 // ─────────────────────────────────────────────────────────────────────────────
-firebase.initializeApp({
+const firebaseConfig = {
   apiKey:            '',
   authDomain:        '',
   projectId:         '',
@@ -30,23 +30,30 @@ firebase.initializeApp({
   messagingSenderId: '',
   appId:             '',
   measurementId:     '',
-});
+};
 
-// Get a reference to Firebase Messaging for the service worker context.
-// 'self' refers to the service worker itself (it has no 'window' object).
-const messaging = firebase.messaging();
+// Guard: until the config above is filled in, initializing Firebase Messaging
+// throws and floods the console with errors on every device. While the config
+// is empty we skip setup entirely so the service worker loads cleanly and
+// simply does nothing. Once you paste real values in, push handling activates.
+if (firebaseConfig.apiKey) {
+  firebase.initializeApp(firebaseConfig);
 
-// ─────────────────────────────────────────────────────────────────────────────
-// BACKGROUND MESSAGE HANDLER
-// ─────────────────────────────────────────────────────────────────────────────
-// This function runs when a push notification arrives from Firebase while:
-//   - The app tab is closed
-//   - The app tab is in the background (user is on a different tab)
-//
-// When the app IS in the foreground (open and active), onMessage() in
-// src/hooks/useNotifications.js handles it instead.
-// ─────────────────────────────────────────────────────────────────────────────
-messaging.onBackgroundMessage(function (payload) {
+  // Get a reference to Firebase Messaging for the service worker context.
+  // 'self' refers to the service worker itself (it has no 'window' object).
+  const messaging = firebase.messaging();
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // BACKGROUND MESSAGE HANDLER
+  // ───────────────────────────────────────────────────────────────────────────
+  // This function runs when a push notification arrives from Firebase while:
+  //   - The app tab is closed
+  //   - The app tab is in the background (user is on a different tab)
+  //
+  // When the app IS in the foreground (open and active), onMessage() in
+  // src/hooks/useNotifications.js handles it instead.
+  // ───────────────────────────────────────────────────────────────────────────
+  messaging.onBackgroundMessage(function (payload) {
   console.log('[LiveHoops SW] Push notification received in background:', payload);
 
   // Pull the notification content from the payload.
@@ -67,7 +74,8 @@ messaging.onBackgroundMessage(function (payload) {
                               // (e.g. courtId, postId) for deep-linking later
     vibrate: [200, 100, 200], // vibration pattern in ms [vibrate, pause, vibrate]
   });
-});
+  });
+} // end: firebaseConfig.apiKey guard
 
 // ─────────────────────────────────────────────────────────────────────────────
 // NOTIFICATION CLICK HANDLER

@@ -114,12 +114,12 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
   const handleRefresh = useCallback(async () => {
     const friendIds = friends.map(f => f.userId);
     if (feedTab === 'following') {
-      await fetchFriendsFeed(user.id, friendIds);
+      await fetchFriendsFeed(user?.id, friendIds);
     } else {
       const posts = await fetchAllFeed(user?.id, friendIds);
       setNearbyFeed(posts ?? []);
     }
-  }, [feedTab, friends, user?.id, fetchFriendsFeed, fetchAllFeed]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [feedTab, friends, user, fetchFriendsFeed, fetchAllFeed]);
 
   const { containerRef, pullDistance, refreshing } = usePullToRefresh(handleRefresh);
 
