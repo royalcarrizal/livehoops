@@ -90,11 +90,49 @@ function normPost(row, likedIds) {
   };
 }
 
-// Simple select — no self-referential repost join.
-// Repost originals are fetched separately below to avoid depending on
-// PostgREST knowing the FK (schema cache issues cause the whole query
-// to fail if the FK was added after the last schema reload).
-const POST_SELECT = `*, profiles(*)`;
+// Simple select — no joins at all.
+// Both the author profile AND repost originals are fetched separately below
+// (attachProfiles / attachOriginalPosts) instead of using PostgREST's
+// `profiles(*)` join syntax. The join syntax requires a foreign key between
+// posts and profiles to exist in the database schema cache — and when it
+// doesn't (as happened in production), EVERY feed/profile query fails
+// silently and the app looks empty even though the posts are safely stored.
+// Two plain queries are slightly slower but can never break that way.
+const POST_SELECT = `*`;
+
+// Fetch the author profile for each post and attach it as row.profiles,
+// mirroring the shape the old join produced so normPost needs no changes.
+// Also covers the authors of any attached original_post (reposts).
+async function attachProfiles(rows) {
+  // Collect every unique author ID we need a profile for
+  const ids = new Set();
+  rows.forEach(r => {
+    if (r.user_id) ids.add(r.user_id);
+    if (r.original_post?.user_id) ids.add(r.original_post.user_id);
+  });
+  if (ids.size === 0) return rows;
+
+  const { data: profiles, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .in('id', [...ids]);
+
+  if (error) {
+    console.error('attachProfiles error:', error);
+    return rows; // posts still render, just with fallback "Player" names
+  }
+
+  const profileMap = {};
+  (profiles ?? []).forEach(p => { profileMap[p.id] = p; });
+
+  return rows.map(r => ({
+    ...r,
+    profiles: profileMap[r.user_id] ?? null,
+    original_post: r.original_post
+      ? { ...r.original_post, profiles: profileMap[r.original_post.user_id] ?? null }
+      : r.original_post,
+  }));
+}
 
 // Fetch the original posts for any reposts in the list, then attach them.
 // This avoids the self-referential FK join which fails when PostgREST's
@@ -108,7 +146,7 @@ async function attachOriginalPosts(rows) {
 
   const { data: originals } = await supabase
     .from('posts')
-    .select('*, profiles(*)')
+    .select('*')
     .in('id', repostIds);
 
   const originalsMap = {};
@@ -179,8 +217,7 @@ export function usePosts() {
     // The feed includes your own posts plus all your friends' posts
     const allIds = [userId, ...(friendIds ?? [])];
 
-    // Query posts and join the profiles table to get username + avatar
-    // The "profiles(*)" syntax tells Supabase to fetch the related profile row
+    // Query posts, then fetch author profiles separately (see attachProfiles)
     const { data, error } = await supabase
       .from('posts')
       .select(POST_SELECT)
@@ -196,7 +233,8 @@ export function usePosts() {
       return;
     }
 
-    const rows = await attachOriginalPosts(data ?? []);
+    let rows = await attachOriginalPosts(data ?? []);
+    rows = await attachProfiles(rows);
     const likedIds = await fetchLikedIds(userId, rows.map(r => r.id));
     setFeed(rows.map(row => normPost(row, likedIds)));
     setLoading(false);
@@ -221,15 +259,19 @@ export function usePosts() {
       return [];
     }
 
+    // Attach author profiles first — the privacy filter below needs to read
+    // each author's profile_visibility, which comes from the profiles table.
+    let rows = await attachOriginalPosts(data ?? []);
+    rows = await attachProfiles(rows);
+
     // Drop posts from non-public authors the viewer isn't friends with
     const friendSet = new Set(friendIds ?? []);
-    const visible = (data ?? []).filter(row => {
+    rows = rows.filter(row => {
       const visibility = row.profiles?.profile_visibility ?? 'public';
       if (visibility === 'public') return true;
       return row.user_id === userId || friendSet.has(row.user_id);
     });
 
-    const rows = await attachOriginalPosts(visible);
     const likedIds = await fetchLikedIds(userId, rows.map(r => r.id));
     return rows.map(row => normPost(row, likedIds));
   }, []);
@@ -252,7 +294,8 @@ export function usePosts() {
       return [];
     }
 
-    const rows = await attachOriginalPosts(data ?? []);
+    let rows = await attachOriginalPosts(data ?? []);
+    rows = await attachProfiles(rows);
     const likedIds = await fetchLikedIds(viewerUserId, rows.map(r => r.id));
     return rows.map(row => normPost(row, likedIds));
   }, []);
@@ -325,7 +368,7 @@ export function usePosts() {
         content: '',
         repost_of_post_id: postId,
       })
-      .select('*, profiles(*)')
+      .select('*')
       .single();
 
     // 23505 = unique violation from posts_user_repost_unique.
@@ -338,7 +381,8 @@ export function usePosts() {
       throw error;
     }
 
-    const [enriched] = await attachOriginalPosts([data]);
+    let [enriched] = await attachOriginalPosts([data]);
+    [enriched] = await attachProfiles([enriched]);
     const newPost = normPost(enriched, new Set());
     setFeed(prev => [newPost, ...prev]);
     return { post: newPost };
