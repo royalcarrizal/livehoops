@@ -64,6 +64,7 @@ arrive, and connect with the people you hoop with.
    | `auto_expire_checkins.sql` | pg_cron job that closes check-ins older than 3 h (fixes "ghost players") |
    | `privacy_settings.sql` | show_location + profile_visibility columns and privacy-aware friends RPC |
    | `posts_profiles_fk.sql` | foreign key linking posts to profiles (integrity; joins were failing without it) |
+   | `push_notifications.sql` | fcm_tokens device registry for push notifications |
    | `checkins_rls.sql` | Check-in read policies |
    | `friends_active_checkins_rpc.sql` | "Which friends are on a court now" RPC |
    | `mutual_courts_rpc.sql` | Courts-in-common RPC for visitor profiles |

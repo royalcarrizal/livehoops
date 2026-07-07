@@ -52,7 +52,7 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
     unreadCount,
     notifications,
     markAllRead,
-  } = useNotifications();
+  } = useNotifications(user?.id); // userId → registers this device's push token
 
   // ── Real friends data from Supabase ────────────────────────────────────
   // useFriends fetches accepted friends + pending requests for this user
