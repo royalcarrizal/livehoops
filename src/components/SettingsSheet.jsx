@@ -24,6 +24,8 @@ import { X, ChevronRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useTheme } from '../hooks/useTheme';
 import { useToast } from '../hooks/useToast';
+import { useNotifications } from '../hooks/useNotifications';
+import { sendPush } from '../lib/push';
 import Toast from './Toast';
 import LegalSheet from './LegalSheet';
 
@@ -46,10 +48,17 @@ function Toggle({ on, onToggle }) {
 
 export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditProfile, profile, updateProfile }) {
 
+  // ── Push notification permission + token registration ───────────────────
+  // Drives the master Push toggle. requestPermission asks the browser AND
+  // registers this device's token in Supabase (see useNotifications), so
+  // toggling on here is enough to start receiving pushes.
+  const { permission, requestPermission } = useNotifications(user?.id);
+
   // ── Notification toggles ────────────────────────────────────────────────
   // Read from localStorage so the values survive page refreshes.
   // The default for push and friends is ON (true unless explicitly 'false').
   // The default for courts is OFF (only on if explicitly 'true').
+  // The master push toggle reflects the real browser permission, not storage.
   const [notifEnabled, setNotifEnabled] = useState(
     () => localStorage.getItem('lh_notif_enabled') !== 'false'
   );
@@ -111,7 +120,9 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
   const handleNotifToggle = async () => {
     const next = !notifEnabled;
     if (next) {
-      const result = await Notification.requestPermission();
+      // Ask the browser AND register this device's token in one step, so
+      // enabling here is enough to actually start receiving pushes.
+      const result = await requestPermission();
       if (result !== 'granted') {
         showToast('Notifications blocked — check your browser settings');
         return;
@@ -119,6 +130,19 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
     }
     setNotifEnabled(next);
     localStorage.setItem('lh_notif_enabled', String(next));
+  };
+
+  // ── Send a test notification to yourself ────────────────────────────────
+  // Only useful once permission is granted and this device has registered.
+  // Fires a push to the current user's own devices via the send-push
+  // Edge Function — handy for confirming the whole pipeline end to end.
+  const [testing, setTesting] = useState(false);
+  const handleTestPush = async () => {
+    if (testing || !user?.id) return;
+    setTesting(true);
+    sendPush(user.id, 'LiveHoops 🏀', 'Your notifications are working!', { kind: 'test' });
+    showToast('Test sent — watch for the notification');
+    setTimeout(() => setTesting(false), 1500);
   };
 
   // ── Handler: Friend request alerts toggle ───────────────────────────────
@@ -335,14 +359,35 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
             <div className="settings-section-label">Notifications</div>
             <div className="settings-group">
 
-              {/* Push notifications — triggers browser permission prompt on first enable */}
+              {/* Push notifications — triggers browser permission prompt on first enable.
+                  The toggle reflects the real browser permission: it's only "on"
+                  when permission is granted AND the user hasn't turned it off. */}
               <div className="settings-row">
                 <div className="settings-row-icon" style={{ background: '#FF9500' }}>🔔</div>
                 <div className="settings-row-content">
                   <div className="settings-row-title">Push Notifications</div>
+                  {permission === 'denied' && (
+                    <div className="settings-row-desc">Blocked in your browser settings</div>
+                  )}
                 </div>
-                <Toggle on={notifEnabled} onToggle={handleNotifToggle} />
+                <Toggle
+                  on={notifEnabled && permission === 'granted'}
+                  onToggle={handleNotifToggle}
+                />
               </div>
+
+              {/* Send test notification — only shown once permission is granted.
+                  Fires a push to your own devices to verify the pipeline. */}
+              {permission === 'granted' && (
+                <button className="settings-row" onClick={handleTestPush} disabled={testing}>
+                  <div className="settings-row-icon" style={{ background: '#0A84FF' }}>🧪</div>
+                  <div className="settings-row-content">
+                    <div className="settings-row-title">Send Test Notification</div>
+                    <div className="settings-row-desc">Push a test alert to this device</div>
+                  </div>
+                  <div className="settings-row-right"><ChevronRight size={16} /></div>
+                </button>
+              )}
 
               {/* Friend request alerts — notified when someone sends a friend request */}
               <div className="settings-row">
