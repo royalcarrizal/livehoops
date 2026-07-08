@@ -21,6 +21,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import { sendPush } from '../lib/push';
 
 export function useFriends(userId) {
   // The list of accepted friends (each has friendshipId, userId, username, avatarUrl, initials)
@@ -232,6 +233,24 @@ export function useFriends(userId) {
     if (!error) {
       // Update sentRequests locally so the UI updates immediately
       setSentRequests(prev => [...prev, addresseeId]);
+
+      // Notify the recipient. We look up our own username for the title —
+      // the hook doesn't hold it, and friend requests are infrequent so the
+      // extra query is cheap. Fire-and-forget (never blocks/throws).
+      supabase
+        .from('profiles')
+        .select('username')
+        .eq('id', userId)
+        .single()
+        .then(({ data }) => {
+          const name = data?.username ?? 'Someone';
+          sendPush(
+            addresseeId,
+            `${name} sent you a friend request`,
+            'Tap to view their profile',
+            { kind: 'friend_request', senderId: userId },
+          );
+        });
     }
   }, [userId]);
 

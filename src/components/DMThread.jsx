@@ -81,7 +81,7 @@ export default function DMThread({ friend, currentUser, onClose }) {
     setText('');
     setIsSending(true);
     try {
-      await sendMessage(currentUser.id, friend.userId, trimmed);
+      await sendMessage(currentUser.id, friend.userId, trimmed, currentUser.username);
     } catch {
       // Restore text so the user doesn't lose their message
       setText(trimmed);

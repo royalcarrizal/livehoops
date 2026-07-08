@@ -14,6 +14,7 @@
 
 import { useState, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import { sendPush, preview } from '../lib/push';
 
 // ── Helper: convert ISO timestamp to relative time string ─────────────────
 function toTimeAgo(isoString) {
@@ -75,7 +76,8 @@ export function useDirectMessages() {
   // ── Send a message ────────────────────────────────────────────────────────
   // Immediately appends an optimistic message so the UI feels instant,
   // then replaces it with the real row once Supabase confirms.
-  const sendMessage = useCallback(async (senderId, recipientId, content) => {
+  // senderName (optional) is used for the push notification title.
+  const sendMessage = useCallback(async (senderId, recipientId, content, senderName = 'Someone') => {
     if (!senderId || !recipientId || !content?.trim()) return;
 
     const tempId = `temp-${Date.now()}`;
@@ -108,6 +110,15 @@ export function useDirectMessages() {
     // Swap the optimistic placeholder with the real row
     const real = normMessage(data);
     setMessages(prev => prev.map(m => m.id === tempId ? real : m));
+
+    // Notify the recipient's devices (fire-and-forget — never blocks/throws)
+    sendPush(
+      recipientId,
+      `${senderName} sent you a message`,
+      preview(content.trim()),
+      { kind: 'dm', senderId },
+    );
+
     return real;
   }, []);
 

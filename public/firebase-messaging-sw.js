@@ -23,13 +23,13 @@ importScripts('https://www.gstatic.com/firebasejs/12.12.0/firebase-messaging-com
 // here so the service worker can authenticate with Firebase independently.
 // ─────────────────────────────────────────────────────────────────────────────
 const firebaseConfig = {
-  apiKey:            '',
-  authDomain:        '',
-  projectId:         '',
-  storageBucket:     '',
-  messagingSenderId: '',
-  appId:             '',
-  measurementId:     '',
+  apiKey:            'AIzaSyBMXMawK3J5wYDUg7WAWvhLiPRAiPLK16U',
+  authDomain:        'livehoops-29dda.firebaseapp.com',
+  projectId:         'livehoops-29dda',
+  storageBucket:     'livehoops-29dda.firebasestorage.app',
+  messagingSenderId: '833499267448',
+  appId:             '1:833499267448:web:09969c8e0654982ac5488d',
+  measurementId:     'G-08HQRWSF6N',
 };
 
 // Guard: until the config above is filled in, initializing Firebase Messaging
