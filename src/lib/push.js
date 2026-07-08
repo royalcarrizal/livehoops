@@ -15,6 +15,12 @@
 
 import { supabase } from './supabase';
 
+// Name of the deployed Supabase Edge Function that sends the push.
+// It's called "smart-api" (Supabase's default name at deploy time) rather
+// than "send-push" — the code inside it is our send-push function. If you
+// ever redeploy under a cleaner name, change this one constant to match.
+const PUSH_FUNCTION = 'smart-api';
+
 /**
  * Send a push notification to a user. Safe to call without awaiting.
  *
@@ -32,7 +38,7 @@ export function sendPush(userId, title, body = '', data = {}) {
   for (const [k, v] of Object.entries(data)) stringData[k] = String(v);
 
   supabase.functions
-    .invoke('send-push', {
+    .invoke(PUSH_FUNCTION, {
       body: { user_id: userId, title, body, data: stringData },
     })
     .catch((err) => {
