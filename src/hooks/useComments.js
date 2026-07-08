@@ -161,12 +161,12 @@ export function useComments() {
     // Only reference parent_comment_id when it's actually a reply, so a plain
     // top-level comment still inserts cleanly even if the replies migration
     // (comment_likes_and_replies.sql) hasn't been run yet.
-    const row = { post_id: postId, user_id: userId, content: content.trim() };
-    if (parentCommentId) row.parent_comment_id = parentCommentId;
+    const insertRow = { post_id: postId, user_id: userId, content: content.trim() };
+    if (parentCommentId) insertRow.parent_comment_id = parentCommentId;
 
     const { data, error } = await supabase
       .from('comments')
-      .insert(row)
+      .insert(insertRow)
       .select('*')
       .single();
 
