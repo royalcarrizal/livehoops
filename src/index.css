@@ -117,7 +117,12 @@ body {
 #root {
   width: 100%;
   max-width: var(--app-width);
-  min-height: 100svh;
+  /* Exact viewport height (not min-height) so the app is a fixed-height
+     column: only the middle scrolls, the bottom nav is pinned by layout.
+     dvh tracks the visible area as the mobile toolbar shows/hides; svh is
+     the fallback for browsers without dvh support. */
+  height: 100svh;
+  height: 100dvh;
   background: var(--bg);
   position: relative;
   display: flex;
@@ -130,7 +135,10 @@ body {
 .app-shell {
   display: flex;
   flex-direction: column;
-  min-height: 100svh;
+  /* Fill #root and allow the inner scroll area to shrink (min-height:0 is
+     required so a flex child with overflow can actually scroll). */
+  flex: 1;
+  min-height: 0;
   background: var(--bg);
 }
 
@@ -160,9 +168,13 @@ body {
 /* ── Scrollable screen area ── */
 .screen-content {
   flex: 1;
+  /* Required so this flex child can shrink below content height and scroll */
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-bottom: var(--nav-height);
+  /* Small breathing room above the nav; the nav is now a real sibling that
+     occupies its own space, so no full nav-height padding is needed. */
+  padding-bottom: 12px;
   /* No scroll-behavior:smooth — it feels sluggish on iOS during pull-to-refresh */
   -webkit-overflow-scrolling: touch;
   /* Contain scroll within the screen so it doesn't bleed to the body */
@@ -487,12 +499,11 @@ body {
 
 /* ── Bottom Navigation ── */
 .bottom-nav {
-  position: fixed;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
+  /* A normal flex child at the bottom of the shell — no position:fixed, so it
+     can't drift, jump, or hide behind the mobile browser toolbar while the
+     content above it scrolls. flex-shrink:0 keeps it at full height. */
+  flex-shrink: 0;
   width: 100%;
-  max-width: var(--app-width);
   height: var(--nav-height);
   background: var(--bg-nav);
   backdrop-filter: blur(20px);
@@ -584,7 +595,10 @@ body {
 .map-screen {
   display: flex;
   flex-direction: column;
-  height: calc(100svh - var(--safe-top) - var(--nav-height));
+  /* Fills the space between header area and the nav via flex, instead of a
+     hardcoded calc — the nav now takes its own row in the shell. */
+  flex: 1;
+  min-height: 0;
 }
 
 /* ── Map area wrapper ── */
