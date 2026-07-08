@@ -21,7 +21,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
-import { sendPush } from '../lib/push';
+import { sendPush, getProfileFlag } from '../lib/push';
 
 export function useFriends(userId) {
   // The list of accepted friends (each has friendshipId, userId, username, avatarUrl, initials)
@@ -234,40 +234,69 @@ export function useFriends(userId) {
       // Update sentRequests locally so the UI updates immediately
       setSentRequests(prev => [...prev, addresseeId]);
 
-      // Notify the recipient. We look up our own username for the title —
-      // the hook doesn't hold it, and friend requests are infrequent so the
-      // extra query is cheap. Fire-and-forget (never blocks/throws).
-      supabase
-        .from('profiles')
-        .select('username')
-        .eq('id', userId)
-        .single()
-        .then(({ data }) => {
-          const name = data?.username ?? 'Someone';
-          sendPush(
-            addresseeId,
-            `${name} sent you a friend request`,
-            'Tap to view their profile',
-            { kind: 'friend_request', senderId: userId },
-          );
-        });
+      // Notify the recipient, respecting their Friend Request Alerts setting.
+      // We look up our own username for the title — the hook doesn't hold
+      // it, and friend requests are infrequent so the extra query is cheap.
+      // Fire-and-forget (never blocks/throws).
+      (async () => {
+        const wantsAlert = await getProfileFlag(addresseeId, 'notif_friend_requests', true);
+        if (!wantsAlert) return;
+
+        const { data } = await supabase
+          .from('profiles')
+          .select('username')
+          .eq('id', userId)
+          .single();
+
+        sendPush(
+          addresseeId,
+          `${data?.username ?? 'Someone'} sent you a friend request`,
+          'Tap to view their profile',
+          { kind: 'friend_request', senderId: userId },
+        );
+      })();
     }
   }, [userId]);
 
   // ── Accept an incoming friend request ──────────────────────────────────
   // Updates the row status to 'accepted', then re-fetches everything so
-  // the new friend appears in the friends list right away.
+  // the new friend appears in the friends list right away. Also notifies
+  // whoever originally sent the request that it was accepted (respecting
+  // their Friend Request Alerts setting).
   const acceptFriendRequest = useCallback(async (friendshipId) => {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('friendships')
       .update({ status: 'accepted' })
-      .eq('id', friendshipId);
+      .eq('id', friendshipId)
+      .select('requester_id')
+      .single();
 
     if (!error) {
       // Re-load all data so the accepted friend moves from pendingRequests → friends
       await loadAll();
+
+      const requesterId = data?.requester_id;
+      if (requesterId && requesterId !== userId) {
+        (async () => {
+          const wantsAlert = await getProfileFlag(requesterId, 'notif_friend_requests', true);
+          if (!wantsAlert) return;
+
+          const { data: me } = await supabase
+            .from('profiles')
+            .select('username')
+            .eq('id', userId)
+            .single();
+
+          sendPush(
+            requesterId,
+            `${me?.username ?? 'Someone'} accepted your friend request`,
+            `You're now friends with ${me?.username ?? 'them'}`,
+            { kind: 'friend_accept', accepterId: userId },
+          );
+        })();
+      }
     }
-  }, [loadAll]);
+  }, [loadAll, userId]);
 
   // ── Decline an incoming friend request ─────────────────────────────────
   // Sets status to 'declined' and removes the request from the local list.

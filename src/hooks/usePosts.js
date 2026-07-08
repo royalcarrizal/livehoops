@@ -19,6 +19,36 @@
 
 import { useState, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import { sendPush, preview } from '../lib/push';
+
+// ── Notify a post's author that someone liked it ──────────────────────────
+// Fire-and-forget: looks up the post (for its author + a content preview)
+// and the liker's username, then pushes. Never notifies you about your own
+// like. Failures are swallowed — a missing post/profile just means no push.
+async function notifyPostLike(postId, likerId) {
+  try {
+    const { data: post } = await supabase
+      .from('posts')
+      .select('user_id, content, court_name')
+      .eq('id', postId)
+      .single();
+
+    if (!post || post.user_id === likerId) return;
+
+    const { data: liker } = await supabase
+      .from('profiles')
+      .select('username')
+      .eq('id', likerId)
+      .single();
+
+    const likerName = liker?.username ?? 'Someone';
+    const body = post.content ? preview(post.content) : (post.court_name ? `at ${post.court_name}` : '');
+
+    sendPush(post.user_id, `${likerName} liked your post`, body, { kind: 'post_like', postId, likerId });
+  } catch (err) {
+    console.info('[LiveHoops] notifyPostLike skipped:', err?.message ?? err);
+  }
+}
 
 // ── Helper: convert an ISO timestamp to a human-readable relative time ────
 // e.g. "2024-03-15T10:30:00Z" → "5m ago", "2h ago", "3d ago"
@@ -399,6 +429,9 @@ export function usePosts() {
 
     // 23505 = unique violation. Treat it as already liked.
     if (error && error.code !== '23505') throw error;
+
+    // Only notify on a genuinely new like, not a repeat/already-liked call
+    if (!error) notifyPostLike(postId, userId);
 
     const next = await fetchPostLikeState(postId, userId);
 

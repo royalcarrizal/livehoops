@@ -66,6 +66,7 @@ arrive, and connect with the people you hoop with.
    | `posts_profiles_fk.sql` | foreign key linking posts to profiles (integrity; joins were failing without it) |
    | `push_notifications.sql` | fcm_tokens device registry for push notifications |
    | `comment_likes_and_replies.sql` | comment_likes table + like_count and parent_comment_id on comments |
+   | `notification_preferences.sql` | notif_friend_requests + notif_court_checkins columns for push gating |
    | `checkins_rls.sql` | Check-in read policies |
    | `friends_active_checkins_rpc.sql` | "Which friends are on a court now" RPC |
    | `mutual_courts_rpc.sql` | Courts-in-common RPC for visitor profiles |

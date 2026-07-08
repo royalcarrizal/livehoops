@@ -55,19 +55,18 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
   const { permission, requestPermission } = useNotifications(user?.id);
 
   // ── Notification toggles ────────────────────────────────────────────────
-  // Read from localStorage so the values survive page refreshes.
-  // The default for push and friends is ON (true unless explicitly 'false').
-  // The default for courts is OFF (only on if explicitly 'true').
-  // The master push toggle reflects the real browser permission, not storage.
+  // The master Push toggle reflects the real browser permission (see below).
+  // Friend Request Alerts and Court Goes Live Alerts are REAL settings
+  // stored on the user's profile row in Supabase (see
+  // supabase/notification_preferences.sql) rather than localStorage — they
+  // gate whether OTHER users' actions push a notification to this user, so
+  // they have to be readable by whoever triggers that notification, not
+  // just this device.
   const [notifEnabled, setNotifEnabled] = useState(
     () => localStorage.getItem('lh_notif_enabled') !== 'false'
   );
-  const [notifFriends, setNotifFriends] = useState(
-    () => localStorage.getItem('lh_notif_friends') !== 'false'
-  );
-  const [notifCourts, setNotifCourts] = useState(
-    () => localStorage.getItem('lh_notif_courts') === 'true'
-  );
+  const notifFriends = profile?.notif_friend_requests ?? true;
+  const notifCourts  = profile?.notif_court_checkins  ?? false;
 
   // ── Privacy settings ────────────────────────────────────────────────────
   // These are REAL settings stored on the user's profile row in Supabase
@@ -146,17 +145,25 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
   };
 
   // ── Handler: Friend request alerts toggle ───────────────────────────────
-  const handleFriendsToggle = () => {
-    const next = !notifFriends;
-    setNotifFriends(next);
-    localStorage.setItem('lh_notif_friends', String(next));
+  // Saved to the profiles table — this is what other users' sendFriendRequest
+  // / acceptFriendRequest calls check before pushing to you.
+  const handleFriendsToggle = async () => {
+    if (privacySaving) return;
+    setPrivacySaving(true);
+    const { error } = await updateProfile({ notif_friend_requests: !notifFriends });
+    setPrivacySaving(false);
+    if (error) showToast('❌ Failed to save — try again');
   };
 
   // ── Handler: Court goes live toggle ────────────────────────────────────
-  const handleCourtsToggle = () => {
-    const next = !notifCourts;
-    setNotifCourts(next);
-    localStorage.setItem('lh_notif_courts', String(next));
+  // Saved to the profiles table — checked by notifyFriendsOfCheckIn
+  // (useCheckIn.js) when any of your friends checks in.
+  const handleCourtsToggle = async () => {
+    if (privacySaving) return;
+    setPrivacySaving(true);
+    const { error } = await updateProfile({ notif_court_checkins: !notifCourts });
+    setPrivacySaving(false);
+    if (error) showToast('❌ Failed to save — try again');
   };
 
   // ── Handler: Show my location toggle ───────────────────────────────────

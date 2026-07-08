@@ -19,6 +19,74 @@
 
 import { useState, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import { sendPush, preview } from '../lib/push';
+
+// ── Notify whoever should hear about a new top-level comment or reply ─────
+// Top-level comment → notify the post's author.
+// Reply             → notify the parent comment's author (one level deep,
+//                     matching the app's threading — not the post author).
+// Never notifies you about your own comment/reply. Fire-and-forget.
+async function notifyComment({ postId, parentCommentId, commenterId, commenterName, content }) {
+  try {
+    let recipientId;
+    if (parentCommentId) {
+      const { data: parent } = await supabase
+        .from('comments')
+        .select('user_id')
+        .eq('id', parentCommentId)
+        .single();
+      recipientId = parent?.user_id;
+    } else {
+      const { data: post } = await supabase
+        .from('posts')
+        .select('user_id')
+        .eq('id', postId)
+        .single();
+      recipientId = post?.user_id;
+    }
+
+    if (!recipientId || recipientId === commenterId) return;
+
+    const title = parentCommentId
+      ? `${commenterName} replied to your comment`
+      : `${commenterName} commented on your post`;
+
+    sendPush(recipientId, title, preview(content), {
+      kind: parentCommentId ? 'comment_reply' : 'post_comment',
+      postId,
+    });
+  } catch (err) {
+    console.info('[LiveHoops] notifyComment skipped:', err?.message ?? err);
+  }
+}
+
+// ── Notify a comment's author that someone liked it ────────────────────────
+async function notifyCommentLike(commentId, likerId) {
+  try {
+    const { data: comment } = await supabase
+      .from('comments')
+      .select('user_id, content')
+      .eq('id', commentId)
+      .single();
+
+    if (!comment || comment.user_id === likerId) return;
+
+    const { data: liker } = await supabase
+      .from('profiles')
+      .select('username')
+      .eq('id', likerId)
+      .single();
+
+    sendPush(
+      comment.user_id,
+      `${liker?.username ?? 'Someone'} liked your comment`,
+      preview(comment.content),
+      { kind: 'comment_like', commentId },
+    );
+  } catch (err) {
+    console.info('[LiveHoops] notifyCommentLike skipped:', err?.message ?? err);
+  }
+}
 
 // ── Helper: convert an ISO timestamp to a human-readable relative time ────
 function toTimeAgo(isoString) {
@@ -181,6 +249,17 @@ export function useComments() {
 
     const newComment = normComment(row, new Set());
 
+    // Notify the post author (top-level) or the parent comment's author
+    // (reply). row.profiles.username is already fetched above — no extra
+    // query needed for the commenter's own name.
+    notifyComment({
+      postId,
+      parentCommentId,
+      commenterId:   userId,
+      commenterName: row.profiles?.username ?? 'Someone',
+      content:       newComment.content,
+    });
+
     if (parentCommentId) {
       // Append under the parent's replies
       setComments(prev => prev.map(c =>
@@ -239,7 +318,11 @@ export function useComments() {
       setComments(prev => patchInTree(prev, commentId, c =>
         ({ isLiked: false, likeCount: Math.max(0, c.likeCount - 1) })
       ));
+      return;
     }
+
+    // Only notify on a genuinely new like, not a repeat/already-liked call
+    if (!error) notifyCommentLike(commentId, userId);
   }, []);
 
   // ── Unlike a comment ────────────────────────────────────────────────────

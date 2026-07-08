@@ -10,8 +10,9 @@
 //     the push fails (recipient has no devices, offline, Firebase hiccup…).
 //   - The recipient only has device tokens if they granted notification
 //     permission, so that permission is the primary on/off gate. Per-type
-//     preferences (Friend Request Alerts, etc.) will be enforced here once
-//     those settings move from localStorage into the database.
+//     preferences (Friend Request Alerts, Court Goes Live) are stored on the
+//     recipient's profile row (see supabase/notification_preferences.sql)
+//     and checked via getProfileFlag before sending those specific pushes.
 
 import { supabase } from './supabase';
 
@@ -51,4 +52,30 @@ export function sendPush(userId, title, body = '', data = {}) {
 export function preview(text, max = 120) {
   if (!text) return '';
   return text.length > max ? text.slice(0, max - 1) + '…' : text;
+}
+
+/**
+ * Read a boolean preference column from another user's profile row, used to
+ * gate notification types that have a Settings toggle (Friend Request
+ * Alerts, Court Goes Live Alerts). Fails open to `fallback` on any error —
+ * a missing/unreachable preference should never silently swallow a push the
+ * user actually wants.
+ *
+ * @param {string} userId   — whose profile to check
+ * @param {string} column   — e.g. 'notif_friend_requests'
+ * @param {boolean} fallback — value to use if the row/column can't be read
+ */
+export async function getProfileFlag(userId, column, fallback = true) {
+  if (!userId) return fallback;
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select(column)
+      .eq('id', userId)
+      .single();
+    if (error || data == null || data[column] == null) return fallback;
+    return data[column];
+  } catch {
+    return fallback;
+  }
 }

@@ -22,12 +22,64 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import { sendPush } from '../lib/push';
 
 // Key used to save the active check-in in localStorage
 const STORAGE_KEY = 'lh_active_checkin';
 
 // How long a check-in lasts before auto-expiring (3 hours in milliseconds)
 const MAX_CHECKIN_MS = 3 * 60 * 60 * 1000;
+
+// ── Notify friends that this user just checked in ──────────────────────────
+// Respects two things:
+//   1. show_location — if the checking-in user turned this off, their
+//      friends already can't see which court they're at (the
+//      get_friends_active_checkins RPC hides it) — so we don't push it
+//      to them either. Same privacy boundary, both places.
+//   2. notif_court_checkins — each individual friend's own "Court Goes
+//      Live Alerts" preference; only friends with it on get pushed.
+// Fire-and-forget: check-in must succeed instantly regardless of this.
+async function notifyFriendsOfCheckIn(userId, courtName) {
+  try {
+    const { data: me } = await supabase
+      .from('profiles')
+      .select('username, show_location')
+      .eq('id', userId)
+      .single();
+
+    if (!me || me.show_location === false) return;
+
+    const { data: friendships } = await supabase
+      .from('friendships')
+      .select('requester_id, addressee_id')
+      .eq('status', 'accepted')
+      .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`);
+
+    const friendIds = (friendships ?? []).map(f =>
+      f.requester_id === userId ? f.addressee_id : f.requester_id
+    );
+    if (friendIds.length === 0) return;
+
+    // Only friends who opted into "Court Goes Live Alerts"
+    const { data: recipients } = await supabase
+      .from('profiles')
+      .select('id')
+      .in('id', friendIds)
+      .eq('notif_court_checkins', true);
+
+    const name = me.username ?? 'A friend';
+    (recipients ?? []).forEach(r => {
+      sendPush(
+        r.id,
+        `${name} is playing now 🏀`,
+        `Checked in at ${courtName ?? 'a court'}`,
+        { kind: 'friend_checkin', userId },
+      );
+    });
+  } catch (err) {
+    console.info('[LiveHoops] notifyFriendsOfCheckIn skipped:', err?.message ?? err);
+  }
+}
 
 export function useCheckIn(userId, onPlayerCountChange, onProfileRefetch) {
   // The user's current active check-in, or null if not checked in anywhere.
@@ -191,6 +243,10 @@ export function useCheckIn(userId, onPlayerCountChange, onProfileRefetch) {
     }
 
     if (result.previous_court_id && onProfileRefetch) onProfileRefetch();
+
+    // Let friends who want court alerts know (privacy- and preference-gated
+    // inside the helper). Fire-and-forget — never blocks the check-in itself.
+    notifyFriendsOfCheckIn(uid, checkin.courtName);
 
     return result;
   }, [onPlayerCountChange, onProfileRefetch]);
