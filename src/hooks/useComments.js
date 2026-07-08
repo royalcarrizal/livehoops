@@ -29,6 +29,31 @@ function toTimeAgo(isoString) {
   return new Date(isoString).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
+// ── Helper: fetch author profiles separately and attach as row.profiles ───
+// Mirrors attachProfiles in usePosts.js — PostgREST's `profiles(...)` join
+// syntax requires a comments→profiles foreign key in the schema cache, and
+// when it's missing the WHOLE query fails and comments never load even
+// though the rows are safely stored. Two plain queries can't break that way.
+async function attachProfiles(rows) {
+  const ids = [...new Set(rows.map(r => r.user_id).filter(Boolean))];
+  if (ids.length === 0) return rows;
+
+  const { data: profiles, error } = await supabase
+    .from('profiles')
+    .select('id, username, avatar_url')
+    .in('id', ids);
+
+  if (error) {
+    console.error('attachProfiles error:', error);
+    return rows; // comments still render, just with fallback "Player" names
+  }
+
+  const profileMap = {};
+  (profiles ?? []).forEach(p => { profileMap[p.id] = p; });
+
+  return rows.map(r => ({ ...r, profiles: profileMap[r.user_id] ?? null }));
+}
+
 // ── Helper: shape a raw Supabase row into the comment format FeedPost uses ─
 function normComment(row) {
   const username = row.profiles?.username ?? 'Player';
@@ -58,15 +83,16 @@ export function useComments() {
   const [fetchError, setFetchError] = useState(false);
 
   // ── Fetch all comments for a post ───────────────────────────────────────
-  // Joins the profiles table so each comment carries the author's
-  // username and avatar URL. Comments are shown oldest-first.
+  // Fetches the comment rows, then the author profiles separately (see
+  // attachProfiles) so each comment carries the author's username and
+  // avatar URL. Comments are shown oldest-first.
   const fetchComments = useCallback(async (postId) => {
     if (!postId) return;
     setLoading(true);
 
     const { data, error } = await supabase
       .from('comments')
-      .select('*, profiles(username, avatar_url)')
+      .select('*')
       .eq('post_id', postId)
       .order('created_at', { ascending: true });
 
@@ -77,8 +103,9 @@ export function useComments() {
       return;
     }
 
+    const rows = await attachProfiles(data ?? []);
     setFetchError(false);
-    setComments((data ?? []).map(normComment));
+    setComments(rows.map(normComment));
     setLoading(false);
   }, []);
 
@@ -92,18 +119,21 @@ export function useComments() {
     const { data, error } = await supabase
       .from('comments')
       .insert({ post_id: postId, user_id: userId, content: content.trim() })
-      // Ask Supabase to return the new row with the joined profile data
-      .select('*, profiles(username, avatar_url)')
+      // Return only the raw comment row — the author profile is attached
+      // separately below so a stale relationship cache can't fail the insert
+      .select('*')
       .single();
 
-    setSubmitting(false);
-
     if (error) {
+      setSubmitting(false);
       console.error('addComment error:', error);
       throw error;
     }
 
-    const newComment = normComment(data);
+    const [row] = await attachProfiles([data]);
+    setSubmitting(false);
+
+    const newComment = normComment(row);
     setComments(prev => [...prev, newComment]);
     return newComment;
   }, []);

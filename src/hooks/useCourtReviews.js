@@ -27,6 +27,31 @@ function toTimeAgo(isoString) {
   return new Date(isoString).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
+// ── Helper: fetch reviewer profiles separately and attach as row.profiles ──
+// Mirrors attachProfiles in usePosts.js — PostgREST's `profiles(...)` join
+// syntax requires a court_reviews→profiles foreign key in the schema cache,
+// and when it's missing the WHOLE query fails and reviews never load even
+// though the rows are safely stored. Two plain queries can't break that way.
+async function attachProfiles(rows) {
+  const ids = [...new Set(rows.map(r => r.user_id).filter(Boolean))];
+  if (ids.length === 0) return rows;
+
+  const { data: profiles, error } = await supabase
+    .from('profiles')
+    .select('id, username, avatar_url')
+    .in('id', ids);
+
+  if (error) {
+    console.error('attachProfiles error:', error);
+    return rows; // reviews still render, just with fallback "Player" names
+  }
+
+  const profileMap = {};
+  (profiles ?? []).forEach(p => { profileMap[p.id] = p; });
+
+  return rows.map(r => ({ ...r, profiles: profileMap[r.user_id] ?? null }));
+}
+
 // ── Helper: shape a raw Supabase row into the format the UI expects ────────
 function normReview(row, currentUserId) {
   const username = row.profiles?.username ?? 'Player';
@@ -52,14 +77,15 @@ export function useCourtReviews() {
 
   // ── Fetch all reviews for a court ────────────────────────────────────────
   // Called lazily the first time the "Ratings & Reviews" section expands.
-  // Joins profiles so we have the reviewer's username + avatar.
+  // Fetches review rows, then reviewer profiles separately (see attachProfiles)
+  // so we have the reviewer's username + avatar.
   const fetchReviews = useCallback(async (courtId, userId) => {
     if (!courtId) return;
     setLoading(true);
 
     const { data, error } = await supabase
       .from('court_reviews')
-      .select('*, profiles(username, avatar_url)')
+      .select('*')
       .eq('court_id', courtId)
       .order('created_at', { ascending: false })
       .limit(30);
@@ -71,8 +97,9 @@ export function useCourtReviews() {
       return;
     }
 
+    const rows = await attachProfiles(data ?? []);
     setFetchError(false);
-    setReviews((data ?? []).map(row => normReview(row, userId)));
+    setReviews(rows.map(row => normReview(row, userId)));
     setLoading(false);
   }, []);
 
@@ -116,7 +143,9 @@ export function useCourtReviews() {
         },
         { onConflict: 'court_id,user_id' }
       )
-      .select('*, profiles(username, avatar_url)')
+      // Return only the raw review row — the reviewer profile is attached
+      // separately below so a stale relationship cache can't fail the upsert
+      .select('*')
       .single();
 
     if (error) {
@@ -127,7 +156,8 @@ export function useCourtReviews() {
     }
 
     // Swap the temporary placeholder with the real row from Supabase
-    const real = normReview(data, userId);
+    const [row] = await attachProfiles([data]);
+    const real = normReview(row, userId);
     setReviews(prev => prev.map(r => r.id === tempId ? real : r));
     return real;
   }, []);
