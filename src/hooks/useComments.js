@@ -1,16 +1,21 @@
 // src/hooks/useComments.js
 //
-// Manages fetching and posting comments for a single post.
+// Manages fetching and posting comments for a single post, including
+// comment likes and one-level-deep replies.
 // Each FeedPost component that opens its comment section gets its own
 // instance of this hook — comments are scoped per post.
 //
+// Comment shape (threaded): top-level comments each carry a `replies` array.
+//   { id, userId, username, initials, avatarUrl, content, timeAgo,
+//     likeCount, isLiked, parentId, replies: [ …same shape… ] }
+//
 // Returns:
-//   comments              — array of comment objects for the current post
-//   loading               — true while fetching from Supabase
-//   submitting            — true while a new comment is being posted
-//   fetchComments(postId) — load all comments for a post
-//   addComment(postId, userId, content) — post a new comment
-//   deleteComment(commentId)            — remove a comment (own only, enforced by RLS)
+//   comments               — threaded array (top-level comments with replies)
+//   loading, submitting, fetchError
+//   fetchComments(postId, userId)
+//   addComment(postId, userId, content, parentCommentId?)
+//   deleteComment(commentId)
+//   likeComment(commentId, userId) / unlikeComment(commentId, userId)
 
 import { useState, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
@@ -55,38 +60,50 @@ async function attachProfiles(rows) {
 }
 
 // ── Helper: shape a raw Supabase row into the comment format FeedPost uses ─
-function normComment(row) {
+function normComment(row, likedSet) {
   const username = row.profiles?.username ?? 'Player';
   return {
     id:        row.id,
     userId:    row.user_id,
     username,
-    // Two-letter fallback for Avatar component
     initials:  username.slice(0, 2).toUpperCase(),
     avatarUrl: row.profiles?.avatar_url ?? null,
     content:   row.content,
     timeAgo:   toTimeAgo(row.created_at),
+    likeCount: row.like_count ?? 0,
+    isLiked:   likedSet?.has(row.id) ?? false,
+    parentId:  row.parent_comment_id ?? null,
+    replies:   [],
   };
 }
 
+// ── Helper: apply an update to a comment anywhere in the tree ─────────────
+// Looks at top-level comments and their replies, returning a new array with
+// the matching comment updated. `update` is a function (comment) => patch,
+// so callers can compute values from the current state (e.g. likeCount + 1).
+function patchInTree(list, commentId, update) {
+  return list.map(c => {
+    if (c.id === commentId) return { ...c, ...update(c) };
+    if (c.replies?.length) {
+      return {
+        ...c,
+        replies: c.replies.map(r => (r.id === commentId ? { ...r, ...update(r) } : r)),
+      };
+    }
+    return c;
+  });
+}
+
 export function useComments() {
-  // The array of comment objects for whichever post is currently open
   const [comments,   setComments]   = useState([]);
-
-  // True while the initial comment list is loading
   const [loading,    setLoading]    = useState(false);
-
-  // True while a new comment is being written to Supabase
   const [submitting, setSubmitting] = useState(false);
-
-  // True when the last fetchComments call failed
   const [fetchError, setFetchError] = useState(false);
 
   // ── Fetch all comments for a post ───────────────────────────────────────
-  // Fetches the comment rows, then the author profiles separately (see
-  // attachProfiles) so each comment carries the author's username and
-  // avatar URL. Comments are shown oldest-first.
-  const fetchComments = useCallback(async (postId) => {
+  // Loads every comment row (top-level + replies), the current user's likes,
+  // then threads replies under their parents. Oldest-first within each level.
+  const fetchComments = useCallback(async (postId, userId) => {
     if (!postId) return;
     setLoading(true);
 
@@ -104,23 +121,52 @@ export function useComments() {
     }
 
     const rows = await attachProfiles(data ?? []);
+
+    // Which of these comments has the current user liked?
+    let likedSet = new Set();
+    if (userId && rows.length > 0) {
+      const { data: likes } = await supabase
+        .from('comment_likes')
+        .select('comment_id')
+        .eq('user_id', userId)
+        .in('comment_id', rows.map(r => r.id));
+      likedSet = new Set((likes ?? []).map(l => l.comment_id));
+    }
+
+    // Thread: build top-level list, nest replies under their parent.
+    const normed = rows.map(r => normComment(r, likedSet));
+    const byId = {};
+    normed.forEach(c => { byId[c.id] = c; });
+
+    const topLevel = [];
+    normed.forEach(c => {
+      if (c.parentId && byId[c.parentId]) {
+        byId[c.parentId].replies.push(c);
+      } else {
+        topLevel.push(c);
+      }
+    });
+
     setFetchError(false);
-    setComments(rows.map(normComment));
+    setComments(topLevel);
     setLoading(false);
   }, []);
 
-  // ── Post a new comment ──────────────────────────────────────────────────
-  // Inserts the row, then appends the returned data to local state so
-  // the comment appears instantly without a second fetch.
-  const addComment = useCallback(async (postId, userId, content) => {
+  // ── Post a new comment or reply ─────────────────────────────────────────
+  // parentCommentId null → top-level comment; set → reply under that comment.
+  const addComment = useCallback(async (postId, userId, content, parentCommentId = null) => {
     if (!postId || !userId || !content?.trim()) return null;
     setSubmitting(true);
 
+    // Only reference parent_comment_id when it's actually a reply, so a plain
+    // top-level comment still inserts cleanly even if the replies migration
+    // (comment_likes_and_replies.sql) hasn't been run yet.
+    const row = { post_id: postId, user_id: userId, content: content.trim() };
+    if (parentCommentId) row.parent_comment_id = parentCommentId;
+
     const { data, error } = await supabase
       .from('comments')
-      .insert({ post_id: postId, user_id: userId, content: content.trim() })
-      // Return only the raw comment row — the author profile is attached
-      // separately below so a stale relationship cache can't fail the insert
+      .insert(row)
       .select('*')
       .single();
 
@@ -133,14 +179,25 @@ export function useComments() {
     const [row] = await attachProfiles([data]);
     setSubmitting(false);
 
-    const newComment = normComment(row);
-    setComments(prev => [...prev, newComment]);
+    const newComment = normComment(row, new Set());
+
+    if (parentCommentId) {
+      // Append under the parent's replies
+      setComments(prev => prev.map(c =>
+        c.id === parentCommentId
+          ? { ...c, replies: [...c.replies, newComment] }
+          : c
+      ));
+    } else {
+      setComments(prev => [...prev, newComment]);
+    }
+
     return newComment;
   }, []);
 
-  // ── Delete a comment ────────────────────────────────────────────────────
-  // Supabase RLS ensures only the comment author can delete their own comment.
-  // We remove it from local state immediately for instant feedback.
+  // ── Delete a comment (own only, enforced by RLS) ────────────────────────
+  // Deleting a top-level comment cascades its replies in the DB; we mirror
+  // that locally by dropping the comment (and any nested replies) from state.
   const deleteComment = useCallback(async (commentId) => {
     const { error } = await supabase
       .from('comments')
@@ -152,8 +209,70 @@ export function useComments() {
       throw error;
     }
 
-    setComments(prev => prev.filter(c => c.id !== commentId));
+    setComments(prev => prev
+      .filter(c => c.id !== commentId) // drop if it's a top-level comment
+      .map(c => ({
+        ...c,
+        replies: c.replies.filter(r => r.id !== commentId), // or a reply
+      }))
+    );
   }, []);
 
-  return { comments, loading, submitting, fetchError, fetchComments, addComment, deleteComment };
+  // ── Like a comment ──────────────────────────────────────────────────────
+  // Optimistic: flip isLiked and bump the count immediately, then persist.
+  // Guard against double-likes so the count can't drift if tapped twice fast.
+  const likeComment = useCallback(async (commentId, userId) => {
+    if (!commentId || !userId) return;
+
+    setComments(prev => patchInTree(prev, commentId, c =>
+      c.isLiked ? {} : { isLiked: true, likeCount: c.likeCount + 1 }
+    ));
+
+    const { error } = await supabase
+      .from('comment_likes')
+      .insert({ comment_id: commentId, user_id: userId });
+
+    // 23505 = already liked (unique violation) — treat as success
+    if (error && error.code !== '23505') {
+      console.error('likeComment error:', error);
+      // Roll back the optimistic bump
+      setComments(prev => patchInTree(prev, commentId, c =>
+        ({ isLiked: false, likeCount: Math.max(0, c.likeCount - 1) })
+      ));
+    }
+  }, []);
+
+  // ── Unlike a comment ────────────────────────────────────────────────────
+  const unlikeComment = useCallback(async (commentId, userId) => {
+    if (!commentId || !userId) return;
+
+    setComments(prev => patchInTree(prev, commentId, c =>
+      !c.isLiked ? {} : { isLiked: false, likeCount: Math.max(0, c.likeCount - 1) }
+    ));
+
+    const { error } = await supabase
+      .from('comment_likes')
+      .delete()
+      .eq('comment_id', commentId)
+      .eq('user_id', userId);
+
+    if (error) {
+      console.error('unlikeComment error:', error);
+      setComments(prev => patchInTree(prev, commentId, c =>
+        ({ isLiked: true, likeCount: c.likeCount + 1 })
+      ));
+    }
+  }, []);
+
+  return {
+    comments,
+    loading,
+    submitting,
+    fetchError,
+    fetchComments,
+    addComment,
+    deleteComment,
+    likeComment,
+    unlikeComment,
+  };
 }

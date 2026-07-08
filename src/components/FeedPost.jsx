@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Heart, MessageCircle, Share2, MoreHorizontal, Play, MapPin, Send, Trash2, Flag } from 'lucide-react';
+import { Heart, MessageCircle, Share2, MoreHorizontal, Play, MapPin, Send, Trash2, Flag, X } from 'lucide-react';
 import Avatar from './Avatar';
 import { sendLocalNotification } from '../utils/notificationStore';
 import { useComments } from '../hooks/useComments';
@@ -53,7 +53,13 @@ export default function FeedPost({
     fetchComments,
     addComment,
     deleteComment,
+    likeComment,
+    unlikeComment,
   } = useComments();
+
+  // When set, the composer is writing a reply to this comment (its top-level
+  // id + the author's name for the "Replying to @name" chip).
+  const [replyingTo, setReplyingTo] = useState(null);
 
   useEffect(() => {
     setLiked(post.isLiked);
@@ -67,16 +73,21 @@ export default function FeedPost({
   useEffect(() => {
     if (showComments && !hasFetched.current) {
       hasFetched.current = true;
-      fetchComments(post.id);
+      fetchComments(post.id, currentUser?.id);
     }
-  }, [showComments, post.id, fetchComments]);
+  }, [showComments, post.id, fetchComments, currentUser?.id]);
 
   // ── Keep comment count in sync with the fetched list ────────────────────
+  // Count includes replies so the badge matches the post's stored total.
+  const totalCommentCount = comments.reduce(
+    (n, c) => n + 1 + (c.replies?.length ?? 0),
+    0
+  );
   useEffect(() => {
     if (hasFetched.current) {
-      setCommentCount(comments.length);
+      setCommentCount(totalCommentCount);
     }
-  }, [comments.length]);
+  }, [totalCommentCount]);
 
   // ── Focus the input when the comment section opens ───────────────────────
   useEffect(() => {
@@ -131,20 +142,39 @@ export default function FeedPost({
     }
   };
 
-  // ── Submit a new comment ─────────────────────────────────────────────────
+  // ── Submit a new comment or reply ─────────────────────────────────────────
   const handleSubmitComment = async () => {
     const text = draft.trim();
     if (!text || !currentUser?.id || submitting) return;
 
+    const parentId = replyingTo?.id ?? null;
     setDraft('');
+    setReplyingTo(null);
 
     try {
-      await addComment(post.id, currentUser.id, text);
-      onToast?.('💬 Comment posted');
+      await addComment(post.id, currentUser.id, text, parentId);
+      onToast?.(parentId ? '💬 Reply posted' : '💬 Comment posted');
     } catch {
       onToast?.('Failed to post comment');
-      // Restore the draft so the user doesn't lose what they typed
+      // Restore the draft + reply target so the user doesn't lose their work
       setDraft(text);
+      if (parentId) setReplyingTo(replyingTo);
+    }
+  };
+
+  // ── Start replying to a comment ──────────────────────────────────────────
+  const handleStartReply = (comment) => {
+    setReplyingTo({ id: comment.id, username: comment.username });
+    setTimeout(() => inputRef.current?.focus(), 0);
+  };
+
+  // ── Like / unlike a comment ──────────────────────────────────────────────
+  const handleToggleCommentLike = (comment) => {
+    if (!currentUser?.id) return;
+    if (comment.isLiked) {
+      unlikeComment(comment.id, currentUser.id);
+    } else {
+      likeComment(comment.id, currentUser.id);
     }
   };
 
@@ -221,6 +251,58 @@ export default function FeedPost({
   // The logged-in user's initials and avatar for the comment input row
   const myInitials  = (currentUser?.username ?? 'PL').slice(0, 2).toUpperCase();
   const myAvatarUrl = currentUser?.avatarUrl ?? null;
+
+  // ── Render one comment row ────────────────────────────────────────────────
+  // Used for both top-level comments and replies. Replies pass isReply so they
+  // render indented and without their own "Reply" button (one level deep).
+  const renderCommentRow = (c, isReply = false) => (
+    <div key={c.id} className={`feed-comment${isReply ? ' is-reply' : ''}`}>
+      <Avatar avatarUrl={c.avatarUrl} initials={c.initials} size={isReply ? 24 : 28} />
+      <div className="feed-comment-main">
+        <div className="feed-comment-bubble">
+          <div className="feed-comment-header">
+            <span className="feed-comment-name">{c.username}</span>
+            <span className="feed-comment-time">{c.timeAgo}</span>
+          </div>
+          <span className="feed-comment-text">{c.content}</span>
+        </div>
+        {/* Actions row: like + reply */}
+        <div className="feed-comment-actions">
+          <button
+            className={`feed-comment-action${c.isLiked ? ' liked' : ''}`}
+            onClick={() => handleToggleCommentLike(c)}
+            aria-label={c.isLiked ? 'Unlike comment' : 'Like comment'}
+          >
+            <Heart
+              size={13}
+              strokeWidth={2}
+              fill={c.isLiked ? 'var(--orange)' : 'none'}
+              color={c.isLiked ? 'var(--orange)' : 'var(--text-secondary)'}
+            />
+            {c.likeCount > 0 && <span>{c.likeCount}</span>}
+          </button>
+          {!isReply && (
+            <button
+              className="feed-comment-action"
+              onClick={() => handleStartReply(c)}
+            >
+              Reply
+            </button>
+          )}
+        </div>
+      </div>
+      {/* Delete button on the user's own comments */}
+      {c.userId === currentUser?.id && (
+        <button
+          className="feed-comment-delete"
+          onClick={() => handleDeleteComment(c.id)}
+          aria-label="Delete comment"
+        >
+          <Trash2 size={13} strokeWidth={2} />
+        </button>
+      )}
+    </div>
+  );
 
   return (
     <div className="feed-post">
@@ -454,29 +536,31 @@ export default function FeedPost({
             </div>
           )}
 
-          {/* Comment list */}
+          {/* Comment list — each top-level comment followed by its replies */}
           {!commentsLoading && comments.map(c => (
-            <div key={c.id} className="feed-comment">
-              <Avatar avatarUrl={c.avatarUrl} initials={c.initials} size={28} />
-              <div className="feed-comment-bubble">
-                <div className="feed-comment-header">
-                  <span className="feed-comment-name">{c.username}</span>
-                  <span className="feed-comment-time">{c.timeAgo}</span>
+            <div key={c.id} className="feed-comment-thread">
+              {renderCommentRow(c, false)}
+              {c.replies?.length > 0 && (
+                <div className="feed-comment-replies">
+                  {c.replies.map(r => renderCommentRow(r, true))}
                 </div>
-                <span className="feed-comment-text">{c.content}</span>
-              </div>
-              {/* Show delete button only on the user's own comments */}
-              {c.userId === currentUser?.id && (
-                <button
-                  className="feed-comment-delete"
-                  onClick={() => handleDeleteComment(c.id)}
-                  aria-label="Delete comment"
-                >
-                  <Trash2 size={13} strokeWidth={2} />
-                </button>
               )}
             </div>
           ))}
+
+          {/* "Replying to @name" chip — shown while composing a reply */}
+          {replyingTo && (
+            <div className="feed-comment-replying">
+              Replying to <strong>@{replyingTo.username}</strong>
+              <button
+                className="feed-comment-replying-cancel"
+                onClick={() => setReplyingTo(null)}
+                aria-label="Cancel reply"
+              >
+                <X size={12} strokeWidth={2.5} />
+              </button>
+            </div>
+          )}
 
           {/* Comment input row */}
           <div className="feed-comment-input-row">
@@ -485,7 +569,7 @@ export default function FeedPost({
               <input
                 ref={inputRef}
                 className="feed-comment-input"
-                placeholder="Add a comment…"
+                placeholder={replyingTo ? `Reply to @${replyingTo.username}…` : 'Add a comment…'}
                 value={draft}
                 onChange={e => setDraft(e.target.value)}
                 onKeyDown={handleKeyDown}
