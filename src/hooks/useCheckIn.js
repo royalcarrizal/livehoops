@@ -39,7 +39,7 @@ const MAX_CHECKIN_MS = 3 * 60 * 60 * 1000;
 //   2. notif_court_checkins — each individual friend's own "Court Goes
 //      Live Alerts" preference; only friends with it on get pushed.
 // Fire-and-forget: check-in must succeed instantly regardless of this.
-async function notifyFriendsOfCheckIn(userId, courtName) {
+async function notifyFriendsOfCheckIn(userId, courtName, courtId) {
   try {
     const { data: me } = await supabase
       .from('profiles')
@@ -73,7 +73,9 @@ async function notifyFriendsOfCheckIn(userId, courtName) {
         r.id,
         `${name} is playing now 🏀`,
         `Checked in at ${courtName ?? 'a court'}`,
-        { kind: 'friend_checkin', userId },
+        // courtId lets a notification tap deep-link straight to this court
+        // on the map (read by the deep-link handler in App.jsx)
+        { kind: 'friend_checkin', userId, courtId: courtId ?? '' },
       );
     });
   } catch (err) {
@@ -246,7 +248,7 @@ export function useCheckIn(userId, onPlayerCountChange, onProfileRefetch) {
 
     // Let friends who want court alerts know (privacy- and preference-gated
     // inside the helper). Fire-and-forget — never blocks the check-in itself.
-    notifyFriendsOfCheckIn(uid, checkin.courtName);
+    notifyFriendsOfCheckIn(uid, checkin.courtName, checkin.courtId);
 
     return result;
   }, [onPlayerCountChange, onProfileRefetch]);

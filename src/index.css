@@ -3542,6 +3542,52 @@ body {
   pointer-events: none;
 }
 
+/* ── Single post sheet (notification deep-link target) ── */
+.single-post-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 950;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  max-width: var(--app-width);
+  margin: 0 auto;
+  animation: slideDown 0.2s ease;
+}
+
+.single-post-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: calc(12px + var(--safe-top)) 20px 12px;
+  border-bottom: 1px solid var(--separator);
+  flex-shrink: 0;
+}
+
+.single-post-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.single-post-close {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 6px;
+  display: flex;
+  border-radius: 8px;
+}
+
+.single-post-close:active { background: var(--bg-elevated); }
+
+.single-post-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 0 40px;
+}
+
 /* ── Notification opt-in prompt ── */
 /* Dismissible banner on the Home feed asking to enable push notifications */
 .notif-prompt {

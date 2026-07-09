@@ -1,4 +1,4 @@
-import { useState, lazy, Suspense } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { useTheme } from './hooks/useTheme';
 import { useAuth } from './hooks/useAuth';
 import { useProfile } from './hooks/useProfile';
@@ -14,6 +14,7 @@ import SplashScreen from './screens/SplashScreen';
 import AuthScreen from './components/AuthScreen';
 import ResetPasswordScreen from './components/ResetPasswordScreen';
 import Onboarding from './components/Onboarding';
+import SinglePostSheet from './components/SinglePostSheet';
 
 // MapScreen is loaded lazily because it pulls in Mapbox GL (~1.6 MB of
 // JavaScript) — by far the heaviest thing in the app. Splitting it into its
@@ -131,6 +132,104 @@ export default function App() {
     setViewedProfile(null);
     setActiveTab(prevTab);
   };
+
+  // ── Notification deep links ──────────────────────────────────────────────
+  // When the user taps a push notification, the service worker either:
+  //   a) opens the app at /?push=<kind>&postId=…  (app was closed), or
+  //   b) posts a {type:'push-click', data} message  (app was already open).
+  // Both paths land in `deepLink`, and the dispatch effect below routes to
+  // the right screen once the user is logged in.
+  const [deepLink, setDeepLink]       = useState(null);
+  // { postId, showComments } — non-null renders the SinglePostSheet overlay
+  const [viewedPost, setViewedPost]   = useState(null);
+  // userId to auto-open a DM thread with on the Friends tab
+  const [dmPartnerId, setDmPartnerId] = useState(null);
+
+  useEffect(() => {
+    // Path a: cold start via URL params (then clean the URL)
+    const qs = new URLSearchParams(window.location.search);
+    if (qs.get('push')) {
+      setDeepLink({
+        kind:       qs.get('push'),
+        postId:     qs.get('postId'),
+        commentId:  qs.get('commentId'),
+        senderId:   qs.get('senderId'),
+        accepterId: qs.get('accepterId'),
+        courtId:    qs.get('courtId'),
+      });
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+
+    // Path b: app already open — the service worker messages us directly
+    const onSwMessage = (event) => {
+      if (event.data?.type === 'push-click' && event.data.data?.kind) {
+        setDeepLink(event.data.data);
+      }
+    };
+    navigator.serviceWorker?.addEventListener('message', onSwMessage);
+    return () => navigator.serviceWorker?.removeEventListener('message', onSwMessage);
+  }, []);
+
+  useEffect(() => {
+    if (!deepLink || !user) return;
+    const link = deepLink;
+    setDeepLink(null); // consume it — each tap navigates once
+
+    switch (link.kind) {
+      case 'dm':
+        // Open the sender's thread on the Friends tab
+        setDmPartnerId(link.senderId ?? null);
+        setActiveTab('friends');
+        break;
+
+      case 'friend_request':
+        setActiveTab('friends');
+        break;
+
+      case 'friend_accept':
+        // Show the profile of the person who accepted
+        if (link.accepterId) handleViewProfile(link.accepterId);
+        else setActiveTab('friends');
+        break;
+
+      case 'friend_checkin':
+        // Fly the map to the court the friend checked in at (the Map tab
+        // already watches lh_focus_court for exactly this)
+        if (link.courtId) localStorage.setItem('lh_focus_court', link.courtId);
+        setActiveTab('map');
+        break;
+
+      case 'post_like':
+      case 'post_comment':
+      case 'comment_reply':
+        if (link.postId) {
+          setViewedPost({
+            postId: link.postId,
+            showComments: link.kind !== 'post_like',
+          });
+        }
+        break;
+
+      case 'comment_like':
+        // Payload only carries the comment ID — resolve it to its post
+        if (link.commentId) {
+          supabase
+            .from('comments')
+            .select('post_id')
+            .eq('id', link.commentId)
+            .single()
+            .then(({ data }) => {
+              if (data?.post_id) {
+                setViewedPost({ postId: data.post_id, showComments: true });
+              }
+            });
+        }
+        break;
+
+      default:
+        break; // 'test' and unknown kinds just open the app
+    }
+  }, [deepLink, user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Location label shown in the HomeScreen header ───────────────────────
   // Starts as the Houston default. Updates to the user's real city the first
@@ -305,6 +404,8 @@ export default function App() {
             {...screenProps}
             profile={profile}
             onUnreadDMs={setUnreadDMs}
+            openDmWith={dmPartnerId}
+            onDmOpened={() => setDmPartnerId(null)}
           />
         )}
         {activeTab === 'profile' && (
@@ -324,6 +425,21 @@ export default function App() {
           checkedIn={!!activeCheckIn}
           unreadDMs={unreadDMs}
         />
+
+        {/* Single-post overlay — opened by notification deep links */}
+        {viewedPost && (
+          <SinglePostSheet
+            postId={viewedPost.postId}
+            showComments={viewedPost.showComments}
+            currentUser={{
+              id:        user?.id,
+              username:  profile?.username ?? '',
+              avatarUrl: profile?.avatar_url ?? null,
+            }}
+            onClose={() => setViewedPost(null)}
+            onViewProfile={handleViewProfile}
+          />
+        )}
 
       </div>
       {splashOverlay}

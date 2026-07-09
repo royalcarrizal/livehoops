@@ -98,14 +98,15 @@ Deno.serve(async (req) => {
         body: JSON.stringify({
           message: {
             token,
-            notification: { title, body: body ?? '' },
-            // data must be string→string; used later for deep-linking
-            data: data ?? {},
+            // Data-only message: the title/body travel inside `data` and the
+            // service worker builds the notification itself. This keeps the
+            // deep-link payload (kind, postId, senderId…) attached to the
+            // notification so a tap can open the right screen, and avoids
+            // the duplicate notifications FCM can create when a
+            // `notification` block is auto-displayed alongside our own.
+            data: { ...(data ?? {}), title, body: body ?? '' },
             webpush: {
-              notification: {
-                icon: '/favicon.svg',
-                badge: '/favicon.svg',
-              },
+              headers: { Urgency: 'high' },
             },
           },
         }),

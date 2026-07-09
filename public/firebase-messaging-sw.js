@@ -54,13 +54,13 @@ if (firebaseConfig.apiKey) {
   // src/hooks/useNotifications.js handles it instead.
   // ───────────────────────────────────────────────────────────────────────────
   messaging.onBackgroundMessage(function (payload) {
-  console.log('[LiveHoops SW] Push notification received in background:', payload);
-
-  // Pull the notification content from the payload.
-  // If your server sends a "notification" object, these fields are populated.
-  // If it sends only "data", you'd read from payload.data instead.
-  const title = payload.notification?.title || 'LiveHoops';
-  const body  = payload.notification?.body  || '';
+  // The send-push function sends DATA-ONLY messages: title and body travel
+  // inside payload.data along with the deep-link fields (kind, postId,
+  // senderId, courtId…). We build the notification ourselves so the data
+  // stays attached and the click handler below can open the right screen.
+  const data  = payload.data ?? {};
+  const title = data.title || payload.notification?.title || 'LiveHoops';
+  const body  = data.body  || payload.notification?.body  || '';
 
   // self.registration is the browser's notification system for this SW.
   // showNotification() creates the actual OS-level notification popup.
@@ -70,8 +70,7 @@ if (firebaseConfig.apiKey) {
     badge: '/favicon.svg',  // tiny icon shown in the Android status bar
     tag:   'livehoops-push', // if a notification with this tag already exists,
                               // the new one replaces it instead of stacking
-    data:  payload.data,     // pass along any extra data from your server
-                              // (e.g. courtId, postId) for deep-linking later
+    data,                    // deep-link payload, read back on tap below
     vibrate: [200, 100, 200], // vibration pattern in ms [vibrate, pause, vibrate]
   });
   });
@@ -86,17 +85,35 @@ if (firebaseConfig.apiKey) {
 self.addEventListener('notificationclick', function (event) {
   event.notification.close(); // dismiss the notification banner
 
+  // The deep-link payload we attached in showNotification() above.
+  // e.g. { kind: 'post_comment', postId: '…' } or { kind: 'dm', senderId: '…' }
+  const data = event.notification.data || {};
+
+  // Build a URL like /?push=dm&senderId=abc — used when we have to open a
+  // brand new tab/window. App.jsx reads these params on startup and
+  // navigates to the right screen.
+  const params = new URLSearchParams();
+  if (data.kind) params.set('push', data.kind);
+  ['postId', 'commentId', 'senderId', 'accepterId', 'courtId', 'userId'].forEach((key) => {
+    if (data[key]) params.set(key, data[key]);
+  });
+  const targetUrl = params.toString() ? `/?${params.toString()}` : '/';
+
   event.waitUntil(
     // Look for an existing app tab
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {
         if ('focus' in client) {
-          return client.focus(); // bring the existing tab to the front
+          // App already open — focus it and hand it the deep link directly
+          // (a postMessage the app listens for), no reload needed.
+          client.focus();
+          client.postMessage({ type: 'push-click', data });
+          return;
         }
       }
-      // No existing tab found — open a new one
+      // No existing tab found — open a new one at the deep-link URL
       if (clients.openWindow) {
-        return clients.openWindow('/');
+        return clients.openWindow(targetUrl);
       }
     })
   );

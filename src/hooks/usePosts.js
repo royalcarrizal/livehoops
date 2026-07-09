@@ -330,6 +330,29 @@ export function usePosts() {
     return rows.map(row => normPost(row, likedIds));
   }, []);
 
+  // ── Fetch one post by ID ────────────────────────────────────────────────
+  // Used by the notification deep-link flow ("X commented on your post" →
+  // open that exact post). Returns a normalized post or null if it's gone.
+  const fetchPostById = useCallback(async (postId, viewerUserId) => {
+    if (!postId) return null;
+
+    const { data, error } = await supabase
+      .from('posts')
+      .select(POST_SELECT)
+      .eq('id', postId)
+      .maybeSingle();
+
+    if (error || !data) {
+      if (error) console.error('fetchPostById error:', error);
+      return null;
+    }
+
+    let rows = await attachOriginalPosts([data]);
+    rows = await attachProfiles(rows);
+    const likedIds = await fetchLikedIds(viewerUserId, [data.id]);
+    return normPost(rows[0], likedIds);
+  }, []);
+
   // ── Create a new post ───────────────────────────────────────────────────
   // Saves the post to Supabase and immediately prepends it to the feed
   // so the user sees it right away (optimistic update).
@@ -517,6 +540,7 @@ export function usePosts() {
     fetchFriendsFeed,
     fetchAllFeed,
     fetchUserPosts,
+    fetchPostById,
     createPost,
     createRepost,
     likePost,

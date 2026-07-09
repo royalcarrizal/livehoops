@@ -26,13 +26,16 @@ export default function FeedPost({
   onRepost,
   onDelete,
   onReport,
+  // true → comment section starts open (used by notification deep links:
+  // "X commented on your post" should land with the comments visible)
+  initialShowComments = false,
 }) {
   const [liked, setLiked]             = useState(post.isLiked);
   const [likeCount, setLikeCount]     = useState(post.likes);
   const [likeBusy, setLikeBusy]       = useState(false);
   const [repostBusy, setRepostBusy]   = useState(false);
   const [expanded, setExpanded]       = useState(false);
-  const [showComments, setShowComments] = useState(false);
+  const [showComments, setShowComments] = useState(initialShowComments);
   const [showOptions, setShowOptions] = useState(false);
   const [deleteBusy,  setDeleteBusy]  = useState(false);
 

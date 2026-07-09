@@ -127,10 +127,12 @@ export function useNotifications(userId) {
     // onMessage returns an "unsubscribe" function — we return it so React
     // calls it when the component unmounts, preventing memory leaks.
     const unsubscribe = onMessage(messaging, (payload) => {
-      console.log('[LiveHoops] Foreground push received:', payload);
+      // send-push delivers data-only messages: title/body live in payload.data
+      // (payload.notification is kept as a fallback for older payloads)
+      const data = payload.data ?? {};
       sendLocalNotification(
-        payload.notification?.title || 'LiveHoops',
-        payload.notification?.body  || '',
+        data.title || payload.notification?.title || 'LiveHoops',
+        data.body  || payload.notification?.body  || '',
         '🏀'
       );
     });

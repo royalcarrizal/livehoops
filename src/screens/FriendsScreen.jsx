@@ -10,6 +10,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { UserPlus, X } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 import { useFriends } from '../hooks/useFriends';
 import { useDirectMessages } from '../hooks/useDirectMessages';
 import FriendCard from '../components/FriendCard';
@@ -21,7 +22,9 @@ import Avatar from '../components/Avatar';
 //   profile      — logged-in user's profile row (username, avatar_url)
 //   onViewProfile — navigate to another user's profile
 //   onUnreadDMs  — called with total unread count so App can badge BottomNav
-export default function FriendsScreen({ user, profile, onViewProfile, onUnreadDMs }) {
+//   openDmWith   — userId to auto-open a DM thread with (notification deep link)
+//   onDmOpened   — called once that thread has been opened (clears the request)
+export default function FriendsScreen({ user, profile, onViewProfile, onUnreadDMs, openDmWith, onDmOpened }) {
   // ── Friends data ─────────────────────────────────────────────────────────
   const {
     friends,
@@ -122,6 +125,34 @@ export default function FriendsScreen({ user, profile, onViewProfile, onUnreadDM
 
   // ── Open a DM thread (called from inbox row OR FriendCard "Message" btn) ──
   const openThread = (friend) => setDmFriend(friend);
+
+  // ── Deep link: auto-open a thread from a push notification tap ──────────
+  // "Marcus sent you a message" → tap → App switches to this tab and passes
+  // the sender's userId here. We fetch their profile and open the thread.
+  useEffect(() => {
+    if (!openDmWith) return;
+    let cancelled = false;
+
+    supabase
+      .from('profiles')
+      .select('id, username, avatar_url')
+      .eq('id', openDmWith)
+      .single()
+      .then(({ data }) => {
+        if (cancelled || !data) return;
+        const username = data.username ?? 'Player';
+        openThread({
+          userId:    data.id,
+          username,
+          name:      username,
+          avatarUrl: data.avatar_url ?? null,
+          initials:  username.slice(0, 2).toUpperCase(),
+        });
+        onDmOpened?.();
+      });
+
+    return () => { cancelled = true; };
+  }, [openDmWith]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Close thread and refresh counts ──────────────────────────────────────
   const closeThread = () => {
