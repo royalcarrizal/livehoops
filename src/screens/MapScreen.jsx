@@ -26,11 +26,12 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 // It reads the value from VITE_MAPBOX_TOKEN in your .env file.
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
 
-// ── Default map center: downtown Houston, TX ──────────────────────────────
+// ── Fallback map center: downtown Houston, TX ──────────────────────────────
+// Only used when the user's GPS position isn't available yet (userPos null).
 // Mapbox uses [longitude, latitude] order (opposite of Google Maps)
-const HOUSTON_CENTER = [-95.3698, 29.7604];
+const FALLBACK_CENTER = [-95.3698, 29.7604];
 
-export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, user, profile, isCheckingIn = false }) {
+export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, user, profile, isCheckingIn = false, userPos = null }) {
   // ── Refs (don't trigger re-renders when they change) ──────────────────────
   // The div element that Mapbox renders the map canvas into
   const mapContainerRef = useRef(null);
@@ -94,12 +95,15 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
       mapContainerRef.current.innerHTML = '';
     }
 
-    // Create the map and attach it to our container div
+    // Create the map and attach it to our container div.
+    // Center on the user's real position when we already have it (GPS came
+    // back before the Map tab opened); otherwise fall back to Houston until
+    // the geolocate control fires.
     const map = new mapboxgl.Map({
       container: mapContainerRef.current,          // The div to render into
       style: 'mapbox://styles/mapbox/dark-v11',    // Dark map to match the app
-      center: HOUSTON_CENTER,                       // Start centered on Houston
-      zoom: 11,                                     // Zoom 11 = city-level view
+      center: userPos ? [userPos.lng, userPos.lat] : FALLBACK_CENTER,
+      zoom: userPos ? 12.5 : 11,                    // closer when it's their real area
       pitch: 30,                                    // Slight 3D tilt for depth
     });
 
@@ -139,7 +143,10 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
       map.remove();
       mapRef.current = null;
     };
-  }, []); // Empty array = run once when the component mounts
+    // userPos is intentionally omitted: the map is created ONCE on mount and
+    // must not be torn down/rebuilt when GPS arrives later — the geolocate
+    // control recenters the existing map instead.
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Sync court markers whenever court data changes ────────────────────────
   // The map itself is long-lived, but court data can arrive later or change

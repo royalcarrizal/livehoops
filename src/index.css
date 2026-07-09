@@ -3542,6 +3542,26 @@ body {
   pointer-events: none;
 }
 
+/* ── Feed "Load more" button ── */
+.feed-load-more {
+  display: block;
+  margin: 4px 20px 16px;
+  width: calc(100% - 40px);
+  padding: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--separator-strong);
+  border-radius: 14px;
+  color: var(--orange);
+  font-size: 14px;
+  font-weight: 700;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.feed-load-more:active { opacity: 0.7; }
+.feed-load-more:disabled { opacity: 0.5; cursor: default; }
+
 /* ── Single post sheet (notification deep-link target) ── */
 .single-post-overlay {
   position: fixed;

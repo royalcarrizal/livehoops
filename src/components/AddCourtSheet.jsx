@@ -82,6 +82,7 @@ export default function AddCourtSheet({ isOpen, onClose, user }) {
   const [name, setName]             = useState('');
   const [address, setAddress]       = useState('');
   const [city, setCity]             = useState('Houston');
+  const [stateCode, setStateCode]   = useState('TX');
   const [courtCount, setCourtCount] = useState(1);
   const [surface, setSurface]       = useState('');
   const [lighting, setLighting]     = useState('');
@@ -118,6 +119,7 @@ export default function AddCourtSheet({ isOpen, onClose, user }) {
       setName('');
       setAddress('');
       setCity('Houston');
+      setStateCode('TX');
       setCourtCount(1);
       setSurface('');
       setLighting('');
@@ -196,7 +198,7 @@ export default function AddCourtSheet({ isOpen, onClose, user }) {
         // No geolocation — fall back to the Mapbox geocoding API.
         // We send the street address + city + state and Mapbox returns
         // the best-matching GPS coordinates.
-        const query = encodeURIComponent(`${address} ${city} TX`);
+        const query = encodeURIComponent(`${address} ${city} ${stateCode}`.trim());
         const token = import.meta.env.VITE_MAPBOX_TOKEN;
         if (!token) {
           throw new Error('Address lookup is not configured');
@@ -237,7 +239,7 @@ export default function AddCourtSheet({ isOpen, onClose, user }) {
           name,
           address,
           city,
-          state: 'TX',
+          state: stateCode.trim().toUpperCase() || null,
           lat,
           lng,
           court_type: courtType,
@@ -395,15 +397,31 @@ export default function AddCourtSheet({ isOpen, onClose, user }) {
                 onChange={e => setAddress(e.target.value)}
               />
 
-              {/* City — pre-filled with "Houston", but editable */}
-              <label className="add-court-field-label">City *</label>
-              <input
-                className="add-court-input"
-                type="text"
-                placeholder="City"
-                value={city}
-                onChange={e => setCity(e.target.value)}
-              />
+              {/* City + State — pre-filled with Houston, TX but editable so
+                  courts anywhere can be submitted */}
+              <div style={{ display: 'flex', gap: 10 }}>
+                <div style={{ flex: 2 }}>
+                  <label className="add-court-field-label">City *</label>
+                  <input
+                    className="add-court-input"
+                    type="text"
+                    placeholder="City"
+                    value={city}
+                    onChange={e => setCity(e.target.value)}
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label className="add-court-field-label">State</label>
+                  <input
+                    className="add-court-input"
+                    type="text"
+                    placeholder="TX"
+                    maxLength={2}
+                    value={stateCode}
+                    onChange={e => setStateCode(e.target.value.toUpperCase())}
+                  />
+                </div>
+              </div>
 
               {/* Number of courts — row of 4 tappable buttons */}
               <label className="add-court-field-label">Number of courts</label>

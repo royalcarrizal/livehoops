@@ -17,9 +17,12 @@
 //   likePost          — increments like count and marks as liked
 //   unlikePost        — decrements like count and unmarks liked
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { sendPush, preview } from '../lib/push';
+
+// How many posts each feed page fetches. "Load more" pulls the next page.
+const PAGE_SIZE = 30;
 
 // ── Notify a post's author that someone liked it ──────────────────────────
 // Fire-and-forget: looks up the post (for its author + a content preview)
@@ -236,6 +239,15 @@ export function usePosts() {
   // True while fetching from Supabase
   const [loading, setLoading] = useState(false);
 
+  // ── Pagination state for the Following feed ─────────────────────────────
+  // feedHasMore  — true when the last page came back full (more may exist)
+  // loadingMore  — true while a "Load more" fetch is in flight
+  // followingQueryRef remembers the last query's params + how many RAW rows
+  // we've consumed, so loadMoreFriendsFeed can fetch the next page.
+  const [feedHasMore, setFeedHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const followingQueryRef = useRef({ userId: null, allIds: [], rawCount: 0 });
+
   // ── Fetch the Following feed ────────────────────────────────────────────
   // Shows posts from you AND your accepted friends.
   const fetchFriendsFeed = useCallback(async (userId, friendIds) => {
@@ -255,13 +267,17 @@ export function usePosts() {
       .in('user_id', allIds)
       // Newest first
       .order('created_at', { ascending: false })
-      .limit(50);
+      .range(0, PAGE_SIZE - 1);
 
     if (error) {
       console.error('fetchFriendsFeed error:', error);
       setLoading(false);
       return;
     }
+
+    // Remember the query so "Load more" can fetch the next page
+    followingQueryRef.current = { userId, allIds, rawCount: (data ?? []).length };
+    setFeedHasMore((data ?? []).length === PAGE_SIZE);
 
     let rows = await attachOriginalPosts(data ?? []);
     rows = await attachProfiles(rows);
@@ -270,24 +286,67 @@ export function usePosts() {
     setLoading(false);
   }, []);
 
+  // ── Load the next page of the Following feed ─────────────────────────────
+  // Appends to the existing feed. Uses the raw row count as the cursor so
+  // pages line up even after optimistic posts were prepended locally.
+  const loadMoreFriendsFeed = useCallback(async () => {
+    const { userId, allIds, rawCount } = followingQueryRef.current;
+    if (!userId) return;
+    setLoadingMore(true);
+
+    const { data, error } = await supabase
+      .from('posts')
+      .select(POST_SELECT)
+      .in('user_id', allIds)
+      .order('created_at', { ascending: false })
+      .range(rawCount, rawCount + PAGE_SIZE - 1);
+
+    if (error) {
+      console.error('loadMoreFriendsFeed error:', error);
+      setLoadingMore(false);
+      return;
+    }
+
+    followingQueryRef.current.rawCount += (data ?? []).length;
+    setFeedHasMore((data ?? []).length === PAGE_SIZE);
+
+    let rows = await attachOriginalPosts(data ?? []);
+    rows = await attachProfiles(rows);
+    const likedIds = await fetchLikedIds(userId, rows.map(r => r.id));
+    const newPosts = rows.map(row => normPost(row, likedIds));
+
+    // Dedupe: a post created optimistically (or arriving between pages)
+    // could already be in the list
+    setFeed(prev => [...prev, ...newPosts.filter(p => !prev.some(q => q.id === p.id))]);
+    setLoadingMore(false);
+  }, []);
+
   // ── Fetch the Nearby (all posts) feed ──────────────────────────────────
   // Shows posts from everyone — used for the Nearby tab.
-  // Returns the result so the caller can store it in a separate state variable.
+  //
+  // Returns { posts, rawCount, hasMore }:
+  //   posts    — normalized posts (after privacy filtering)
+  //   rawCount — how many RAW rows this page consumed; the caller adds this
+  //              to its offset for the next page (filtering can drop rows,
+  //              so posts.length alone would skip data)
+  //   hasMore  — the page came back full, so another page may exist
   //
   // Privacy: posts by users whose Profile Visibility is 'friends' or
   // 'private' only appear to their friends (friendIds) and to themselves.
-  // The author's visibility comes along for free via the profiles(*) join.
-  const fetchAllFeed = useCallback(async (userId, friendIds = []) => {
+  const fetchAllFeed = useCallback(async (userId, friendIds = [], offset = 0) => {
     const { data, error } = await supabase
       .from('posts')
       .select(POST_SELECT)
       .order('created_at', { ascending: false })
-      .limit(50);
+      .range(offset, offset + PAGE_SIZE - 1);
 
     if (error) {
       console.error('fetchAllFeed error:', error);
-      return [];
+      return { posts: [], rawCount: 0, hasMore: false };
     }
+
+    const rawCount = (data ?? []).length;
+    const hasMore  = rawCount === PAGE_SIZE;
 
     // Attach author profiles first — the privacy filter below needs to read
     // each author's profile_visibility, which comes from the profiles table.
@@ -303,7 +362,7 @@ export function usePosts() {
     });
 
     const likedIds = await fetchLikedIds(userId, rows.map(r => r.id));
-    return rows.map(row => normPost(row, likedIds));
+    return { posts: rows.map(row => normPost(row, likedIds)), rawCount, hasMore };
   }, []);
 
   // ── Fetch posts by a specific user (for profile pages) ──────────────────
@@ -537,6 +596,9 @@ export function usePosts() {
   return {
     feed,
     loading,
+    feedHasMore,
+    loadingMore,
+    loadMoreFriendsFeed,
     fetchFriendsFeed,
     fetchAllFeed,
     fetchUserPosts,

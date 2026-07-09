@@ -33,7 +33,7 @@ import { supabase } from '../lib/supabase';
 //   setActiveTab — lets this screen switch to another tab (e.g. Friends tab)
 //   user         — the logged-in Supabase user object (has .id)
 //   profile      — the user's profile row from Supabase (username, avatar_url, etc.)
-export default function HomeScreen({ setActiveTab, user, profile, parks, onViewProfile, onCheckIn, activeCheckIn, checkOut, cityLabel = 'Houston, TX' }) {
+export default function HomeScreen({ setActiveTab, user, profile, parks, onViewProfile, onCheckIn, activeCheckIn, checkOut, cityLabel = 'Nearby' }) {
   const [feedTab, setFeedTab]           = useState('following');
   const [photoUrl, setPhotoUrl]         = useState(null);
   const [showPanel, setShowPanel]       = useState(false);
@@ -46,6 +46,10 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
 
   // Holds posts for the Nearby tab (fetched separately from the Following feed)
   const [nearbyFeed, setNearbyFeed] = useState([]);
+  // Nearby pagination: raw-row offset for the next page + whether more exist
+  const [nearbyOffset, setNearbyOffset]           = useState(0);
+  const [nearbyHasMore, setNearbyHasMore]         = useState(false);
+  const [nearbyLoadingMore, setNearbyLoadingMore] = useState(false);
 
   const { toast, showToast } = useToast();
 
@@ -66,6 +70,9 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
   const {
     feed:            followingFeed,
     loading:         feedLoading,
+    feedHasMore,
+    loadingMore,
+    loadMoreFriendsFeed,
     fetchFriendsFeed,
     fetchAllFeed,
     createPost,
@@ -75,6 +82,23 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
     deletePost,
     subscribeToNewPosts,
   } = usePosts();
+
+  // ── Nearby distance filter ────────────────────────────────────────────────
+  // "Nearby" now means it: posts tagged with a court more than 50 miles away
+  // are dropped. Untagged posts (no location to judge) and posts whose court
+  // distance is unknown (GPS denied → parks show "—") are kept, so the tab
+  // never goes empty just because location is unavailable.
+  const NEARBY_RADIUS_MILES = 50;
+  const applyNearbyFilter = useCallback((posts) => {
+    return (posts ?? []).filter(post => {
+      if (!post.courtId) return true;
+      const park = (parks ?? []).find(p => p.id === post.courtId);
+      if (!park || !park.distance || park.distance === '—') return true;
+      const miles = parseFloat(park.distance.replace('<', ''));
+      if (Number.isNaN(miles)) return true;
+      return miles <= NEARBY_RADIUS_MILES;
+    });
+  }, [parks]);
 
   // ── Load the Following feed when friends list is ready ──────────────────
   // We wait until we know who the friends are, then fetch their posts.
@@ -92,7 +116,11 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
   useEffect(() => {
     if (feedTab === 'nearby' && nearbyFeed.length === 0) {
       const friendIds = friends.map(f => f.userId);
-      fetchAllFeed(user?.id, friendIds).then(posts => setNearbyFeed(posts ?? []));
+      fetchAllFeed(user?.id, friendIds).then(({ posts, rawCount, hasMore }) => {
+        setNearbyFeed(applyNearbyFilter(posts));
+        setNearbyOffset(rawCount);
+        setNearbyHasMore(hasMore);
+      });
     }
   }, [feedTab, user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -119,10 +147,31 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
     if (feedTab === 'following') {
       await fetchFriendsFeed(user?.id, friendIds);
     } else {
-      const posts = await fetchAllFeed(user?.id, friendIds);
-      setNearbyFeed(posts ?? []);
+      const { posts, rawCount, hasMore } = await fetchAllFeed(user?.id, friendIds);
+      setNearbyFeed(applyNearbyFilter(posts));
+      setNearbyOffset(rawCount);
+      setNearbyHasMore(hasMore);
     }
-  }, [feedTab, friends, user, fetchFriendsFeed, fetchAllFeed]);
+  }, [feedTab, friends, user, fetchFriendsFeed, fetchAllFeed, applyNearbyFilter]);
+
+  // ── Load more (both tabs) ─────────────────────────────────────────────────
+  const handleLoadMore = async () => {
+    if (feedTab === 'following') {
+      await loadMoreFriendsFeed();
+      return;
+    }
+    if (nearbyLoadingMore) return;
+    setNearbyLoadingMore(true);
+    const friendIds = friends.map(f => f.userId);
+    const { posts, rawCount, hasMore } = await fetchAllFeed(user?.id, friendIds, nearbyOffset);
+    setNearbyOffset(prev => prev + rawCount);
+    setNearbyHasMore(hasMore);
+    setNearbyFeed(prev => [
+      ...prev,
+      ...applyNearbyFilter(posts).filter(p => !prev.some(q => q.id === p.id)),
+    ]);
+    setNearbyLoadingMore(false);
+  };
 
   const { containerRef, pullDistance, refreshing } = usePullToRefresh(handleRefresh);
 
@@ -372,6 +421,21 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
             />
           ))}
         </div>
+      )}
+
+      {/* ── Load more posts ──────────────────────────────────────────────────── */}
+      {/* Shown when the last fetched page was full — more posts may exist */}
+      {!isLoading && currentFeed.length > 0 &&
+        (feedTab === 'following' ? feedHasMore : nearbyHasMore) && (
+        <button
+          className="feed-load-more"
+          onClick={handleLoadMore}
+          disabled={feedTab === 'following' ? loadingMore : nearbyLoadingMore}
+        >
+          {(feedTab === 'following' ? loadingMore : nearbyLoadingMore)
+            ? 'Loading…'
+            : 'Load more posts'}
+        </button>
       )}
 
       {/* ── Your Crew ────────────────────────────────────────────────────────── */}

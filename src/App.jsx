@@ -232,9 +232,30 @@ export default function App() {
   }, [deepLink, user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Location label shown in the HomeScreen header ───────────────────────
-  // Starts as the Houston default. Updates to the user's real city the first
-  // time they check in (we reverse-geocode once at that moment, not on load).
-  const [cityLabel, setCityLabel] = useState('Houston, TX');
+  // null until we know the user's real city. Filled in by the effect below
+  // as soon as GPS is available (and refreshed on check-in). No more
+  // hardcoded Houston default — users outside Houston see their own city,
+  // and users without GPS see a neutral "Nearby".
+  const [cityLabel, setCityLabel] = useState(null);
+
+  useEffect(() => {
+    if (!userPos || cityLabel) return;
+    const token = import.meta.env.VITE_MAPBOX_TOKEN;
+    const url   = `https://api.mapbox.com/geocoding/v5/mapbox.places/${userPos.lng},${userPos.lat}.json?types=place&limit=1&access_token=${token}`;
+
+    fetch(url)
+      .then(res => res.json())
+      .then(geo => {
+        const feature = geo.features?.[0];
+        if (!feature) return;
+        const city      = feature.text ?? '';
+        const regionCtx = feature.context?.find(c => c.id.startsWith('region'));
+        const stateCode = regionCtx?.short_code?.replace('US-', '') ?? '';
+        const name      = stateCode ? `${city}, ${stateCode}` : city;
+        if (name) setCityLabel(name);
+      })
+      .catch(() => {}); // geocoding is cosmetic — never surface a failure
+  }, [userPos, cityLabel]);
 
   // ── Prevents double-tap on any check-in button ──────────────────────────
   const [isCheckingIn, setIsCheckingIn] = useState(false);
@@ -319,7 +340,8 @@ export default function App() {
     profile,
     refreshCounts,
     onViewProfile:   handleViewProfile,
-    cityLabel,        // real city from last check-in (or 'Houston, TX' default)
+    cityLabel: cityLabel ?? 'Nearby', // real city from GPS/check-in, neutral fallback
+    userPos,          // user's GPS position (or null) — MapScreen centers on it
     isCheckingIn,     // true while a check-in is in flight — disables buttons
   };
 

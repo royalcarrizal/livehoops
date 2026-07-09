@@ -57,8 +57,9 @@ function normalizeCourt(row, userPos = null) {
   return {
     id:           row.id,
     name:         row.name,
-    // Combine address + city into a single display string
-    shortAddress: `${row.address}, ${row.city} TX`,
+    // Combine address + city into a single display string.
+    // No hardcoded state — courts can exist outside Texas.
+    shortAddress: `${row.address}, ${row.city}`,
     courts:       row.courts    ?? 1,
     // player_count from the DB becomes "players" in the UI
     players:      row.player_count ?? 0,

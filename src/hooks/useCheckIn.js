@@ -195,7 +195,7 @@ export function useCheckIn(userId, onPlayerCountChange, onProfileRefetch) {
         courtId:      data.court_id,
         courtName:    data.courts?.name    ?? parsed.courtName    ?? 'Unknown Court',
         courtAddress: data.courts
-          ? `${data.courts.address}, ${data.courts.city} TX`
+          ? `${data.courts.address}, ${data.courts.city}`
           : parsed.courtAddress ?? '',
         checkedInAt:  data.checked_in_at,
       });
