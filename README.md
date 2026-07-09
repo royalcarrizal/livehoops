@@ -66,6 +66,8 @@ arrive, and connect with the people you hoop with.
    | `privacy_settings.sql` | show_location + profile_visibility columns and privacy-aware friends RPC |
    | `posts_profiles_fk.sql` | foreign key linking posts to profiles (integrity; joins were failing without it) |
    | `push_notifications.sql` | fcm_tokens device registry for push notifications |
+   | `notification_preferences.sql` | per-user notification preference columns |
+   | `admin_moderation.sql` | is_admin flag + RPCs for the in-app moderation panel |
    | `comment_likes_and_replies.sql` | comment_likes table + like_count and parent_comment_id on comments |
    | `notification_preferences.sql` | notif_friend_requests + notif_court_checkins columns for push gating |
    | `checkins_rls.sql` | Check-in read policies |

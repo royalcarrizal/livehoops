@@ -19,7 +19,7 @@
 //   signOut       — async function that logs the user out (from useAuth)
 //   onEditProfile — callback to open the Edit Profile sheet in ProfileScreen
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, ChevronRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useTheme } from '../hooks/useTheme';
@@ -28,6 +28,7 @@ import { useNotifications } from '../hooks/useNotifications';
 import { sendPush } from '../lib/push';
 import Toast from './Toast';
 import LegalSheet from './LegalSheet';
+import AdminSheet from './AdminSheet';
 
 // ── Toggle sub-component ────────────────────────────────────────────────────
 // A simple on/off pill toggle. Styled in index.css as .settings-toggle.
@@ -98,6 +99,22 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
   // ── Legal sheet ─────────────────────────────────────────────────────────
   // 'privacy' | 'terms' | null — opens the in-app legal document viewer
   const [legalType, setLegalType] = useState(null);
+
+  // ── Admin moderation (only for profiles with is_admin) ──────────────────
+  // pendingCounts drives the badge: { courts: n, reports: n } from the
+  // admin_pending_counts RPC — the "alert when something's waiting".
+  const [showAdmin, setShowAdmin]         = useState(false);
+  const [pendingCounts, setPendingCounts] = useState(null);
+  const isAdmin = !!profile?.is_admin;
+
+  useEffect(() => {
+    if (!isOpen || !isAdmin) return;
+    supabase.rpc('admin_pending_counts').then(({ data, error }) => {
+      if (!error && data) setPendingCounts(data);
+    });
+  }, [isOpen, isAdmin, showAdmin]); // refetch after the admin sheet closes
+
+  const pendingTotal = (pendingCounts?.courts ?? 0) + (pendingCounts?.reports ?? 0);
 
   // ── Confirmation dialogs ────────────────────────────────────────────────
   // 'signout' | 'delete' | null — controls which dialog is visible
@@ -470,6 +487,32 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
             </div>
           </div>
 
+          {/* ── Admin section — only rendered for is_admin profiles ─────────── */}
+          {isAdmin && (
+            <div>
+              <div className="settings-section-label">Admin</div>
+              <div className="settings-group">
+                <button className="settings-row" onClick={() => setShowAdmin(true)}>
+                  <div className="settings-row-icon" style={{ background: '#AF52DE' }}>🛡️</div>
+                  <div className="settings-row-content">
+                    <div className="settings-row-title">Moderation</div>
+                    <div className="settings-row-desc">
+                      {pendingTotal > 0
+                        ? `${pendingCounts?.courts ?? 0} court${(pendingCounts?.courts ?? 0) === 1 ? '' : 's'} · ${pendingCounts?.reports ?? 0} report${(pendingCounts?.reports ?? 0) === 1 ? '' : 's'} waiting`
+                        : 'Court submissions & post reports'}
+                    </div>
+                  </div>
+                  <div className="settings-row-right" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    {pendingTotal > 0 && (
+                      <span className="settings-admin-badge">{pendingTotal > 99 ? '99+' : pendingTotal}</span>
+                    )}
+                    <ChevronRight size={16} />
+                  </div>
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* ── Section 5: Support ──────────────────────────────────────────── */}
           <div>
             <div className="settings-section-label">Support</div>
@@ -614,6 +657,9 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
 
       {/* In-app legal document viewer — slides over the settings sheet */}
       <LegalSheet type={legalType} onClose={() => setLegalType(null)} />
+
+      {/* Admin moderation panel — renders above the settings sheet */}
+      {showAdmin && <AdminSheet onClose={() => setShowAdmin(false)} />}
 
       {/* Toast notification — shown above the sheet so messages are visible */}
       <Toast message={toast} />

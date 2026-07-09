@@ -3608,6 +3608,104 @@ body {
   padding: 12px 0 40px;
 }
 
+/* ── Admin moderation cards ── */
+.admin-card {
+  background: var(--bg-card);
+  border: 1px solid var(--separator-strong);
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 10px;
+}
+
+.admin-card-photo {
+  width: 100%;
+  max-height: 180px;
+  object-fit: cover;
+  border-radius: 10px;
+  margin-bottom: 10px;
+}
+
+.admin-card-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-report-count {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--orange);
+  background: var(--orange-dim);
+  border-radius: 10px;
+  padding: 2px 8px;
+}
+
+.admin-card-sub {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+.admin-card-meta {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin-top: 4px;
+}
+
+.admin-card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.admin-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px;
+  border: none;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.admin-btn:disabled { opacity: 0.5; cursor: default; }
+.admin-btn:active { opacity: 0.8; }
+
+.admin-btn.approve {
+  background: var(--green-dim);
+  color: var(--green);
+}
+
+.admin-btn.reject {
+  background: rgba(255, 69, 58, 0.12);
+  color: #FF453A;
+}
+
+/* Badge showing pending moderation count on the Settings admin row */
+.settings-admin-badge {
+  min-width: 20px;
+  height: 20px;
+  background: var(--orange);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px;
+}
+
 /* ── Notification opt-in prompt ── */
 /* Dismissible banner on the Home feed asking to enable push notifications */
 .notif-prompt {
