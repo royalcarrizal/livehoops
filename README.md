@@ -97,6 +97,7 @@ arrive, and connect with the people you hoop with.
 | `npm run build` | Production build into `dist/` (includes PWA service worker) |
 | `npm run preview` | Serve the production build locally |
 | `npm run lint` | Run ESLint |
+| `npm test` | Run the unit tests (Vitest) |
 
 ## Project structure
 

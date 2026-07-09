@@ -16,7 +16,7 @@ import { supabase } from '../lib/supabase';
 // ── Haversine formula ─────────────────────────────────────────────────────────
 // Calculates the straight-line distance in miles between two lat/lng points.
 // Named after the haversine trigonometric function used in the calculation.
-function haversine(lat1, lng1, lat2, lng2) {
+export function haversine(lat1, lng1, lat2, lng2) {
   const R    = 3958.8; // Earth's radius in miles
   const dLat = (lat2 - lat1) * (Math.PI / 180);
   const dLng = (lng2 - lng1) * (Math.PI / 180);
@@ -30,12 +30,12 @@ function haversine(lat1, lng1, lat2, lng2) {
 
 // ── Format a distance in miles to a readable string ──────────────────────────
 // e.g. 0.08 → "< 0.1 mi"   1.4 → "1.4 mi"   12.3 → "12.3 mi"
-function formatMiles(miles) {
+export function formatMiles(miles) {
   if (miles < 0.1) return '< 0.1 mi';
   return `${miles.toFixed(1)} mi`;
 }
 
-function normalizeLighting(value) {
+export function normalizeLighting(value) {
   if (typeof value === 'boolean') return value;
   if (typeof value === 'string') {
     return ['yes', 'true', 'lit'].includes(value.toLowerCase());
@@ -48,7 +48,7 @@ function normalizeLighting(value) {
 // We convert the database column names (snake_case) to the shape the
 // UI components were built with.
 // userPos is optional — if provided, distance is calculated; otherwise "—".
-function normalizeCourt(row, userPos = null) {
+export function normalizeCourt(row, userPos = null) {
   const distance =
     userPos && row.lat && row.lng
       ? formatMiles(haversine(userPos.lat, userPos.lng, row.lat, row.lng))

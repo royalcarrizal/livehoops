@@ -198,7 +198,7 @@ export function useAuth() {
 // ── Helper: Convert Supabase error messages to plain English ──────────────
 // Supabase returns technical error messages like "Invalid login credentials".
 // This function translates them into friendlier messages.
-function friendlyError(message) {
+export function friendlyError(message) {
   const lower = message.toLowerCase();
   if (lower.includes('invalid login credentials'))
     return 'Wrong email or password. Double-check and try again.';

@@ -55,7 +55,7 @@ async function notifyPostLike(postId, likerId) {
 
 // ── Helper: convert an ISO timestamp to a human-readable relative time ────
 // e.g. "2024-03-15T10:30:00Z" → "5m ago", "2h ago", "3d ago"
-function toTimeAgo(isoString) {
+export function toTimeAgo(isoString) {
   if (!isoString) return '';
 
   const diff = Date.now() - new Date(isoString).getTime();
