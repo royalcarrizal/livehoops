@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { useTheme } from './hooks/useTheme';
 import { useAuth } from './hooks/useAuth';
 import { useProfile } from './hooks/useProfile';
@@ -7,7 +7,6 @@ import { useCheckIn } from './hooks/useCheckIn';
 import { supabase } from './lib/supabase';
 import BottomNav from './components/BottomNav';
 import HomeScreen from './screens/HomeScreen';
-import MapScreen from './screens/MapScreen';
 import CheckInScreen from './screens/CheckInScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import FriendsScreen from './screens/FriendsScreen';
@@ -15,6 +14,27 @@ import SplashScreen from './screens/SplashScreen';
 import AuthScreen from './components/AuthScreen';
 import ResetPasswordScreen from './components/ResetPasswordScreen';
 import Onboarding from './components/Onboarding';
+
+// MapScreen is loaded lazily because it pulls in Mapbox GL (~1.6 MB of
+// JavaScript) — by far the heaviest thing in the app. Splitting it into its
+// own chunk means Home/feed loads fast, and the map code only downloads the
+// first time the user opens the Map tab.
+const MapScreen = lazy(() => import('./screens/MapScreen'));
+
+// Shown for the moment it takes the map chunk to download on first open
+function MapLoadingFallback() {
+  return (
+    <div
+      className="screen-content"
+      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '70vh' }}
+    >
+      <div style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>
+        <div style={{ fontSize: 40, marginBottom: 10 }}>🗺️</div>
+        <div style={{ fontSize: 14 }}>Loading map…</div>
+      </div>
+    </div>
+  );
+}
 
 export default function App() {
   useTheme(); // applies theme-dark/theme-light class to document.body
@@ -274,7 +294,11 @@ export default function App() {
     <>
       <div className={`app-shell${!splashDone ? ' app-shell-enter' : ''}`}>
         {activeTab === 'home'    && <HomeScreen    {...screenProps} />}
-        {activeTab === 'map'     && <MapScreen      {...screenProps} />}
+        {activeTab === 'map'     && (
+          <Suspense fallback={<MapLoadingFallback />}>
+            <MapScreen {...screenProps} />
+          </Suspense>
+        )}
         {activeTab === 'checkin' && <CheckInScreen  {...screenProps} />}
         {activeTab === 'friends' && (
           <FriendsScreen
