@@ -184,9 +184,10 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
   };
 
   // ── Handler: Show my location toggle ───────────────────────────────────
-  // Saves to the profiles table. The get_friends_active_checkins RPC
-  // (supabase/privacy_settings.sql) hides your active check-in from friends
-  // when this is off, and App.jsx stops saving GPS coords on check-in.
+  // Saves to the profiles table. When off: the get_friends_active_checkins
+  // RPC hides your check-in from friends, get_court_active_players hides
+  // you from the map and court sheets, no check-in pushes go out, and
+  // App.jsx stops saving GPS coords on check-in.
   const handleLocationToggle = async () => {
     if (privacySaving) return;
     setPrivacySaving(true);
@@ -197,8 +198,8 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
       showToast('❌ Failed to save — try again');
     } else {
       showToast(next
-        ? 'Friends can see which court you\'re at'
-        : 'Your court location is now hidden from friends');
+        ? 'You\'ll appear on the map when checked in'
+        : 'You\'re now hidden on the map and from friends');
     }
   };
 
@@ -479,7 +480,7 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
                 <div className="settings-row-icon" style={{ background: '#30D158' }}>📍</div>
                 <div className="settings-row-content">
                   <div className="settings-row-title">Show My Location</div>
-                  <div className="settings-row-desc">Friends can see which court you're at</div>
+                  <div className="settings-row-desc">Appear on the map at courts you check into</div>
                 </div>
                 <Toggle on={showLocation} onToggle={handleLocationToggle} />
               </div>

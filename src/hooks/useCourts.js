@@ -73,9 +73,29 @@ export function normalizeCourt(row, userPos = null) {
     reviewCount: row.review_count ?? 0,
     // Optional photo submitted by the user who added the court
     photoUrl:    row.photo_url    ?? null,
-    // Per-court check-in avatars are future work
+    // Players currently checked in here (privacy-filtered) — filled in
+    // separately by the get_court_active_players RPC, empty until it loads
     checkins:     [],
   };
+}
+
+// ── Group the RPC's flat player rows by court ────────────────────────────────
+// get_court_active_players returns one row per (court, player). The UI wants
+// them keyed by court id, shaped like the Avatar component expects.
+// `id` duplicates userId because ParkCard's AvatarStack keys on ci.id.
+export function groupPlayersByCourt(rows) {
+  const byCourt = {};
+  (rows ?? []).forEach(r => {
+    const username = r.username ?? 'Player';
+    (byCourt[r.court_id] ??= []).push({
+      id:        r.user_id,
+      userId:    r.user_id,
+      username,
+      avatarUrl: r.avatar_url ?? null,
+      initials:  username.slice(0, 2).toUpperCase(),
+    });
+  });
+  return byCourt;
 }
 
 export function useCourts() {
@@ -119,6 +139,21 @@ export function useCourts() {
     })));
   }, [userPos]);
 
+  // ── Fetch who's checked in at every court ─────────────────────────────────
+  // Calls the get_court_active_players RPC (SECURITY DEFINER — the checkins
+  // RLS policy blocks direct reads of other users' rows) and returns a
+  // { courtId: [player, …] } map. Returns null on any error — e.g. the RPC
+  // hasn't been created in Supabase yet — so callers can leave existing
+  // checkins untouched and the app degrades to counts-only, never breaks.
+  const fetchActivePlayers = useCallback(async () => {
+    const { data, error } = await supabase.rpc('get_court_active_players');
+    if (error) {
+      console.info('[LiveHoops] Court players unavailable:', error.message);
+      return null;
+    }
+    return groupPlayersByCourt(data);
+  }, []);
+
   // ── Fetch all courts from Supabase ────────────────────────────────────────
   // Called on mount. Returns courts ordered by when they were added
   // (newest first so recently added courts appear at the top).
@@ -138,7 +173,17 @@ export function useCourts() {
     }
 
     setLoading(false);
-  }, []);
+
+    // Attach checked-in players after the courts render — the map and lists
+    // are useful without them, so this never delays the initial paint.
+    const playersMap = await fetchActivePlayers();
+    if (playersMap) {
+      setCourts(prev => prev.map(court => ({
+        ...court,
+        checkins: playersMap[court.id] ?? [],
+      })));
+    }
+  }, [fetchActivePlayers]);
 
   // Run fetchCourts once when the hook first mounts
   useEffect(() => {
@@ -158,30 +203,37 @@ export function useCourts() {
     ));
   }, []);
 
-  // ── Re-fetch only player counts from the database ─────────────────────────
-  // Called every 60 seconds by CheckInScreen to stay in sync with
-  // other users checking in and out around the city.
-  // We only update player counts, not the full court objects, to avoid
+  // ── Re-fetch player counts + who's checked in ─────────────────────────────
+  // Called every 60 seconds by CheckInScreen, and after the user checks
+  // in/out, to stay in sync with other users around the city. Updates only
+  // the players/checkins fields, not the full court objects, to avoid
   // unnecessary re-renders in the map and court lists.
   const refreshCounts = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('courts')
-      .select('id, player_count')
-      .eq('verified', true);
+    // Counts and the player list come from different sources (courts table
+    // vs the checkins RPC) — fetch both at once
+    const [countsRes, playersMap] = await Promise.all([
+      supabase.from('courts').select('id, player_count').eq('verified', true),
+      fetchActivePlayers(),
+    ]);
 
+    const { data, error } = countsRes;
     if (error || !data) return;
 
     // Build a quick lookup map: { courtId: playerCount }
     const countMap = {};
     data.forEach(row => { countMap[row.id] = row.player_count ?? 0; });
 
-    // Update each court's player count if it changed
-    setCourts(prev => prev.map(court =>
-      countMap[court.id] !== undefined
-        ? { ...court, players: countMap[court.id] }
-        : court
-    ));
-  }, []);
+    // Update each court's player count (and player list, when available)
+    setCourts(prev => prev.map(court => {
+      if (countMap[court.id] === undefined) return court;
+      return {
+        ...court,
+        players: countMap[court.id],
+        // playersMap null = RPC unavailable — keep whatever list we had
+        checkins: playersMap ? (playersMap[court.id] ?? []) : court.checkins,
+      };
+    }));
+  }, [fetchActivePlayers]);
 
   return { courts, loading, updatePlayerCount, refreshCounts, userPos };
 }

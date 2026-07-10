@@ -279,6 +279,10 @@ export default function App() {
       // Step 1 — save check-in via existing RPC
       const result = await checkIn(courtId, user.id);
 
+      // Re-fetch counts + checked-in player lists so the user's own avatar
+      // shows up on the map/court sheets right away (fire-and-forget)
+      refreshCounts();
+
       // Step 2 — reverse geocode once if the browser gave us GPS coords.
       // Skipped entirely when the user turned off "Show My Location" in
       // Settings — their check-in row then carries no GPS coords or city.
@@ -329,11 +333,19 @@ export default function App() {
   //
   // onCheckIn       — shim so ParkCard and other components can still call
   //                   onCheckIn(courtId) without knowing the hook's signature
+  // ── Unified check-out handler ────────────────────────────────────────────
+  // Same idea as handleCheckIn: after the RPC, re-fetch counts + player
+  // lists so the user's avatar disappears from the map immediately.
+  const handleCheckOut = async (checkinId, courtId, uid) => {
+    await checkOut(checkinId, courtId, uid);
+    refreshCounts();
+  };
+
   const screenProps = {
     parks:           courts,
     activeCheckIn,
     checkIn:         handleCheckIn,   // unified handler — does geocoding + RPC
-    checkOut,
+    checkOut:        handleCheckOut,
     onCheckIn:       handleCheckIn,   // shim for screens that call onCheckIn(courtId)
     setActiveTab,
     user,

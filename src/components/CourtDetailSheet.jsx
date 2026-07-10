@@ -6,13 +6,14 @@
 //
 // Props:
 //   court        — court object from useCourts (name, shortAddress, players,
-//                  avgRating, reviewCount, etc.)
+//                  avgRating, reviewCount, checkins, etc.)
 //   onClose      — called when the backdrop or close button is tapped
 //   onCheckIn    — (courtId) => void — triggers a check-in
 //   activeCheckIn — current check-in object or null
 //   checkOut     — (checkinId, courtId, userId) => void
 //   user         — logged-in Supabase user object
 //   isCheckingIn — true while the check-in Supabase call is in progress
+//   onViewProfile — optional (userId) => void — opens a checked-in player's profile
 
 import { useState, useEffect } from 'react';
 import { Trash2 } from 'lucide-react';
@@ -40,6 +41,7 @@ export default function CourtDetailSheet({
   checkOut,
   user,
   isCheckingIn = false,
+  onViewProfile,
 }) {
   // ── All hooks must be called before any conditional return ────────────────
   const [showReviews,  setShowReviews]  = useState(false);
@@ -150,6 +152,43 @@ export default function CourtDetailSheet({
             <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>No ratings yet</span>
           )}
         </div>
+
+        {/* ── Who's here — checked-in players (privacy-filtered) ─────────────── */}
+        {/* court.checkins comes from the get_court_active_players RPC via     */}
+        {/* useCourts. The player count above can be higher — the difference   */}
+        {/* is players who've hidden themselves, noted anonymously below.      */}
+        {(court.checkins ?? []).length > 0 && (
+          <div className="whos-here">
+            <div className="whos-here-label">Playing now</div>
+            <div className="whos-here-row">
+              {court.checkins.slice(0, 6).map(player => (
+                <button
+                  key={player.userId}
+                  className="whos-here-player"
+                  onClick={() => onViewProfile?.(player.userId)}
+                  aria-label={`View ${player.username}'s profile`}
+                >
+                  <Avatar
+                    avatarUrl={player.avatarUrl}
+                    initials={player.initials}
+                    size={34}
+                  />
+                  <span className="whos-here-name">
+                    {player.userId === user?.id ? 'You' : player.username.split('_')[0]}
+                  </span>
+                </button>
+              ))}
+              {court.checkins.length > 6 && (
+                <span className="whos-here-more">+{court.checkins.length - 6}</span>
+              )}
+            </div>
+            {court.players > court.checkins.length && (
+              <div className="whos-here-hidden">
+                +{court.players - court.checkins.length} more playing
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ── Check-in / Directions buttons ─────────────────────────────────── */}
         <div className="map-sheet-buttons">

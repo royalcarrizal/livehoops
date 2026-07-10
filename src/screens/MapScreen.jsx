@@ -17,6 +17,7 @@ import { usePosts } from '../hooks/usePosts';
 import { useCourtFavorites } from '../hooks/useCourtFavorites';
 import MapPostModal from '../components/MapPostModal';
 import Toast from '../components/Toast';
+import Avatar from '../components/Avatar';
 import { useToast } from '../hooks/useToast';
 
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -31,7 +32,7 @@ mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
 // Mapbox uses [longitude, latitude] order (opposite of Google Maps)
 const FALLBACK_CENTER = [-95.3698, 29.7604];
 
-export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, user, profile, isCheckingIn = false, userPos = null }) {
+export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, user, profile, isCheckingIn = false, userPos = null, onViewProfile }) {
   // ── Refs (don't trigger re-renders when they change) ──────────────────────
   // The div element that Mapbox renders the map canvas into
   const mapContainerRef = useRef(null);
@@ -205,6 +206,13 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
     .filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
     .sort((a, b) => (favoriteIds.has(b.id) ? 1 : 0) - (favoriteIds.has(a.id) ? 1 : 0));
 
+  // selectedPark is a snapshot from when the marker was tapped — look up the
+  // live court object so the player count and checked-in avatars in the
+  // sheet stay fresh as counts refresh while it's open.
+  const livePark = selectedPark
+    ? (parks.find(p => p.id === selectedPark.id) ?? selectedPark)
+    : null;
+
   return (
     <div className="map-screen">
 
@@ -309,9 +317,9 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
 
             {/* Info pills: live status + court details */}
             <div className="map-sheet-meta">
-              {selectedPark.players > 0 ? (
+              {livePark.players > 0 ? (
                 <span className="map-sheet-live-badge">
-                  🟢 {selectedPark.players} live
+                  🟢 {livePark.players} live
                 </span>
               ) : (
                 <span className="map-sheet-empty-badge">Empty</span>
@@ -329,6 +337,46 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
                 </span>
               )}
             </div>
+
+            {/* ── Who's here — checked-in players (privacy-filtered) ────────── */}
+            {/* Only players who allow it appear (show_location + visibility,   */}
+            {/* enforced by the get_court_active_players RPC). The count badge  */}
+            {/* above can be higher — those extras are players who've hidden    */}
+            {/* themselves, so we note them anonymously.                        */}
+            {livePark.checkins.length > 0 && (
+              <div className="whos-here">
+                <div className="whos-here-label">Playing now</div>
+                <div className="whos-here-row">
+                  {livePark.checkins.slice(0, 6).map(player => (
+                    <button
+                      key={player.userId}
+                      className="whos-here-player"
+                      onClick={() => onViewProfile?.(player.userId)}
+                      aria-label={`View ${player.username}'s profile`}
+                    >
+                      <Avatar
+                        avatarUrl={player.avatarUrl}
+                        initials={player.initials}
+                        size={34}
+                      />
+                      <span className="whos-here-name">
+                        {player.userId === user?.id ? 'You' : player.username.split('_')[0]}
+                      </span>
+                    </button>
+                  ))}
+                  {livePark.checkins.length > 6 && (
+                    <span className="whos-here-more">
+                      +{livePark.checkins.length - 6}
+                    </span>
+                  )}
+                </div>
+                {livePark.players > livePark.checkins.length && (
+                  <div className="whos-here-hidden">
+                    +{livePark.players - livePark.checkins.length} more playing
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Action buttons */}
             <div className="map-sheet-buttons" style={{ flexWrap: 'wrap' }}>
@@ -473,7 +521,8 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
 //
 // The marker is an orange circle when the court is live (has players),
 // or a darker circle when it's empty. A green pulsing dot appears on
-// top-right to signal "live" status.
+// top-right to signal "live" status, and the avatars of checked-in players
+// (privacy-filtered by the get_court_active_players RPC) float above it.
 function createMarkerEl(park, visited = false, isFavorited = false) {
   const el = document.createElement('div');
   el.className = [
@@ -491,6 +540,40 @@ function createMarkerEl(park, visited = false, isFavorited = false) {
     const dot = document.createElement('div');
     dot.className = 'mb-live-dot';
     el.appendChild(dot);
+  }
+
+  // ── Checked-in player avatars, floating above the marker ────────────────
+  // Up to 2 faces plus a "+N" pill. Built with plain DOM (not React) because
+  // Mapbox owns this element. Tapping them opens the court sheet like the
+  // marker itself — profile taps live in the sheet's "Playing now" row.
+  const players = park.checkins ?? [];
+  if (players.length > 0) {
+    const stack = document.createElement('div');
+    stack.className = 'mb-marker-avatars';
+
+    players.slice(0, 2).forEach(player => {
+      if (player.avatarUrl) {
+        const img = document.createElement('img');
+        img.className = 'mb-marker-avatar';
+        img.src = player.avatarUrl;
+        img.alt = player.username;
+        stack.appendChild(img);
+      } else {
+        const fallback = document.createElement('div');
+        fallback.className = 'mb-marker-avatar mb-marker-avatar-initials';
+        fallback.textContent = player.initials;
+        stack.appendChild(fallback);
+      }
+    });
+
+    if (players.length > 2) {
+      const more = document.createElement('div');
+      more.className = 'mb-marker-avatar mb-marker-avatar-more';
+      more.textContent = `+${players.length - 2}`;
+      stack.appendChild(more);
+    }
+
+    el.appendChild(stack);
   }
 
   // Checkmark badge for courts the user has visited

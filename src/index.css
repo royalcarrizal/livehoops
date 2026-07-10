@@ -1189,6 +1189,123 @@ body {
   opacity: 0.6;
 }
 
+/* ── Checked-in player avatars floating above a court marker ─────────────── */
+/* Rendered by createMarkerEl in MapScreen.jsx (plain DOM — Mapbox owns the  */
+/* marker element). Up to 2 overlapping faces plus a "+N" overflow pill.     */
+.mb-marker-avatars {
+  position: absolute;
+  bottom: calc(100% + 3px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+}
+
+.mb-marker-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--bg-elevated);
+  object-fit: cover;
+  background: var(--bg-elevated);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+  flex-shrink: 0;
+}
+
+/* Overlap every avatar after the first, like a mini stack */
+.mb-marker-avatar + .mb-marker-avatar {
+  margin-left: -7px;
+}
+
+/* Initials fallback when the player has no profile photo */
+.mb-marker-avatar-initials {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--orange);
+  color: #fff;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+}
+
+/* "+N" pill when more than 2 players are checked in */
+.mb-marker-avatar-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  font-size: 8px;
+  font-weight: 800;
+}
+
+/* ── "Playing now" row in the court bottom sheets ────────────────────────── */
+/* Used by the MapScreen sheet and CourtDetailSheet. Each player is a       */
+/* tappable avatar + first name that opens their profile.                   */
+.whos-here {
+  margin: 12px 0 2px;
+}
+
+.whos-here-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.whos-here-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+.whos-here-row::-webkit-scrollbar { display: none; }
+
+.whos-here-player {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+  flex-shrink: 0;
+}
+
+.whos-here-name {
+  font-size: 11px;
+  color: var(--text-secondary);
+  max-width: 52px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* "+N" pill when more players are visible than we show avatars for */
+.whos-here-more {
+  align-self: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  background: var(--bg-elevated);
+  border-radius: 999px;
+  padding: 6px 10px;
+  flex-shrink: 0;
+}
+
+/* Anonymous remainder: players counted at this court who've hidden        */
+/* themselves (show_location off / private profile)                        */
+.whos-here-hidden {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  margin-top: 6px;
+}
+
 .map-courts-sheet {
   background: var(--bg-card);
   border-top: 1px solid var(--separator-strong);

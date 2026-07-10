@@ -33,7 +33,7 @@ import { supabase } from '../lib/supabase';
 //   setActiveTab — lets this screen switch to another tab (e.g. Friends tab)
 //   user         — the logged-in Supabase user object (has .id)
 //   profile      — the user's profile row from Supabase (username, avatar_url, etc.)
-export default function HomeScreen({ setActiveTab, user, profile, parks, onViewProfile, onCheckIn, activeCheckIn, checkOut, cityLabel = 'Nearby' }) {
+export default function HomeScreen({ setActiveTab, user, profile, parks, onViewProfile, onCheckIn, activeCheckIn, checkOut, cityLabel = 'Nearby', isCheckingIn = false }) {
   const [feedTab, setFeedTab]           = useState('following');
   const [photoUrl, setPhotoUrl]         = useState(null);
   const [showPanel, setShowPanel]       = useState(false);
@@ -496,6 +496,8 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
           activeCheckIn={activeCheckIn}
           checkOut={checkOut}
           user={user}
+          isCheckingIn={isCheckingIn}
+          onViewProfile={(uid) => { setTappedCourtId(null); onViewProfile?.(uid); }}
         />
       )}
 

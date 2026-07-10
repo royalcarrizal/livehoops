@@ -117,7 +117,8 @@ export default function Onboarding({ profile, onComplete }) {
 
               <p className="onboarding-subtext">
                 LiveHoops uses your location to show nearby courts and verify
-                check-ins. We never share your location with other users.
+                check-ins. Only the court you check into is ever shared — never
+                your exact location — and you can hide that too in Settings.
               </p>
             </div>
 

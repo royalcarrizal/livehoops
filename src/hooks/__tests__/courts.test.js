@@ -1,8 +1,8 @@
 // Tests for the court helpers: distance math, distance formatting,
-// lighting normalization, and the DB-row → UI-shape transform.
+// lighting normalization, and the DB-row → UI-shape transforms.
 
 import { describe, it, expect } from 'vitest';
-import { haversine, formatMiles, normalizeLighting, normalizeCourt } from '../useCourts';
+import { haversine, formatMiles, normalizeLighting, normalizeCourt, groupPlayersByCourt } from '../useCourts';
 
 describe('haversine', () => {
   it('returns 0 for identical points', () => {
@@ -82,5 +82,42 @@ describe('normalizeCourt', () => {
     const sparse = normalizeCourt({ ...row, player_count: null, courts: null });
     expect(sparse.players).toBe(0);
     expect(sparse.courts).toBe(1);
+  });
+});
+
+describe('groupPlayersByCourt', () => {
+  const rows = [
+    { court_id: 'court-1', user_id: 'u1', username: 'marcus_w', avatar_url: 'https://x/a.jpg' },
+    { court_id: 'court-1', user_id: 'u2', username: null,       avatar_url: null },
+    { court_id: 'court-2', user_id: 'u3', username: 'jo',       avatar_url: null },
+  ];
+
+  it('groups RPC rows by court id', () => {
+    const byCourt = groupPlayersByCourt(rows);
+    expect(byCourt['court-1']).toHaveLength(2);
+    expect(byCourt['court-2']).toHaveLength(1);
+  });
+
+  it('shapes players for the Avatar component', () => {
+    const player = groupPlayersByCourt(rows)['court-1'][0];
+    expect(player).toEqual({
+      id:        'u1',       // AvatarStack keys on ci.id
+      userId:    'u1',
+      username:  'marcus_w',
+      avatarUrl: 'https://x/a.jpg',
+      initials:  'MA',
+    });
+  });
+
+  it('falls back to "Player" for missing usernames', () => {
+    const anon = groupPlayersByCourt(rows)['court-1'][1];
+    expect(anon.username).toBe('Player');
+    expect(anon.initials).toBe('PL');
+    expect(anon.avatarUrl).toBeNull();
+  });
+
+  it('returns an empty object for empty or missing input', () => {
+    expect(groupPlayersByCourt([])).toEqual({});
+    expect(groupPlayersByCourt(null)).toEqual({});
   });
 });
