@@ -333,6 +333,9 @@ export function usePosts() {
   //
   // Privacy: posts by users whose Profile Visibility is 'friends' or
   // 'private' only appear to their friends (friendIds) and to themselves.
+  // The real enforcement is the posts_select_visible RLS policy
+  // (supabase/privacy_enforcement.sql) — hidden posts never leave the
+  // database. The client-side filter below is kept as defense in depth.
   const fetchAllFeed = useCallback(async (userId, friendIds = [], offset = 0) => {
     const { data, error } = await supabase
       .from('posts')

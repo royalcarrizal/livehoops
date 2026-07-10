@@ -393,6 +393,15 @@ export default function FeedPost({
         </button>
       )}
 
+      {/* ── Repost with no visible original ─────────────────────────────── */}
+      {/* The original was deleted, or its author is friends-only/private    */}
+      {/* and this viewer isn't a friend (RLS withholds the row entirely).  */}
+      {post.repostOfPostId && !original && (
+        <div className="feed-repost-preview feed-repost-unavailable">
+          This post is unavailable
+        </div>
+      )}
+
       {/* ── Repost preview ──────────────────────────────────────────────── */}
       {original && (
         <div className="feed-repost-preview">

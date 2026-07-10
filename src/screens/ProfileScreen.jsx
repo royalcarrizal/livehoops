@@ -157,34 +157,32 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
     if (isOwner || !profile?.id || !user?.id || !canViewContent) return;
 
     async function loadMutuals() {
-      // Viewed user's accepted friendships
-      const { data: viewedFriendships } = await supabase
-        .from('friendships')
-        .select('requester_id, addressee_id')
-        .eq('status', 'accepted')
-        .or(`requester_id.eq.${profile.id},addressee_id.eq.${profile.id}`);
+      // Both lists are computed server-side by SECURITY DEFINER RPCs
+      // (supabase/mutual_courts_rpc.sql + privacy_enforcement.sql) because
+      // RLS correctly blocks reading the other user's checkins/friendships
+      // directly. Reading the viewed user's friendships from the client used
+      // to return only OUR shared row, so mutual friends was always empty.
+      const [friendsRes, courtsRes] = await Promise.all([
+        supabase.rpc('get_mutual_friends', { p_other_user_id: profile.id }),
+        supabase.rpc('get_mutual_courts',  { p_other_user_id: profile.id }),
+      ]);
 
-      const viewedFriendIds = new Set(
-        (viewedFriendships ?? []).map(f =>
-          f.requester_id === profile.id ? f.addressee_id : f.requester_id
-        )
+      setMutualFriends(
+        (friendsRes.data ?? []).map(r => ({
+          userId:    r.user_id,
+          username:  r.username ?? 'Player',
+          avatarUrl: r.avatar_url ?? null,
+          initials:  (r.username ?? 'PL').slice(0, 2).toUpperCase(),
+        }))
       );
 
-      // Intersect with logged-in user's already-loaded friends list
-      setMutualFriends(myFriends.filter(f => viewedFriendIds.has(f.userId)));
-
-      // Courts both users have checked into — computed server-side via
-      // SECURITY DEFINER RPC so the checkins RLS policy isn't violated.
-      const { data: mutualData } = await supabase
-        .rpc('get_mutual_courts', { p_other_user_id: profile.id });
-
       setMutualCourts(
-        (mutualData ?? []).map(r => ({ id: r.court_id, name: r.court_name }))
+        (courtsRes.data ?? []).map(r => ({ id: r.court_id, name: r.court_name }))
       );
     }
 
     loadMutuals();
-  }, [profile?.id, isOwner, myFriends, canViewContent]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [profile?.id, isOwner, canViewContent]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Check-in history state ────────────────────────────────────────────────
   // Loaded from Supabase when the user taps the "Check-ins" tab.

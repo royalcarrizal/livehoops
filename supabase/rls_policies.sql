@@ -10,17 +10,12 @@ on public.direct_messages for select
 to authenticated
 using (sender_id = auth.uid() or recipient_id = auth.uid());
 
-drop policy if exists "dm_insert_own" on public.direct_messages;
-create policy "dm_insert_own"
-on public.direct_messages for insert
-to authenticated
-with check (sender_id = auth.uid());
-
-drop policy if exists "dm_update_own" on public.direct_messages;
-create policy "dm_update_own"
-on public.direct_messages for update
-to authenticated
-using (recipient_id = auth.uid());
+-- The INSERT and UPDATE policies moved to privacy_enforcement.sql:
+--   dm_insert_own  — now requires an accepted friendship with the recipient
+--   dm_update_own  — paired with a column-level grant so recipients can only
+--                    set read_at, never rewrite message content
+-- They are intentionally NOT recreated here, so re-running this file can't
+-- reopen the old anyone-can-DM-anyone / editable-content holes.
 
 drop policy if exists "dm_delete_own" on public.direct_messages;
 create policy "dm_delete_own"

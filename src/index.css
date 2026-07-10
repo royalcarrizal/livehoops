@@ -3072,6 +3072,16 @@ body {
   overflow: hidden;
 }
 
+/* Repost whose original can't be shown — deleted, or its author's profile
+   is friends-only/private and the viewer isn't a friend (the posts RLS
+   policy withholds the row entirely) */
+.feed-repost-unavailable {
+  padding: 14px 12px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
 .feed-repost-header {
   display: flex;
   align-items: center;

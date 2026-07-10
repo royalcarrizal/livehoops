@@ -3,12 +3,10 @@
 
 alter table public.posts enable row level security;
 
-drop policy if exists "posts_select_all" on public.posts;
-create policy "posts_select_all"
-on public.posts
-for select
-to authenticated
-using (true);
+-- The SELECT policy moved to privacy_enforcement.sql (posts_select_visible),
+-- which enforces Profile Visibility server-side. It is intentionally NOT
+-- recreated here, so re-running this file can't reopen the old
+-- read-everything hole (posts_select_all / using true).
 
 drop policy if exists "posts_insert_own" on public.posts;
 create policy "posts_insert_own"
