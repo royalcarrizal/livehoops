@@ -25,6 +25,11 @@ describe('friendlyError', () => {
       .toBe('Too many attempts. Wait a minute and try again.');
   });
 
+  it('translates a failed signup trigger', () => {
+    expect(friendlyError('Database error saving new user'))
+      .toBe('Could not finish creating your account. Try a different username.');
+  });
+
   it('passes unknown messages through unchanged', () => {
     expect(friendlyError('Some brand new error')).toBe('Some brand new error');
   });

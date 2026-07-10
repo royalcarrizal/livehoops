@@ -25,12 +25,17 @@ export default function AuthScreen({ onSignUp, onSignIn, onResetPassword }) {
   const [error, setError]         = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [resetSent, setResetSent] = useState(false);
+  // True after a successful sign-up that requires email confirmation —
+  // the account exists but the user must click the emailed link before
+  // Supabase will log them in.
+  const [confirmSent, setConfirmSent] = useState(false);
 
   // ── Switch between Login and Sign Up ─────────────────────────────────
   const switchMode = (newMode) => {
     setMode(newMode);
     setError('');
     setResetSent(false);
+    setConfirmSent(false);
   };
 
   // ── Handle form submission ───────────────────────────────────────────
@@ -40,6 +45,7 @@ export default function AuthScreen({ onSignUp, onSignIn, onResetPassword }) {
     e.preventDefault();
     setError('');
     setResetSent(false);
+    setConfirmSent(false);
 
     // ── Client-side validation ────────────────────────────────────────
     // Check for obvious problems before sending anything to the server.
@@ -88,8 +94,13 @@ export default function AuthScreen({ onSignUp, onSignIn, onResetPassword }) {
 
     if (result.error) {
       setError(result.error);
+    } else if (result.needsConfirmation) {
+      // Email confirmation is enabled in Supabase: the account was created
+      // but there's no session until they click the emailed link (which
+      // opens the app already logged in). Show them where to go next.
+      setConfirmSent(true);
     }
-    // If no error, the auth state change in useAuth will automatically
+    // Otherwise the auth state change in useAuth will automatically
     // cause App.jsx to re-render and show the main app instead of this screen
   };
 
@@ -208,6 +219,14 @@ export default function AuthScreen({ onSignUp, onSignIn, onResetPassword }) {
         {resetSent && (
           <div className="auth-success">
             Check your email for a password reset link.
+          </div>
+        )}
+
+        {/* ── Email confirmation notice (sign-up with confirmation enabled) ── */}
+        {confirmSent && (
+          <div className="auth-success">
+            ✅ Account created! Check your email and tap the confirmation
+            link to start playing.
           </div>
         )}
 

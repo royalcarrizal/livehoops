@@ -82,28 +82,63 @@ export function useAuth() {
   }, []); // empty array = run once on mount
 
   // ── Sign Up ─────────────────────────────────────────────────────────────
-  // Creates a brand new account with email + password, then saves their
-  // chosen username to the profiles table in the database.
+  // Creates a brand new account with email + password. The chosen username
+  // rides along in the signUp metadata, and the handle_new_user database
+  // trigger (supabase/handle_new_user.sql) creates the profiles row
+  // server-side, inside the same transaction that creates the auth user.
+  //
+  // Why not insert the profile from here? That only works while email
+  // confirmation is OFF. With confirmation ON, signUp returns a user but
+  // no session, so a client-side insert runs unauthenticated and the
+  // profiles RLS policy rejects it — account created, profile missing.
+  //
+  // Returns { error } on failure, or { error: null, needsConfirmation }
+  // on success — needsConfirmation is true when Supabase sent a
+  // confirmation email and the user must click it before they're logged in.
   const signUp = useCallback(async (email, password, username) => {
     try {
-      // Step 1: Create the account in Supabase Auth
+      // Step 1: Check the username is free BEFORE creating the account —
+      // once the auth user exists there's no clean way to undo it.
+      // If the check itself fails (e.g. the RPC isn't deployed yet), carry
+      // on: the handle_new_user trigger de-dupes usernames as a backstop.
+      const { data: available, error: checkError } = await supabase
+        .rpc('username_available', { p_username: username });
+
+      if (!checkError && available === false) {
+        return { error: 'That username is already taken. Try a different one.' };
+      }
+
+      // Step 2: Create the account. options.data lands in the new auth
+      // user's raw_user_meta_data, where the trigger reads the username.
       const { data, error: authError } = await supabase.auth.signUp({
         email,
         password,
+        options: { data: { username } },
       });
 
       if (authError) return { error: friendlyError(authError.message) };
 
-      // Step 2: Insert a profile row for this new user.
-      // data.user contains the newly created user's ID, which we use
-      // as the primary key in the profiles table to link them together.
-      if (data.user) {
+      // With email confirmation ON, signing up with an ALREADY-REGISTERED
+      // email doesn't error — Supabase returns an obfuscated fake user with
+      // no identities (so attackers can't probe which emails have accounts).
+      // Detect that and show the same message the error path would.
+      if (data.user && data.user.identities?.length === 0) {
+        return { error: 'An account with this email already exists. Try logging in instead.' };
+      }
+
+      // Step 3 (transition backstop): if we DO have a session (confirmation
+      // off — today's setup), upsert the profile row client-side too. This
+      // keeps sign-up working during the window where this code is deployed
+      // but handle_new_user.sql hasn't been run yet. Once the trigger
+      // exists, the row is already there and ignoreDuplicates makes this a
+      // no-op. Safe to delete after the SQL has been applied in production.
+      if (data.user && data.session) {
         const { error: profileError } = await supabase
           .from('profiles')
-          .insert({
-            id: data.user.id,       // links to auth.users
-            username: username,       // the display name they chose
-          });
+          .upsert(
+            { id: data.user.id, username },
+            { onConflict: 'id', ignoreDuplicates: true }
+          );
 
         if (profileError) {
           console.error('[LiveHoops] Profile creation error:', profileError.message);
@@ -111,7 +146,10 @@ export function useAuth() {
         }
       }
 
-      return { error: null };
+      // No session + a real new user = Supabase emailed a confirmation
+      // link. The caller shows a "check your email" notice; clicking the
+      // link opens the app logged in (SIGNED_IN fires via onAuthStateChange).
+      return { error: null, needsConfirmation: !!data.user && !data.session };
     } catch {
       return { error: 'Something went wrong. Please try again.' };
     }
@@ -212,6 +250,11 @@ export function friendlyError(message) {
     return 'Too many attempts. Wait a minute and try again.';
   if (lower.includes('duplicate') || lower.includes('unique'))
     return 'That username is already taken. Try a different one.';
+  // Raised when the handle_new_user trigger fails during signUp — the only
+  // realistic cause is a username conflict slipping past the availability
+  // check, so steer the user toward picking a different name.
+  if (lower.includes('database error saving new user'))
+    return 'Could not finish creating your account. Try a different username.';
   // Fallback: return the original message if we don't have a translation
   return message;
 }
