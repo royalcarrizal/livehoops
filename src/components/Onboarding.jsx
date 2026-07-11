@@ -1,75 +1,112 @@
 // src/components/Onboarding.jsx
 //
-// This is the first-time welcome flow that new users see after signing up.
-// It runs once and never shows again (tracked with 'lh_onboarded' in localStorage).
-// There are 3 screens: Welcome, Location permission, and Ready to play.
-// The screens slide left/right using a CSS animation — no libraries needed.
+// The first-time welcome flow shown once after sign-up (tracked with
+// 'lh_onboarded' in localStorage). Screens slide left/right via a CSS
+// transform — no libraries needed.
+//
+// Screens: Welcome → Location → [Add to Home Screen] → Ready.
+// The "Add to Home Screen" screen only appears for iPhone/iPad users in
+// Safari who haven't installed the app yet — iOS is the one platform with
+// no native install prompt, and iOS push notifications REQUIRE the app be
+// added to the home screen. Android/desktop and already-installed users
+// never see it (the instructions would just confuse them), so the flow
+// stays 3 screens for them and grows to 4 only where it's useful.
 
-import { useState, useEffect } from 'react';
-import { MapPin, CheckCircle, Trophy } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { MapPin, CheckCircle, Trophy, Share, Plus } from 'lucide-react';
+
+// ── Should we show the iOS "Add to Home Screen" screen? ─────────────────────
+// True only on an iPhone/iPad, in Safari (other iOS browsers can't add to the
+// home screen), and not already running as an installed PWA.
+function shouldShowIosInstall() {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent;
+
+  // iPhone/iPod, or iPad — modern iPadOS reports as "Macintosh" but is the
+  // only Mac-like device with a touch screen, so maxTouchPoints disambiguates.
+  const isIos =
+    /iphone|ipod|ipad/i.test(ua) ||
+    (/macintosh/i.test(ua) && navigator.maxTouchPoints > 1);
+  if (!isIos) return false;
+
+  // Only Safari offers Share → Add to Home Screen. Chrome/Firefox/Edge on iOS
+  // (crios/fxios/edgios) don't, so showing them these steps would be wrong.
+  const isSafari = /safari/i.test(ua) && !/crios|fxios|edgios/i.test(ua);
+  if (!isSafari) return false;
+
+  // Already installed — navigator.standalone is the iOS-specific signal;
+  // display-mode covers the standard case.
+  const isStandalone =
+    navigator.standalone === true ||
+    window.matchMedia?.('(display-mode: standalone)').matches;
+  return !isStandalone;
+}
 
 export default function Onboarding({ profile, onComplete }) {
-  // Which screen we're on: 0 = Welcome, 1 = Location, 2 = Ready
-  const [step, setStep] = useState(0);
+  // The ordered list of screens for THIS device. The iOS install screen is
+  // spliced in only where relevant, so numeric steps stay in sync with what's
+  // actually rendered. Computed once — the device doesn't change mid-session.
+  const slides = useMemo(() => {
+    const showInstall = shouldShowIosInstall();
+    return ['welcome', 'location', ...(showInstall ? ['install'] : []), 'ready'];
+  }, []);
 
-  // True while we're waiting for the browser to ask about location
+  // Which screen we're on, by index into `slides`.
+  const [step, setStep] = useState(0);
+  const current = slides[step];
+
+  // True while we're waiting for the browser to answer the location prompt.
   const [locationLoading, setLocationLoading] = useState(false);
 
-  // The username to display on screen 3. Falls back to 'Player' if not loaded yet.
+  // Shown on the Ready screen. Falls back to 'Player' if not loaded yet.
   const username = profile?.username || 'Player';
 
-  // ── Auto-advance past location screen if already granted ─────────────────
-  // When the user lands on screen 1, check if they already said "yes" to
-  // location in a previous session. If so, skip the request and go to screen 2.
-  useEffect(() => {
-    if (step !== 1) return;
+  // Advance to the next screen (clamped to the last).
+  const goNext = () => setStep(s => Math.min(s + 1, slides.length - 1));
 
-    // navigator.permissions is not available in all browsers (e.g. some older Safari),
-    // so we wrap it in a try/catch just in case.
+  // ── Auto-advance past the Location screen if already granted ──────────────
+  // If the user already allowed location in a previous session, don't make
+  // them tap the button again — move straight to the next screen.
+  useEffect(() => {
+    if (current !== 'location') return;
     try {
       navigator.permissions
         .query({ name: 'geolocation' })
-        .then((result) => {
-          if (result.state === 'granted') {
-            setStep(2);
-          }
-        })
-        .catch(() => {
-          // If the permission query fails, just stay on the screen and let
-          // the user tap the button manually — no big deal.
-        });
+        .then((result) => { if (result.state === 'granted') goNext(); })
+        .catch(() => {}); // query unsupported — leave them on the screen
     } catch {
-      // Same fallback: stay on screen 1 if the API isn't available
+      // navigator.permissions missing (older Safari) — same fallback
     }
-  }, [step]);
+  }, [current]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Location request handler ──────────────────────────────────────────────
-  // Called when the user taps "Allow Location". We ask for their position and
-  // then advance to screen 3 — whether they allow OR deny. We don't block them.
+  // ── Location request ──────────────────────────────────────────────────────
+  // Ask for position, then advance whether they allow OR deny — we never block.
   const handleAllowLocation = () => {
     setLocationLoading(true);
-
-    const advance = () => setStep(2);
-
-    navigator.geolocation.getCurrentPosition(advance, advance, {
+    navigator.geolocation.getCurrentPosition(goNext, goNext, {
       timeout: 8000,
       maximumAge: 60000,
     });
   };
 
-  // ── Completion handler ────────────────────────────────────────────────────
-  // Called when the user picks a starting screen on screen 3.
-  // We mark onboarding as done in localStorage so it never shows again,
-  // then tell App.jsx which tab to open first.
+  // ── Completion ────────────────────────────────────────────────────────────
+  // Mark onboarding done so it never shows again, then tell App.jsx which tab
+  // to open first.
   const complete = (startScreen) => {
     localStorage.setItem('lh_onboarded', 'true');
     onComplete(startScreen);
   };
 
-  // ── Sliding strip offset ──────────────────────────────────────────────────
-  // The strip is 300% wide and holds all 3 screens side by side.
-  // Moving it left by (step * 33.333%) shows the right screen.
-  const stripOffset = `${step * 33.333}%`;
+  // ── Sliding strip geometry ────────────────────────────────────────────────
+  // The strip holds every screen side by side. Its width and each slide's
+  // width scale with the slide count (3 or 4) so the transform math works for
+  // both, overriding the fixed 300% / 33.333% defaults in index.css.
+  const slidePct  = 100 / slides.length;
+  const stripStyle = {
+    width: `${slides.length * 100}%`,
+    transform: `translateX(-${step * slidePct}%)`,
+  };
+  const slideStyle = { width: `${slidePct}%` };
 
   return (
     <div className="onboarding-wrap">
@@ -77,13 +114,10 @@ export default function Onboarding({ profile, onComplete }) {
 
         {/* ── Sliding screens ─────────────────────────────────────────────── */}
         <div className="onboarding-strip-wrap">
-          <div
-            className="onboarding-strip"
-            style={{ transform: `translateX(-${stripOffset})` }}
-          >
+          <div className="onboarding-strip" style={stripStyle}>
 
-            {/* ── Screen 0: Welcome ────────────────────────────────────── */}
-            <div className="onboarding-slide">
+            {/* ── Welcome ──────────────────────────────────────────────── */}
+            <div className="onboarding-slide" style={slideStyle}>
               <div className="onboarding-icon">🏀</div>
 
               <h1 className="onboarding-heading">Welcome to LiveHoops</h1>
@@ -109,8 +143,8 @@ export default function Onboarding({ profile, onComplete }) {
               </div>
             </div>
 
-            {/* ── Screen 1: Location ───────────────────────────────────── */}
-            <div className="onboarding-slide">
+            {/* ── Location ─────────────────────────────────────────────── */}
+            <div className="onboarding-slide" style={slideStyle}>
               <div className="onboarding-icon">📍</div>
 
               <h1 className="onboarding-heading">Find courts near you</h1>
@@ -122,8 +156,49 @@ export default function Onboarding({ profile, onComplete }) {
               </p>
             </div>
 
-            {/* ── Screen 2: Ready ──────────────────────────────────────── */}
-            <div className="onboarding-slide">
+            {/* ── Add to Home Screen (iOS Safari only) ─────────────────── */}
+            {slides.includes('install') && (
+              <div className="onboarding-slide" style={slideStyle}>
+                <div className="onboarding-icon">📲</div>
+
+                <h1 className="onboarding-heading">Add to your Home Screen</h1>
+
+                <p className="onboarding-subtext">
+                  Install LiveHoops for full-screen, one-tap access — and to get
+                  notified the moment your crew hits the court.
+                </p>
+
+                {/* Numbered steps for the iOS Safari "Add to Home Screen" flow */}
+                <div className="onboarding-install-steps">
+                  <div className="onboarding-install-step">
+                    <span className="onboarding-install-step-num">1</span>
+                    <span>
+                      Tap the Share button{' '}
+                      <Share size={15} strokeWidth={2} style={{ verticalAlign: 'text-bottom' }} />{' '}
+                      in Safari's toolbar
+                    </span>
+                  </div>
+                  <div className="onboarding-install-step">
+                    <span className="onboarding-install-step-num">2</span>
+                    <span>
+                      Scroll down and tap{' '}
+                      <strong>Add to Home Screen</strong>{' '}
+                      <Plus size={15} strokeWidth={2} style={{ verticalAlign: 'text-bottom' }} />
+                    </span>
+                  </div>
+                  <div className="onboarding-install-step">
+                    <span className="onboarding-install-step-num">3</span>
+                    <span>
+                      Tap <strong>Add</strong>, then open LiveHoops from your
+                      Home Screen
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── Ready ────────────────────────────────────────────────── */}
+            <div className="onboarding-slide" style={slideStyle}>
               <div className="onboarding-icon">🏆</div>
 
               <h1 className="onboarding-heading">You're all set, {username}</h1>
@@ -153,31 +228,28 @@ export default function Onboarding({ profile, onComplete }) {
         </div>
 
         {/* ── Bottom area: dots + buttons ─────────────────────────────────── */}
-        {/* This stays fixed at the bottom while the screens slide above */}
+        {/* Stays fixed at the bottom while the screens slide above */}
         <div className="onboarding-bottom">
 
-          {/* Progress dots — 3 dots showing current position */}
+          {/* Progress dots — one per screen for this device */}
           <div className="onboarding-dots">
-            {[0, 1, 2].map((i) => (
+            {slides.map((key, i) => (
               <div
-                key={i}
+                key={key}
                 className={`onboarding-dot${step === i ? ' active' : ''}`}
               />
             ))}
           </div>
 
-          {/* ── Screen 0 buttons ─────────────────────────────────────────── */}
-          {step === 0 && (
-            <button
-              className="auth-submit-btn"
-              onClick={() => setStep(1)}
-            >
+          {/* ── Welcome buttons ──────────────────────────────────────────── */}
+          {current === 'welcome' && (
+            <button className="auth-submit-btn" onClick={goNext}>
               Let's Go
             </button>
           )}
 
-          {/* ── Screen 1 buttons ─────────────────────────────────────────── */}
-          {step === 1 && (
+          {/* ── Location buttons ─────────────────────────────────────────── */}
+          {current === 'location' && (
             <>
               <button
                 className="auth-submit-btn"
@@ -186,22 +258,23 @@ export default function Onboarding({ profile, onComplete }) {
               >
                 {locationLoading ? '...' : 'Allow Location'}
               </button>
-              <button
-                className="onboarding-skip-link"
-                onClick={() => setStep(2)}
-              >
+              <button className="onboarding-skip-link" onClick={goNext}>
                 Skip for now
               </button>
             </>
           )}
 
-          {/* ── Screen 2 buttons ─────────────────────────────────────────── */}
-          {step === 2 && (
+          {/* ── Add to Home Screen buttons ───────────────────────────────── */}
+          {current === 'install' && (
+            <button className="auth-submit-btn" onClick={goNext}>
+              Continue
+            </button>
+          )}
+
+          {/* ── Ready buttons ────────────────────────────────────────────── */}
+          {current === 'ready' && (
             <>
-              <button
-                className="auth-submit-btn"
-                onClick={() => complete('map')}
-              >
+              <button className="auth-submit-btn" onClick={() => complete('map')}>
                 Find a Court
               </button>
               <button
