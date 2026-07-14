@@ -68,6 +68,7 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
   );
   const notifFriends = profile?.notif_friend_requests ?? true;
   const notifCourts  = profile?.notif_court_checkins  ?? false;
+  const notifMeetups = profile?.notif_meetups         ?? true;
 
   // ── Privacy settings ────────────────────────────────────────────────────
   // These are REAL settings stored on the user's profile row in Supabase
@@ -179,6 +180,17 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
     if (privacySaving) return;
     setPrivacySaving(true);
     const { error } = await updateProfile({ notif_court_checkins: !notifCourts });
+    setPrivacySaving(false);
+    if (error) showToast('❌ Failed to save — try again');
+  };
+
+  // ── Handler: Run alerts toggle ─────────────────────────────────────────
+  // Saved to the profiles table — checked by notifyFriendsOfMeetup
+  // (useMeetups.js) when a friend schedules a run.
+  const handleMeetupsToggle = async () => {
+    if (privacySaving) return;
+    setPrivacySaving(true);
+    const { error } = await updateProfile({ notif_meetups: !notifMeetups });
     setPrivacySaving(false);
     if (error) showToast('❌ Failed to save — try again');
   };
@@ -430,6 +442,16 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
                   <div className="settings-row-title">Court Goes Live Alerts</div>
                 </div>
                 <Toggle on={notifCourts} onToggle={handleCourtsToggle} />
+              </div>
+
+              {/* Run alerts — notified when a friend schedules a meetup at a court */}
+              <div className="settings-row">
+                <div className="settings-row-icon" style={{ background: '#5856D6' }}>📅</div>
+                <div className="settings-row-content">
+                  <div className="settings-row-title">Run Alerts</div>
+                  <div className="settings-row-desc">When a friend schedules a run</div>
+                </div>
+                <Toggle on={notifMeetups} onToggle={handleMeetupsToggle} />
               </div>
 
             </div>

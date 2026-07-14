@@ -94,7 +94,7 @@ self.addEventListener('notificationclick', function (event) {
   // navigates to the right screen.
   const params = new URLSearchParams();
   if (data.kind) params.set('push', data.kind);
-  ['postId', 'commentId', 'senderId', 'accepterId', 'courtId', 'userId'].forEach((key) => {
+  ['postId', 'commentId', 'senderId', 'accepterId', 'courtId', 'userId', 'meetupId'].forEach((key) => {
     if (data[key]) params.set(key, data[key]);
   });
   const targetUrl = params.toString() ? `/?${params.toString()}` : '/';

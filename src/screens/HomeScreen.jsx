@@ -15,6 +15,7 @@ import { MapPin, Bell, Search } from 'lucide-react';
 import Avatar from '../components/Avatar';
 import FeedPost from '../components/FeedPost';
 import ActiveFriendsRow from '../components/ActiveFriendsRow';
+import UpcomingMeetupsRow from '../components/UpcomingMeetupsRow';
 import PostComposer from '../components/PostComposer';
 import PhotoViewer from '../components/PhotoViewer';
 import CourtDetailSheet from '../components/CourtDetailSheet';
@@ -33,7 +34,7 @@ import { supabase } from '../lib/supabase';
 //   setActiveTab — lets this screen switch to another tab (e.g. Friends tab)
 //   user         — the logged-in Supabase user object (has .id)
 //   profile      — the user's profile row from Supabase (username, avatar_url, etc.)
-export default function HomeScreen({ setActiveTab, user, profile, parks, onViewProfile, onCheckIn, activeCheckIn, checkOut, cityLabel = 'Nearby', isCheckingIn = false }) {
+export default function HomeScreen({ setActiveTab, user, profile, parks, onViewProfile, onCheckIn, activeCheckIn, checkOut, cityLabel = 'Nearby', isCheckingIn = false, upcomingMeetups = [], meetupActions }) {
   const [feedTab, setFeedTab]           = useState('following');
   const [photoUrl, setPhotoUrl]         = useState(null);
   const [showPanel, setShowPanel]       = useState(false);
@@ -284,6 +285,11 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
       {/* Shows friends currently checked in at a court. Hidden when none are. */}
       <ActiveFriendsRow friends={friends} setActiveTab={setActiveTab} />
 
+      {/* ── Upcoming Runs row ───────────────────────────────────────────────── */}
+      {/* Scheduled meetups at courts. Tapping one flies the Map to that court. */}
+      {/* Hidden when there are none. */}
+      <UpcomingMeetupsRow meetups={upcomingMeetups} setActiveTab={setActiveTab} />
+
       {/* ── Post composer ────────────────────────────────────────────────────── */}
       {/* Pass the user's real initials and avatar */}
       <PostComposer
@@ -498,6 +504,8 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
           user={user}
           isCheckingIn={isCheckingIn}
           onViewProfile={(uid) => { setTappedCourtId(null); onViewProfile?.(uid); }}
+          meetupActions={meetupActions}
+          onToast={showToast}
         />
       )}
 

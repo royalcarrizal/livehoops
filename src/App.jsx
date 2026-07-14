@@ -4,6 +4,7 @@ import { useAuth } from './hooks/useAuth';
 import { useProfile } from './hooks/useProfile';
 import { useCourts } from './hooks/useCourts';
 import { useCheckIn } from './hooks/useCheckIn';
+import { useMeetups } from './hooks/useMeetups';
 import { supabase } from './lib/supabase';
 import BottomNav from './components/BottomNav';
 import HomeScreen from './screens/HomeScreen';
@@ -86,6 +87,20 @@ export default function App() {
     refetchProfile      // called after checkout to reload profile stats
   );
 
+  // ── Meetups ("runs") ──────────────────────────────────────────────────────
+  // Scheduled meetups at courts. upcomingMeetups drives the Home row;
+  // meetupsByCourt hydrates each court object (below) so the map marker and
+  // court sheets can show scheduled runs.
+  const {
+    upcomingMeetups,
+    meetupsByCourt,
+    createMeetup,
+    joinMeetup,
+    leaveMeetup,
+    cancelMeetup,
+    fetchAttendees,
+  } = useMeetups(user?.id);
+
   // ── App State ───────────────────────────────────────────────────────────
   const [splashDone,  setSplashDone]  = useState(false);
   // splashDone is set to true by SplashScreen's onComplete callback after its
@@ -156,6 +171,7 @@ export default function App() {
         senderId:   qs.get('senderId'),
         accepterId: qs.get('accepterId'),
         courtId:    qs.get('courtId'),
+        meetupId:   qs.get('meetupId'),
       });
       window.history.replaceState({}, '', window.location.pathname);
     }
@@ -195,6 +211,14 @@ export default function App() {
       case 'friend_checkin':
         // Fly the map to the court the friend checked in at (the Map tab
         // already watches lh_focus_court for exactly this)
+        if (link.courtId) localStorage.setItem('lh_focus_court', link.courtId);
+        setActiveTab('map');
+        break;
+
+      case 'meetup_scheduled':
+      case 'meetup_reminder':
+        // Both meetup pushes carry the courtId — fly the map to that court so
+        // the user lands on its sheet (where the run + RSVP controls live).
         if (link.courtId) localStorage.setItem('lh_focus_court', link.courtId);
         setActiveTab('map');
         break;
@@ -341,8 +365,16 @@ export default function App() {
     refreshCounts();
   };
 
+  // Hydrate each court with its scheduled runs so the map marker and court
+  // sheets can read them off the same `parks` object (mirrors how `checkins`
+  // is attached in useCourts). nextMeetup = the soonest run at that court.
+  const parksWithMeetups = courts.map(c => {
+    const list = meetupsByCourt[c.id] ?? [];
+    return { ...c, meetups: list, nextMeetup: list[0] ?? null };
+  });
+
   const screenProps = {
-    parks:           courts,
+    parks:           parksWithMeetups,
     activeCheckIn,
     checkIn:         handleCheckIn,   // unified handler — does geocoding + RPC
     checkOut:        handleCheckOut,
@@ -355,6 +387,17 @@ export default function App() {
     cityLabel: cityLabel ?? 'Nearby', // real city from GPS/check-in, neutral fallback
     userPos,          // user's GPS position (or null) — MapScreen centers on it
     isCheckingIn,     // true while a check-in is in flight — disables buttons
+    // Meetups — the Home-row list plus a bundle of RSVP/host actions the
+    // court sheets use. Court-scoped run lists live on each park object above
+    // (park.meetups).
+    upcomingMeetups,
+    meetupActions: {
+      onSchedule:     createMeetup,
+      onJoin:         joinMeetup,
+      onLeave:        leaveMeetup,
+      onCancel:       cancelMeetup,
+      fetchAttendees,
+    },
   };
 
   const splashOverlay = !splashDone ? (

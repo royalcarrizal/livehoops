@@ -18,6 +18,7 @@
 import { useState, useEffect } from 'react';
 import { Trash2 } from 'lucide-react';
 import Avatar from './Avatar';
+import CourtMeetups from './CourtMeetups';
 import { useCourtReviews } from '../hooks/useCourtReviews';
 
 // ── Renders 1–5 filled/empty star characters ─────────────────────────────────
@@ -42,6 +43,8 @@ export default function CourtDetailSheet({
   user,
   isCheckingIn = false,
   onViewProfile,
+  meetupActions,
+  onToast,
 }) {
   // ── All hooks must be called before any conditional return ────────────────
   const [showReviews,  setShowReviews]  = useState(false);
@@ -223,6 +226,22 @@ export default function CourtDetailSheet({
             Get Directions
           </a>
         </div>
+
+        {/* ── Upcoming runs (scheduled meetups) ─────────────────────────────── */}
+        {meetupActions && (
+          <CourtMeetups
+            court={{ id: court.id, name: court.name }}
+            meetups={court.meetups ?? []}
+            user={user}
+            onSchedule={meetupActions.onSchedule}
+            onJoin={meetupActions.onJoin}
+            onLeave={meetupActions.onLeave}
+            onCancel={meetupActions.onCancel}
+            fetchAttendees={meetupActions.fetchAttendees}
+            onViewProfile={onViewProfile}
+            onToast={onToast}
+          />
+        )}
 
         {/* ── Ratings & Reviews section ─────────────────────────────────────── */}
         {/* Tapping the header toggles the section open/closed.               */}

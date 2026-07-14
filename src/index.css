@@ -1189,6 +1189,24 @@ body {
   opacity: 0.6;
 }
 
+/* Calendar badge on a court marker when a run is scheduled there. Sits at the
+   bottom-right so it never overlaps the live dot (top-right). */
+.mb-meetup-dot {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  border: 1.5px solid var(--orange);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  line-height: 1;
+}
+
 /* ── Checked-in player avatars floating above a court marker ─────────────── */
 /* Rendered by createMarkerEl in MapScreen.jsx (plain DOM — Mapbox owns the  */
 /* marker element). Up to 2 overlapping faces plus a "+N" overflow pill.     */
@@ -2750,6 +2768,235 @@ body {
 @keyframes slideInFromRight {
   from { opacity: 0; transform: translateX(20px); }
   to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ══ Scheduled Meetups ("Runs") ══════════════════════════════════════════════ */
+
+/* Small calendar icon in the "Upcoming runs" row header */
+.meetup-cal-icon { font-size: 12px; line-height: 1; }
+
+/* ── Home "Upcoming Runs" card (clones .active-friend-card) ─────────────────── */
+.meetup-card {
+  width: 108px;
+  flex-shrink: 0;
+  background: var(--bg-card);
+  border-radius: 12px;
+  border: 0.5px solid var(--separator);
+  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: transform 0.15s;
+  scroll-snap-align: start;
+  animation: slideInFromRight 0.3s ease both;
+}
+.meetup-card:active { transform: scale(0.96); }
+
+.meetup-card-avatar-wrap { position: relative; width: 36px; height: 36px; }
+
+/* Orange calendar badge on the host avatar */
+.meetup-card-badge {
+  position: absolute;
+  bottom: -2px;
+  right: -4px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: 1.5px solid var(--orange);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  line-height: 1;
+}
+
+.meetup-card-time {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--orange);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+.meetup-card-court {
+  font-size: 10px;
+  color: var(--text-primary);
+  text-align: center;
+  line-height: 1.3;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  width: 100%;
+}
+
+.meetup-card-going {
+  font-size: 10px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+/* ── "Run scheduled" pills on the map sheet + chips ─────────────────────────── */
+.map-sheet-meetup-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(255, 107, 0, 0.14);
+  color: var(--orange);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.map-court-chip-meetup { color: var(--orange); margin-left: 4px; white-space: nowrap; }
+
+/* ── CourtMeetups section (inside a court bottom sheet) ─────────────────────── */
+.court-meetups {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--separator);
+}
+
+.meetup-empty {
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-align: center;
+  padding: 12px 0 4px;
+}
+
+/* One scheduled run inside the sheet */
+.meetup-row {
+  background: var(--bg-elevated);
+  border: 1px solid var(--separator-strong);
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+
+.meetup-row-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.meetup-row-time { font-size: 15px; font-weight: 800; color: var(--text-primary); }
+.meetup-row-vis  { font-size: 13px; }
+
+.meetup-row-sub {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.meetup-row-going {
+  background: none;
+  border: none;
+  padding: 6px 0 2px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--orange);
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.meetup-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.meetup-row-joined { font-size: 13px; font-weight: 600; color: var(--green, #30D158); }
+
+/* "Go as Baller" anonymity checkbox */
+.meetup-anon-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.meetup-anon-check input { accent-color: var(--orange); }
+
+.meetup-btn-join,
+.meetup-btn-leave,
+.meetup-btn-cancel,
+.meetup-schedule-btn {
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 8px 16px;
+  border: none;
+}
+
+.meetup-btn-join     { background: var(--orange); color: #fff; margin-left: auto; }
+.meetup-btn-leave    { background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--separator-strong); margin-left: auto; }
+.meetup-btn-cancel   { background: none; color: #FF453A; padding: 8px 4px; }
+.meetup-btn-join:disabled,
+.meetup-btn-leave:disabled,
+.meetup-btn-cancel:disabled { opacity: 0.5; cursor: default; }
+
+/* Full-width "Schedule a Run" button under the list */
+.meetup-schedule-btn {
+  width: 100%;
+  background: rgba(255, 107, 0, 0.12);
+  color: var(--orange);
+  padding: 12px;
+  margin-top: 4px;
+}
+
+/* ── ScheduleMeetupSheet form bits (sheet frame reuses .add-court-sheet) ────── */
+.meetup-form-court {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+}
+
+.meetup-form-preview {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--orange);
+  margin: 6px 0 4px;
+}
+
+.meetup-visibility-row { display: flex; gap: 10px; }
+
+.meetup-visibility-btn {
+  flex: 1;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--separator-strong);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+.meetup-visibility-btn.selected {
+  border-color: var(--orange);
+  background: rgba(255, 107, 0, 0.12);
+  color: var(--orange);
+}
+
+.meetup-visibility-hint {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 8px;
 }
 
 /* ── Post Composer ── */

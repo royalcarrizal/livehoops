@@ -17,3 +17,9 @@ alter table public.profiles
 
 alter table public.profiles
   add column if not exists notif_court_checkins boolean not null default false;
+
+-- "Run Alerts" — push me when a friend schedules a meetup ("run") at a court.
+-- Checked by notifyFriendsOfMeetup (useMeetups.js) before pushing, same as
+-- notif_court_checkins gates check-in alerts.
+alter table public.profiles
+  add column if not exists notif_meetups boolean not null default true;

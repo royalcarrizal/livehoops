@@ -16,9 +16,11 @@ import { supabase } from '../lib/supabase';
 import { usePosts } from '../hooks/usePosts';
 import { useCourtFavorites } from '../hooks/useCourtFavorites';
 import MapPostModal from '../components/MapPostModal';
+import CourtMeetups from '../components/CourtMeetups';
 import Toast from '../components/Toast';
 import Avatar from '../components/Avatar';
 import { useToast } from '../hooks/useToast';
+import { formatMeetupTime } from '../utils/datetime';
 
 import 'mapbox-gl/dist/mapbox-gl.css';
 
@@ -32,7 +34,7 @@ mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
 // Mapbox uses [longitude, latitude] order (opposite of Google Maps)
 const FALLBACK_CENTER = [-95.3698, 29.7604];
 
-export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, user, profile, isCheckingIn = false, userPos = null, onViewProfile }) {
+export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, user, profile, isCheckingIn = false, userPos = null, onViewProfile, meetupActions }) {
   // ── Refs (don't trigger re-renders when they change) ──────────────────────
   // The div element that Mapbox renders the map canvas into
   const mapContainerRef = useRef(null);
@@ -336,6 +338,11 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
                   ★ {Number(selectedPark.avgRating).toFixed(1)} ({selectedPark.reviewCount})
                 </span>
               )}
+              {livePark.nextMeetup && (
+                <span className="map-sheet-meetup-badge">
+                  📅 Run {formatMeetupTime(livePark.nextMeetup.scheduledAt)}
+                </span>
+              )}
             </div>
 
             {/* ── Who's here — checked-in players (privacy-filtered) ────────── */}
@@ -442,6 +449,22 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
                 ✏️ Post Here
               </button>
             </div>
+
+            {/* ── Upcoming runs (scheduled meetups) ─────────────────────────── */}
+            {meetupActions && (
+              <CourtMeetups
+                court={{ id: selectedPark.id, name: selectedPark.name }}
+                meetups={livePark.meetups ?? []}
+                user={user}
+                onSchedule={meetupActions.onSchedule}
+                onJoin={meetupActions.onJoin}
+                onLeave={meetupActions.onLeave}
+                onCancel={meetupActions.onCancel}
+                fetchAttendees={meetupActions.fetchAttendees}
+                onViewProfile={onViewProfile}
+                onToast={showToast}
+              />
+            )}
           </div>
         </>
       )}
@@ -475,6 +498,11 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
                 {park.reviewCount > 0 && (
                   <span style={{ color: 'var(--orange)', marginLeft: 4 }}>
                     · ★ {Number(park.avgRating).toFixed(1)}
+                  </span>
+                )}
+                {park.nextMeetup && (
+                  <span className="map-court-chip-meetup">
+                    · 📅 {formatMeetupTime(park.nextMeetup.scheduledAt)}
                   </span>
                 )}
               </div>
@@ -540,6 +568,16 @@ function createMarkerEl(park, visited = false, isFavorited = false) {
     const dot = document.createElement('div');
     dot.className = 'mb-live-dot';
     el.appendChild(dot);
+  }
+
+  // Calendar badge (bottom-right) when a run is scheduled at this court —
+  // built like the live dot, so a court can show both "live now" and "run
+  // coming up" at once.
+  if (park.nextMeetup) {
+    const cal = document.createElement('div');
+    cal.className = 'mb-meetup-dot';
+    cal.textContent = '📅';
+    el.appendChild(cal);
   }
 
   // ── Checked-in player avatars, floating above the marker ────────────────
