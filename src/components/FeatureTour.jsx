@@ -20,6 +20,7 @@
 
 import { useState } from 'react';
 import { FEATURE_SLIDES } from '../data/featureSlides';
+import { useSwipeNav } from '../hooks/useSwipeNav';
 
 // ── One slide's inner content ────────────────────────────────────────────────
 // The consumer supplies the .onboarding-slide wrapper (Onboarding needs to
@@ -55,6 +56,12 @@ export default function FeatureTour({ onClose }) {
   const isLast   = step === slides.length - 1;
   const slidePct = 100 / slides.length;
 
+  const goNext = () => setStep(s => Math.min(s + 1, slides.length - 1));
+  const goBack = () => setStep(s => Math.max(s - 1, 0));
+
+  // Swipe left/right in addition to the Next/Back buttons below.
+  const { containerRef: swipeRef } = useSwipeNav(goNext, goBack);
+
   return (
     <div className="feature-tour-wrap">
       <div className="onboarding-inner">
@@ -72,7 +79,7 @@ export default function FeatureTour({ onClose }) {
         </div>
 
         {/* Sliding strip — same dynamic geometry as Onboarding */}
-        <div className="onboarding-strip-wrap">
+        <div className="onboarding-strip-wrap" ref={swipeRef}>
           <div
             className="onboarding-strip"
             style={{
@@ -105,7 +112,7 @@ export default function FeatureTour({ onClose }) {
 
           <button
             className="auth-submit-btn"
-            onClick={() => (isLast ? onClose() : setStep(s => s + 1))}
+            onClick={() => (isLast ? onClose() : goNext())}
           >
             {isLast ? 'Done' : 'Next'}
           </button>
@@ -113,7 +120,7 @@ export default function FeatureTour({ onClose }) {
           {step > 0 && (
             <button
               className="onboarding-skip-link"
-              onClick={() => setStep(s => s - 1)}
+              onClick={goBack}
             >
               Back
             </button>

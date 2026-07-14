@@ -18,6 +18,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { MapPin, CheckCircle, Trophy, Share, Plus } from 'lucide-react';
 import { FeatureSlide } from './FeatureTour';
 import { FEATURE_SLIDES } from '../data/featureSlides';
+import { useSwipeNav } from '../hooks/useSwipeNav';
 
 // ── Should we show the iOS "Add to Home Screen" screen? ─────────────────────
 // True only on an iPhone/iPad, in Safari (other iOS browsers can't add to the
@@ -72,8 +73,16 @@ export default function Onboarding({ profile, onComplete }) {
   // Shown on the Ready screen. Falls back to 'Player' if not loaded yet.
   const username = profile?.username || 'Player';
 
-  // Advance to the next screen (clamped to the last).
+  // Advance to the next / previous screen (clamped to the ends). There's no
+  // "Back" button anywhere in this flow — goBack exists purely so swiping
+  // right can step backward — but swiping past slide 0 is a safe no-op.
   const goNext = () => setStep(s => Math.min(s + 1, slides.length - 1));
+  const goBack = () => setStep(s => Math.max(s - 1, 0));
+
+  // Swipe left/right in addition to the tap buttons below. containerRef
+  // attaches to the strip-wrap div; buttons live outside it in
+  // .onboarding-bottom so they're unaffected.
+  const { containerRef: swipeRef } = useSwipeNav(goNext, goBack);
 
   // Is the current screen one of the 6 feature-tour slides?
   const isTourSlide = current?.startsWith('tour_');
@@ -130,7 +139,8 @@ export default function Onboarding({ profile, onComplete }) {
       <div className="onboarding-inner">
 
         {/* ── Sliding screens ─────────────────────────────────────────────── */}
-        <div className="onboarding-strip-wrap">
+        {/* ref enables swipe-left/right navigation alongside the tap buttons */}
+        <div className="onboarding-strip-wrap" ref={swipeRef}>
           <div className="onboarding-strip" style={stripStyle}>
 
             {/* ── Welcome ──────────────────────────────────────────────── */}
