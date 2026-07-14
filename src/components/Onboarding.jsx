@@ -4,16 +4,20 @@
 // 'lh_onboarded' in localStorage). Screens slide left/right via a CSS
 // transform — no libraries needed.
 //
-// Screens: Welcome → Location → [Add to Home Screen] → Ready.
+// Screens: Welcome → 6-slide feature tour → Location → [Add to Home Screen]
+// → Ready. The feature tour ("How LiveHoops Works") is defined once in
+// FeatureTour.jsx and shared with the Settings → Support entry that lets
+// users revisit it later; a "Skip tour" link jumps straight to Location.
 // The "Add to Home Screen" screen only appears for iPhone/iPad users in
 // Safari who haven't installed the app yet — iOS is the one platform with
 // no native install prompt, and iOS push notifications REQUIRE the app be
 // added to the home screen. Android/desktop and already-installed users
-// never see it (the instructions would just confuse them), so the flow
-// stays 3 screens for them and grows to 4 only where it's useful.
+// never see it (the instructions would just confuse them).
 
 import { useState, useEffect, useMemo } from 'react';
 import { MapPin, CheckCircle, Trophy, Share, Plus } from 'lucide-react';
+import { FeatureSlide } from './FeatureTour';
+import { FEATURE_SLIDES } from '../data/featureSlides';
 
 // ── Should we show the iOS "Add to Home Screen" screen? ─────────────────────
 // True only on an iPhone/iPad, in Safari (other iOS browsers can't add to the
@@ -48,7 +52,14 @@ export default function Onboarding({ profile, onComplete }) {
   // actually rendered. Computed once — the device doesn't change mid-session.
   const slides = useMemo(() => {
     const showInstall = shouldShowIosInstall();
-    return ['welcome', 'location', ...(showInstall ? ['install'] : []), 'ready'];
+    return [
+      'welcome',
+      // The 6-slide feature tour (shared with Settings via FeatureTour.jsx)
+      ...FEATURE_SLIDES.map(s => s.key),
+      'location',
+      ...(showInstall ? ['install'] : []),
+      'ready',
+    ];
   }, []);
 
   // Which screen we're on, by index into `slides`.
@@ -63,6 +74,12 @@ export default function Onboarding({ profile, onComplete }) {
 
   // Advance to the next screen (clamped to the last).
   const goNext = () => setStep(s => Math.min(s + 1, slides.length - 1));
+
+  // Is the current screen one of the 6 feature-tour slides?
+  const isTourSlide = current?.startsWith('tour_');
+
+  // "Skip tour" jumps straight to the Location screen.
+  const skipTour = () => setStep(slides.indexOf('location'));
 
   // ── Auto-advance past the Location screen if already granted ──────────────
   // If the user already allowed location in a previous session, don't make
@@ -142,6 +159,13 @@ export default function Onboarding({ profile, onComplete }) {
                 </div>
               </div>
             </div>
+
+            {/* ── Feature tour (6 slides, shared with Settings) ────────── */}
+            {FEATURE_SLIDES.map(slide => (
+              <div key={slide.key} className="onboarding-slide" style={slideStyle}>
+                <FeatureSlide slide={slide} />
+              </div>
+            ))}
 
             {/* ── Location ─────────────────────────────────────────────── */}
             <div className="onboarding-slide" style={slideStyle}>
@@ -246,6 +270,18 @@ export default function Onboarding({ profile, onComplete }) {
             <button className="auth-submit-btn" onClick={goNext}>
               Let's Go
             </button>
+          )}
+
+          {/* ── Feature tour buttons ─────────────────────────────────────── */}
+          {isTourSlide && (
+            <>
+              <button className="auth-submit-btn" onClick={goNext}>
+                Next
+              </button>
+              <button className="onboarding-skip-link" onClick={skipTour}>
+                Skip tour
+              </button>
+            </>
           )}
 
           {/* ── Location buttons ─────────────────────────────────────────── */}

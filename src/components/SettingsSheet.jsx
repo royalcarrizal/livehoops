@@ -28,6 +28,7 @@ import { useNotifications } from '../hooks/useNotifications';
 import { sendPush } from '../lib/push';
 import Toast from './Toast';
 import LegalSheet from './LegalSheet';
+import FeatureTour from './FeatureTour';
 import AdminSheet from './AdminSheet';
 
 // ── Toggle sub-component ────────────────────────────────────────────────────
@@ -100,6 +101,11 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
   // ── Legal sheet ─────────────────────────────────────────────────────────
   // 'privacy' | 'terms' | null — opens the in-app legal document viewer
   const [legalType, setLegalType] = useState(null);
+
+  // ── Feature tour ────────────────────────────────────────────────────────
+  // "How LiveHoops Works" — reopens the same 6-slide tour new users see
+  // during onboarding (shared slide content in FeatureTour.jsx).
+  const [showTour, setShowTour] = useState(false);
 
   // ── Admin moderation (only for profiles with is_admin) ──────────────────
   // pendingCounts drives the badge: { courts: n, reports: n } from the
@@ -541,6 +547,19 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
             <div className="settings-section-label">Support</div>
             <div className="settings-group">
 
+              {/* How LiveHoops Works — reopens the feature tour anytime */}
+              <button
+                className="settings-row"
+                onClick={() => setShowTour(true)}
+              >
+                <div className="settings-row-icon" style={{ background: '#FF6B00' }}>📖</div>
+                <div className="settings-row-content">
+                  <div className="settings-row-title">How LiveHoops Works</div>
+                  <div className="settings-row-desc">A quick tour of the app</div>
+                </div>
+                <div className="settings-row-right"><ChevronRight size={16} /></div>
+              </button>
+
               {/* Privacy Policy — opens in-app legal sheet */}
               <button
                 className="settings-row"
@@ -680,6 +699,9 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
 
       {/* In-app legal document viewer — slides over the settings sheet */}
       <LegalSheet type={legalType} onClose={() => setLegalType(null)} />
+
+      {/* Feature tour — full-screen overlay above the settings sheet */}
+      {showTour && <FeatureTour onClose={() => setShowTour(false)} />}
 
       {/* Admin moderation panel — renders above the settings sheet */}
       {showAdmin && <AdminSheet onClose={() => setShowAdmin(false)} />}

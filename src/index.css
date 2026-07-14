@@ -4668,6 +4668,67 @@ body {
 
 .onboarding-secondary-btn:active { opacity: 0.7; }
 
+/* ── Feature tour ("How LiveHoops Works") ────────────────────────────────── */
+/* Slide content inside onboarding reuses .onboarding-* classes directly.    */
+/* These styles cover the STANDALONE overlay opened from Settings, plus the  */
+/* emoji badge used on tour highlight cards in both contexts.                */
+
+/* Full-screen overlay — clone of .onboarding-wrap, layered above the        */
+/* settings + legal sheets (≤601) but below the splash/error screens (900+). */
+.feature-tour-wrap {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+  z-index: 800;
+}
+
+/* Header row: centered title + ✕ on the right */
+.feature-tour-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 0;
+  box-sizing: border-box;
+}
+
+.feature-tour-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.feature-tour-close {
+  background: var(--bg-card);
+  border: 1px solid var(--separator-strong);
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  font-size: 14px;
+  cursor: pointer;
+  font-family: var(--font);
+}
+
+/* Emoji badge on a tour highlight card (replaces the numbered circle the
+   iOS install steps use in the same card row) */
+.onboarding-tour-point-icon {
+  flex-shrink: 0;
+  width: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  line-height: 1;
+}
+
 /* "Skip for now" text link — no border, gray text */
 .onboarding-skip-link {
   background: none;
