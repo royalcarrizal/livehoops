@@ -456,6 +456,17 @@ export function usePosts() {
         hasImage: !!imageUrl,
         hasCourt: !!courtId,
       });
+      // supabase/rate_limits.sql throttles posting via the insert policy's
+      // WITH CHECK — a tripped throttle surfaces as a generic RLS violation,
+      // not a distinct error code. Translate it to something a person can
+      // act on; callers show err.message when err.friendly is set, and fall
+      // back to their own generic copy otherwise (this errors on other,
+      // unrelated causes too — ownership mismatch, etc.).
+      if (error.message?.toLowerCase().includes('row-level security')) {
+        const friendly = new Error("You're posting too fast — try again in a few minutes.");
+        friendly.friendly = true;
+        throw friendly;
+      }
       throw error; // Let the caller show an error message
     }
 

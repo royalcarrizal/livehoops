@@ -1643,6 +1643,27 @@ body {
   color: var(--text-primary);
 }
 
+/* Small, de-emphasized "Block" control below the main action row — visitor
+   mode only. Muted red text so it reads as available-but-not-primary. */
+.profile-block-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin: 4px auto 0;
+  padding: 4px 10px;
+  background: none;
+  border: none;
+  color: #FF453A;
+  opacity: 0.75;
+  font-size: 12.5px;
+  font-weight: 600;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+.profile-block-link:active { opacity: 1; }
+
 /* ── Mutual friends + courts section ─────────────────────────────────────── */
 .mutual-section {
   margin: 0 20px 16px;
@@ -4405,6 +4426,27 @@ body {
   line-height: 1.4;
 }
 
+/* Small explanatory line above the birth date field — why we're asking */
+.auth-field-hint {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 0 2px 6px;
+  line-height: 1.4;
+}
+
+/* Neutral informational notice (the under-13 supervision message) — distinct
+   from .auth-error (red, blocking) and .auth-success (green, confirms an
+   action completed). Blue reads as "FYI," never as a problem. */
+.auth-notice {
+  font-size: 13px;
+  color: #64D2FF;
+  text-align: center;
+  padding: 8px 12px;
+  background: rgba(100, 210, 255, 0.1);
+  border-radius: 10px;
+  line-height: 1.4;
+}
+
 /* The big orange "Create Account" or "Log In" button */
 .auth-submit-btn {
   width: 100%;
@@ -5700,7 +5742,20 @@ body {
   font-weight: 700;
   color: var(--text-primary);
   font-family: var(--font);
+  flex: 1;
 }
+
+.dm-block-btn {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+.dm-block-btn:active { color: #FF453A; }
 
 /* ── DM Message list ───────────────────────────────────────────────────── */
 .dm-message-list {

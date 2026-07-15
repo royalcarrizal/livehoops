@@ -34,7 +34,7 @@ import { supabase } from '../lib/supabase';
 //   setActiveTab — lets this screen switch to another tab (e.g. Friends tab)
 //   user         — the logged-in Supabase user object (has .id)
 //   profile      — the user's profile row from Supabase (username, avatar_url, etc.)
-export default function HomeScreen({ setActiveTab, user, profile, parks, onViewProfile, onCheckIn, activeCheckIn, checkOut, cityLabel = 'Nearby', isCheckingIn = false, upcomingMeetups = [], meetupActions }) {
+export default function HomeScreen({ setActiveTab, user, profile, parks, onViewProfile, onCheckIn, activeCheckIn, checkOut, cityLabel = 'Nearby', isCheckingIn = false, upcomingMeetups = [], meetupActions, blockUser }) {
   const [feedTab, setFeedTab]           = useState('following');
   const [photoUrl, setPhotoUrl]         = useState(null);
   const [showPanel, setShowPanel]       = useState(false);
@@ -424,6 +424,7 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
                   await supabase.from('post_reports').insert({ post_id: postId, reported_by: user.id });
                 } catch { /* silent — toast shown by FeedPost */ }
               }}
+              onBlock={blockUser}
             />
           ))}
         </div>

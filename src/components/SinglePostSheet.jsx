@@ -22,7 +22,7 @@ import { useToast } from '../hooks/useToast';
 import { usePosts } from '../hooks/usePosts';
 import { supabase } from '../lib/supabase';
 
-export default function SinglePostSheet({ postId, showComments = false, currentUser, onClose, onViewProfile }) {
+export default function SinglePostSheet({ postId, showComments = false, currentUser, onClose, onViewProfile, onBlock }) {
   const [post, setPost]       = useState(null);
   const [loading, setLoading] = useState(true);
   const [photoUrl, setPhotoUrl] = useState(null);
@@ -84,6 +84,7 @@ export default function SinglePostSheet({ postId, showComments = false, currentU
                 await supabase.from('post_reports').insert({ post_id: id, reported_by: currentUser?.id });
               } catch { /* silent — toast shown by FeedPost */ }
             }}
+            onBlock={onBlock}
           />
         )}
       </div>

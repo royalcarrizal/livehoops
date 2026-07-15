@@ -11,15 +11,42 @@
 
 import { useState } from 'react';
 
+// ── Age from a birth date, for the supervision notice below ─────────────────
+// Pure client-side arithmetic — the date itself is never sent anywhere (not
+// included in the onSignUp call, so it never reaches Supabase). Returns null
+// for an unparseable/empty date.
+function calculateAge(dateStr) {
+  if (!dateStr) return null;
+  const dob = new Date(dateStr);
+  if (Number.isNaN(dob.getTime())) return null;
+
+  const now = new Date();
+  let age = now.getFullYear() - dob.getFullYear();
+  const hadBirthdayThisYear =
+    now.getMonth() > dob.getMonth() ||
+    (now.getMonth() === dob.getMonth() && now.getDate() >= dob.getDate());
+  if (!hadBirthdayThisYear) age--;
+
+  return age;
+}
+
 export default function AuthScreen({ onSignUp, onSignIn, onResetPassword }) {
   // Which form is showing: 'login' or 'signup'
   const [mode, setMode] = useState('login');
 
   // Form field values
   const [username, setUsername]             = useState('');
+  const [birthDate, setBirthDate]           = useState('');
   const [email, setEmail]                   = useState('');
   const [password, setPassword]             = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+
+  // Birth date is collected only to decide whether to show the supervision
+  // notice below — it's never persisted or sent to onSignUp. Doesn't block
+  // account creation at any age; see supabase/block_users.sql's sibling
+  // decision notes in the safety-table plan for why.
+  const age = calculateAge(birthDate);
+  const showYoungNotice = age !== null && age <= 12;
 
   // UI state
   const [error, setError]         = useState('');
@@ -74,6 +101,12 @@ export default function AuthScreen({ onSignUp, onSignIn, onResetPassword }) {
       }
       if (username.trim().length < 2) {
         setError('Username must be at least 2 characters.');
+        return;
+      }
+      // Required so the supervision notice below gets a chance to show for
+      // every signup — the VALUE never blocks anything, only a missing date.
+      if (!birthDate) {
+        setError('Please enter your birth date.');
         return;
       }
       if (password !== confirmPassword) {
@@ -180,6 +213,35 @@ export default function AuthScreen({ onSignUp, onSignIn, onResetPassword }) {
             autoComplete="username"
             maxLength={30}
           />
+        )}
+
+        {/* Birth date — signup only. Used only to decide whether to show the
+            supervision notice below; never sent to onSignUp or stored. */}
+        {mode === 'signup' && (
+          <div>
+            <p className="auth-field-hint">
+              So we can let younger players know to have a parent or guardian nearby
+            </p>
+            <input
+              style={inputStyle}
+              type="date"
+              aria-label="Birth date"
+              value={birthDate}
+              onChange={e => setBirthDate(e.target.value)}
+              autoComplete="bday"
+              max={new Date().toISOString().slice(0, 10)}
+            />
+          </div>
+        )}
+
+        {/* Supervision notice — informational only, never blocks Create
+            Account. Shown as soon as a birth date making someone 12 or
+            under is entered. */}
+        {mode === 'signup' && showYoungNotice && (
+          <div className="auth-notice">
+            LiveHoops is best experienced with a parent or guardian nearby for
+            players 12 and under.
+          </div>
         )}
 
         {/* Identifier field — shown on both forms. On signup it's the account

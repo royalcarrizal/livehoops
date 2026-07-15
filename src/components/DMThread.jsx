@@ -7,14 +7,20 @@
 //   friend      — friend object from useFriends { userId, username, avatarUrl, initials }
 //   currentUser — { id, username, avatarUrl }
 //   onClose     — called when the user taps the back button
+//   onBlock     — async (userId) => void — blocks friend.userId; the thread
+//                 closes itself on success (continuing to view/send in a
+//                 thread with someone you just blocked makes no sense)
 
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronLeft, Send } from 'lucide-react';
+import { ChevronLeft, Send, UserX } from 'lucide-react';
 import Avatar from './Avatar';
+import BlockUserConfirm from './BlockUserConfirm';
+import Toast from './Toast';
 import { useDirectMessages } from '../hooks/useDirectMessages';
+import { useToast } from '../hooks/useToast';
 
-export default function DMThread({ friend, currentUser, onClose }) {
+export default function DMThread({ friend, currentUser, onClose, onBlock }) {
   const [text,          setText]          = useState('');
   const [isSending,     setIsSending]     = useState(false);
   const [bottomOffset,  setBottomOffset]  = useState(0);
@@ -29,6 +35,8 @@ export default function DMThread({ friend, currentUser, onClose }) {
     markRead,
     subscribeToMessages,
   } = useDirectMessages();
+
+  const { toast, showToast } = useToast();
 
   // ── Load conversation and mark existing messages as read on open ──────────
   useEffect(() => {
@@ -82,9 +90,14 @@ export default function DMThread({ friend, currentUser, onClose }) {
     setIsSending(true);
     try {
       await sendMessage(currentUser.id, friend.userId, trimmed, currentUser.username);
-    } catch {
+    } catch (err) {
       // Restore text so the user doesn't lose their message
       setText(trimmed);
+      // useDirectMessages.sendMessage throws a marked friendly error when
+      // the send policy's checks reject it (rate limit, most commonly, but
+      // also a stale friendship/block — see the hook for why the copy stays
+      // deliberately non-specific); anything else gets a generic fallback.
+      showToast(err?.friendly ? err.message : 'Failed to send — try again');
     } finally {
       setIsSending(false);
     }
@@ -95,6 +108,18 @@ export default function DMThread({ friend, currentUser, onClose }) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
+    }
+  };
+
+  // ── Block ─────────────────────────────────────────────────────────────────
+  const [showBlockConfirm, setShowBlockConfirm] = useState(false);
+  const handleBlock = async () => {
+    try {
+      await onBlock?.(friend.userId);
+      onClose(); // nothing left to do in a thread with someone just blocked
+    } catch {
+      // Stay in the thread so the user can retry — BlockUserConfirm's own
+      // button state already reflects that the attempt finished.
     }
   };
 
@@ -117,7 +142,22 @@ export default function DMThread({ friend, currentUser, onClose }) {
             size="small"
           />
           <span className="dm-header-name">{friend.name}</span>
+          <button
+            className="dm-block-btn"
+            onClick={() => setShowBlockConfirm(true)}
+            aria-label={`Block ${friend.name}`}
+          >
+            <UserX size={18} strokeWidth={2} />
+          </button>
         </div>
+
+        {showBlockConfirm && (
+          <BlockUserConfirm
+            username={friend.name}
+            onConfirm={handleBlock}
+            onCancel={() => setShowBlockConfirm(false)}
+          />
+        )}
 
         {/* ── Message list ─────────────────────────────────────────────────── */}
         <div className="dm-message-list">
@@ -172,6 +212,7 @@ export default function DMThread({ friend, currentUser, onClose }) {
           </button>
         </div>
 
+        <Toast message={toast} />
       </div>
     </div>,
     document.body

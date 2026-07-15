@@ -5,6 +5,7 @@ import { useProfile } from './hooks/useProfile';
 import { useCourts } from './hooks/useCourts';
 import { useCheckIn } from './hooks/useCheckIn';
 import { useMeetups } from './hooks/useMeetups';
+import { useBlockedUsers } from './hooks/useBlockedUsers';
 import { supabase } from './lib/supabase';
 import BottomNav from './components/BottomNav';
 import HomeScreen from './screens/HomeScreen';
@@ -100,6 +101,11 @@ export default function App() {
     cancelMeetup,
     fetchAttendees,
   } = useMeetups(user?.id);
+
+  // ── Blocked users ──────────────────────────────────────────────────────────
+  // blockedIds gates who you can see/message; blockedUsers (with profile
+  // info) powers the Settings → Blocked Accounts management list.
+  const { blockedIds, blockedUsers, blockUser, unblockUser } = useBlockedUsers(user?.id);
 
   // ── App State ───────────────────────────────────────────────────────────
   const [splashDone,  setSplashDone]  = useState(false);
@@ -398,6 +404,12 @@ export default function App() {
       onCancel:       cancelMeetup,
       fetchAttendees,
     },
+    // Blocking — blockedIds lets any screen filter/mark blocked users;
+    // blockUser/unblockUser are the actions, threaded down to the entry
+    // points (profile, post options, DM header) and the Settings list.
+    blockedIds,
+    blockUser,
+    unblockUser,
   };
 
   const splashOverlay = !splashDone ? (
@@ -494,6 +506,10 @@ export default function App() {
             onBack={viewedProfile ? handleBackFromProfile : null}
             onViewProfile={handleViewProfile}
             onNavigateTab={setActiveTab}
+            blockedIds={blockedIds}
+            blockedUsers={blockedUsers}
+            blockUser={blockUser}
+            unblockUser={unblockUser}
           />
         )}
 
@@ -516,6 +532,7 @@ export default function App() {
             }}
             onClose={() => setViewedPost(null)}
             onViewProfile={handleViewProfile}
+            onBlock={blockUser}
           />
         )}
 

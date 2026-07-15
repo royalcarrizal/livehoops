@@ -14,7 +14,9 @@ import { createPortal } from 'react-dom';
 import { X, Image, Send } from 'lucide-react';
 import { MapPin } from 'lucide-react';
 import Avatar from './Avatar';
+import Toast from './Toast';
 import { useStorage } from '../hooks/useStorage';
+import { useToast } from '../hooks/useToast';
 
 export default function MapPostModal({ court, currentUser, onPost, onClose }) {
   const [text,       setText]       = useState('');
@@ -28,6 +30,7 @@ export default function MapPostModal({ court, currentUser, onPost, onClose }) {
   const textareaRef   = useRef(null);
 
   const { uploadPostImage } = useStorage();
+  const { toast, showToast } = useToast();
 
   // Focus textarea on open
   useEffect(() => {
@@ -96,8 +99,12 @@ export default function MapPostModal({ court, currentUser, onPost, onClose }) {
       });
 
       onClose();
-    } catch {
-      // onPost or uploadPostImage failed — stay open so the user can retry
+    } catch (err) {
+      // onPost or uploadPostImage failed — stay open so the user can retry.
+      // usePosts.createPost throws a marked friendly error for a tripped
+      // rate limit (supabase/rate_limits.sql) — show that; anything else
+      // gets a generic fallback so a failure is never silent.
+      showToast(err?.friendly ? `❌ ${err.message}` : '❌ Failed to post — try again');
     } finally {
       setIsPosting(false);
     }
@@ -187,6 +194,7 @@ export default function MapPostModal({ court, currentUser, onPost, onClose }) {
           style={{ display: 'none' }}
           onChange={handleImageSelect}
         />
+        <Toast message={toast} />
       </div>
     </div>,
     document.body

@@ -68,10 +68,17 @@ function PrivacyPolicy() {
 
       <h2 className="legal-section-title">5. Children's Privacy</h2>
       <p className="legal-body">
-        LiveHoops is not directed at children under the age of 13. We do not
-        knowingly collect personal information from children under 13. If you
-        believe a child has provided us with personal information, please contact
-        us so we can remove it.
+        At sign-up, we ask for your birth date. It is used only to show players
+        aged 12 and under a message suggesting they use the app with a parent or
+        guardian nearby — it is never stored, saved to your account, or sent
+        anywhere else, and account creation is not restricted by age.
+      </p>
+      <p className="legal-body">
+        Because of this, LiveHoops does not verify or limit the age of its
+        users, and younger players may use the app and share the same
+        information as any other user (see Section 1). If you are a parent or
+        guardian and want a child's account removed, contact us and we will
+        delete it.
       </p>
 
       <h2 className="legal-section-title">6. Changes to This Policy</h2>

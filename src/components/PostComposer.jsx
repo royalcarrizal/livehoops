@@ -117,7 +117,10 @@ export default function PostComposer({
 
     } catch (err) {
       console.error('PostComposer submit failed:', err);
-      onToast?.('❌ Failed to post — try again');
+      // usePosts.createPost throws a marked friendly error for a tripped
+      // rate limit (supabase/rate_limits.sql) — show that specific message;
+      // any other failure keeps the generic fallback.
+      onToast?.(err?.friendly ? `❌ ${err.message}` : '❌ Failed to post — try again');
     } finally {
       setIsPosting(false);
     }

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
-import { Heart, MessageCircle, Share2, MoreHorizontal, Play, MapPin, Send, Trash2, Flag, X } from 'lucide-react';
+import { Heart, MessageCircle, Share2, MoreHorizontal, Play, MapPin, Send, Trash2, Flag, X, UserX } from 'lucide-react';
 import Avatar from './Avatar';
+import BlockUserConfirm from './BlockUserConfirm';
 import { sendLocalNotification } from '../utils/notificationStore';
 import { useComments } from '../hooks/useComments';
 
@@ -26,6 +27,7 @@ export default function FeedPost({
   onRepost,
   onDelete,
   onReport,
+  onBlock,
   // true → comment section starts open (used by notification deep links:
   // "X commented on your post" should land with the comments visible)
   initialShowComments = false,
@@ -243,6 +245,19 @@ export default function FeedPost({
       onToast?.('Post reported — thanks for keeping it clean 🙏');
     } catch {
       onToast?.('Failed to report post');
+    }
+  };
+
+  // ── Block ─────────────────────────────────────────────────────────────────
+  const [showBlockConfirm, setShowBlockConfirm] = useState(false);
+
+  const handleBlock = async () => {
+    try {
+      await onBlock?.(post.userId);
+      setShowBlockConfirm(false);
+      onToast?.(`Blocked ${post.userName}`);
+    } catch {
+      onToast?.('Failed to block — try again');
     }
   };
 
@@ -507,16 +522,33 @@ export default function FeedPost({
                 {deleteBusy ? 'Deleting…' : 'Delete Post'}
               </button>
             ) : (
-              <button className="feed-options-btn" onClick={handleReport}>
-                <Flag size={18} strokeWidth={2} />
-                Report Post
-              </button>
+              <>
+                <button className="feed-options-btn" onClick={handleReport}>
+                  <Flag size={18} strokeWidth={2} />
+                  Report Post
+                </button>
+                <button
+                  className="feed-options-btn destructive"
+                  onClick={() => { setShowOptions(false); setShowBlockConfirm(true); }}
+                >
+                  <UserX size={18} strokeWidth={2} />
+                  Block {post.userName}
+                </button>
+              </>
             )}
             <button className="feed-options-btn cancel" onClick={() => setShowOptions(false)}>
               Cancel
             </button>
           </div>
         </>
+      )}
+
+      {showBlockConfirm && (
+        <BlockUserConfirm
+          username={post.userName}
+          onConfirm={handleBlock}
+          onCancel={() => setShowBlockConfirm(false)}
+        />
       )}
 
       {/* ── Comments section ────────────────────────────────────────────── */}

@@ -30,6 +30,7 @@ import Toast from './Toast';
 import LegalSheet from './LegalSheet';
 import FeatureTour from './FeatureTour';
 import AdminSheet from './AdminSheet';
+import BlockedAccountsSheet from './BlockedAccountsSheet';
 
 // ── Toggle sub-component ────────────────────────────────────────────────────
 // A simple on/off pill toggle. Styled in index.css as .settings-toggle.
@@ -48,7 +49,7 @@ function Toggle({ on, onToggle }) {
   );
 }
 
-export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditProfile, profile, updateProfile }) {
+export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditProfile, profile, updateProfile, blockedUsers = [], unblockUser }) {
 
   // ── Push notification permission + token registration ───────────────────
   // Drives the master Push toggle. requestPermission asks the browser AND
@@ -106,6 +107,9 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
   // "How LiveHoops Works" — reopens the same 6-slide tour new users see
   // during onboarding (shared slide content in FeatureTour.jsx).
   const [showTour, setShowTour] = useState(false);
+
+  // ── Blocked accounts list ────────────────────────────────────────────────
+  const [showBlocked, setShowBlocked] = useState(false);
 
   // ── Admin moderation (only for profiles with is_admin) ──────────────────
   // pendingCounts drives the badge: { courts: n, reports: n } from the
@@ -513,6 +517,20 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
                 <Toggle on={showLocation} onToggle={handleLocationToggle} />
               </div>
 
+              {/* Blocked accounts — opens the management list */}
+              <button className="settings-row" onClick={() => setShowBlocked(true)}>
+                <div className="settings-row-icon" style={{ background: '#8E8E93' }}>🚫</div>
+                <div className="settings-row-content">
+                  <div className="settings-row-title">Blocked Accounts</div>
+                  {blockedUsers.length > 0 && (
+                    <div className="settings-row-desc">
+                      {blockedUsers.length} {blockedUsers.length === 1 ? 'account' : 'accounts'} blocked
+                    </div>
+                  )}
+                </div>
+                <ChevronRight size={16} />
+              </button>
+
             </div>
           </div>
 
@@ -705,6 +723,15 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
 
       {/* Admin moderation panel — renders above the settings sheet */}
       {showAdmin && <AdminSheet onClose={() => setShowAdmin(false)} />}
+
+      {/* Blocked accounts list — renders above the settings sheet */}
+      {showBlocked && (
+        <BlockedAccountsSheet
+          blockedUsers={blockedUsers}
+          onUnblock={unblockUser}
+          onClose={() => setShowBlocked(false)}
+        />
+      )}
 
       {/* Toast notification — shown above the sheet so messages are visible */}
       <Toast message={toast} />

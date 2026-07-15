@@ -104,6 +104,20 @@ export function useDirectMessages() {
       console.error('sendMessage error:', error);
       // Remove the optimistic message so the user knows it failed
       setMessages(prev => prev.filter(m => m.id !== tempId));
+      // The dm_insert_own policy's WITH CHECK ANDs together three things —
+      // friends-only, not-blocked, and (as of rate_limits.sql) a send
+      // throttle — and RLS can't report which one tripped, only that one
+      // did. Deliberately not claiming "you're rate limited" here: it's the
+      // most common cause in practice, but a stale thread with someone who
+      // just blocked you (or unfriended you) hits this exact same error, so
+      // the message stays true either way instead of guessing. Callers show
+      // err.message when err.friendly is set, and fall back to their own
+      // generic copy otherwise.
+      if (error.message?.toLowerCase().includes('row-level security')) {
+        const friendly = new Error("Message couldn't be sent — try again in a moment.");
+        friendly.friendly = true;
+        throw friendly;
+      }
       throw error;
     }
 

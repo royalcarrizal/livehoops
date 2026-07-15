@@ -24,7 +24,7 @@ import Avatar from '../components/Avatar';
 //   onUnreadDMs  — called with total unread count so App can badge BottomNav
 //   openDmWith   — userId to auto-open a DM thread with (notification deep link)
 //   onDmOpened   — called once that thread has been opened (clears the request)
-export default function FriendsScreen({ user, profile, onViewProfile, onUnreadDMs, openDmWith, onDmOpened }) {
+export default function FriendsScreen({ user, profile, onViewProfile, onUnreadDMs, openDmWith, onDmOpened, blockUser }) {
   // ── Friends data ─────────────────────────────────────────────────────────
   const {
     friends,
@@ -414,6 +414,7 @@ export default function FriendsScreen({ user, profile, onViewProfile, onUnreadDM
             avatarUrl: profile?.avatar_url ?? null,
           }}
           onClose={closeThread}
+          onBlock={blockUser}
         />
       )}
 

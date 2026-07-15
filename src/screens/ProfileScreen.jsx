@@ -17,7 +17,7 @@
 //   6. Settings sheet     — owner only, full settings slide-up
 
 import { useState, useRef, useEffect } from 'react';
-import { Settings, X, ChevronLeft, Map } from 'lucide-react';
+import { Settings, X, ChevronLeft, Map, UserX } from 'lucide-react';
 import { useFriends } from '../hooks/useFriends';
 import AchievementsSection from '../components/AchievementsSection';
 import Avatar from '../components/Avatar';
@@ -25,6 +25,7 @@ import FeedPost from '../components/FeedPost';
 import PhotoViewer from '../components/PhotoViewer';
 import Toast from '../components/Toast';
 import SettingsSheet from '../components/SettingsSheet';
+import BlockUserConfirm from '../components/BlockUserConfirm';
 import { useToast } from '../hooks/useToast';
 import { usePosts } from '../hooks/usePosts';
 import { useStorage } from '../hooks/useStorage';
@@ -41,7 +42,7 @@ import { supabase } from '../lib/supabase';
 //                   Named distinctly from the local activeTab/setActiveTab
 //                   state below, which only toggles this screen's Posts vs.
 //                   Check-ins view.
-export default function ProfileScreen({ signOut, profile, updateProfile, user, onBack, onViewProfile, onNavigateTab }) {
+export default function ProfileScreen({ signOut, profile, updateProfile, user, onBack, onViewProfile, onNavigateTab, blockedIds, blockedUsers, blockUser, unblockUser }) {
   // ── Refs ──────────────────────────────────────────────────────────────────
   // Hidden file input — triggered when the owner taps "Change Photo"
   const fileInputRef = useRef(null);
@@ -132,6 +133,29 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
   const viewedUserId = profile?.id;
   const alreadyFriends = myFriends.some(f => f.userId === viewedUserId);
   const requestPending = mySentRequests.includes(viewedUserId);
+  const isBlocked = !isOwner && !!viewedUserId && !!blockedIds?.has(viewedUserId);
+
+  // Block/unblock confirmation dialog + toast, shared with the other two
+  // block entry points (FeedPost options sheet, DMThread header) via
+  // BlockUserConfirm.
+  const [showBlockConfirm, setShowBlockConfirm] = useState(false);
+  const handleBlock = async () => {
+    try {
+      await blockUser?.(viewedUserId);
+      setShowBlockConfirm(false);
+      showToast(`Blocked ${displayUser.name}`);
+    } catch {
+      showToast('Failed to block — try again');
+    }
+  };
+  const handleUnblock = async () => {
+    try {
+      await unblockUser?.(viewedUserId);
+      showToast(`Unblocked ${displayUser.name}`);
+    } catch {
+      showToast('Failed to unblock — try again');
+    }
+  };
 
   // ── Profile visibility gate ───────────────────────────────────────────────
   // Respects the viewed user's Profile Visibility privacy setting:
@@ -141,8 +165,11 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
   // When locked, visitors see only the avatar, username, and an Add Friend
   // button — posts, stats, and mutuals are replaced by a locked message.
   const viewedVisibility = profile?.profile_visibility ?? 'public';
-  const canViewContent =
+  const canViewContentBase =
     isOwner || viewedVisibility === 'public' || alreadyFriends;
+  // A block overrides visibility entirely — even a public profile is locked
+  // once you've blocked its owner.
+  const canViewContent = canViewContentBase && !isBlocked;
 
   const handleAddFriend = async () => {
     await sendFriendRequest(viewedUserId);
@@ -406,53 +433,89 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
           </div>
         )}
 
-        {/* Two action buttons side by side */}
+        {/* Two action buttons side by side — replaced with a single Unblock
+            button when you've blocked this person, since Achievements/Add
+            Friend/etc. don't make sense for a profile you can't see anyway. */}
         <div className="profile-action-row">
-          {/* Achievements — derived from stats, so hidden on locked profiles */}
-          {canViewContent && (
-            <button
-              className="profile-action-btn outlined"
-              onClick={() => setShowAchievements(true)}
-            >
-              Achievements
-            </button>
-          )}
-
-          {/* Edit Profile — owner only. Visitors see friend status button instead. */}
-          {isOwner ? (
-            <button
-              className="profile-action-btn filled"
-              onClick={openEditProfile}
-            >
-              Edit Profile
-            </button>
-          ) : alreadyFriends ? (
-            <button className="profile-action-btn filled" disabled>
-              Friends ✓
-            </button>
-          ) : requestPending ? (
-            <button className="profile-action-btn filled" disabled style={{ opacity: 0.6 }}>
-              Pending
+          {isBlocked ? (
+            <button className="profile-action-btn filled" onClick={handleUnblock}>
+              Unblock
             </button>
           ) : (
-            <button className="profile-action-btn filled" onClick={handleAddFriend}>
-              Add Friend
-            </button>
+            <>
+              {/* Achievements — derived from stats, so hidden on locked profiles */}
+              {canViewContent && (
+                <button
+                  className="profile-action-btn outlined"
+                  onClick={() => setShowAchievements(true)}
+                >
+                  Achievements
+                </button>
+              )}
+
+              {/* Edit Profile — owner only. Visitors see friend status button instead. */}
+              {isOwner ? (
+                <button
+                  className="profile-action-btn filled"
+                  onClick={openEditProfile}
+                >
+                  Edit Profile
+                </button>
+              ) : alreadyFriends ? (
+                <button className="profile-action-btn filled" disabled>
+                  Friends ✓
+                </button>
+              ) : requestPending ? (
+                <button className="profile-action-btn filled" disabled style={{ opacity: 0.6 }}>
+                  Pending
+                </button>
+              ) : (
+                <button className="profile-action-btn filled" onClick={handleAddFriend}>
+                  Add Friend
+                </button>
+              )}
+            </>
           )}
         </div>
+
+        {/* Small, de-emphasized Block control — visitor mode only */}
+        {!isOwner && !isBlocked && (
+          <button
+            className="profile-block-link"
+            onClick={() => setShowBlockConfirm(true)}
+            aria-label={`Block ${displayUser.name}`}
+          >
+            <UserX size={13} strokeWidth={2} />
+            Block
+          </button>
+        )}
       </div>
 
-      {/* ── Locked profile state — friends-only/private and we're not friends ── */}
+      {/* ── Locked profile state — blocked, or friends-only/private ─────────── */}
       {!canViewContent && (
         <div className="feed-empty" style={{ marginTop: 8 }}>
-          <div style={{ fontSize: 48 }}>🔒</div>
-          <div className="feed-empty-title">This profile is {viewedVisibility === 'private' ? 'private' : 'friends only'}</div>
+          <div style={{ fontSize: 48 }}>{isBlocked ? '🚫' : '🔒'}</div>
+          <div className="feed-empty-title">
+            {isBlocked
+              ? `You've blocked ${displayUser.name}`
+              : `This profile is ${viewedVisibility === 'private' ? 'private' : 'friends only'}`}
+          </div>
           <div className="feed-empty-sub">
-            {requestPending
-              ? 'Your friend request is pending'
-              : 'Add them as a friend to see their posts and stats'}
+            {isBlocked
+              ? 'Unblock them above to see their posts and stats again'
+              : requestPending
+                ? 'Your friend request is pending'
+                : 'Add them as a friend to see their posts and stats'}
           </div>
         </div>
+      )}
+
+      {showBlockConfirm && (
+        <BlockUserConfirm
+          username={displayUser.name}
+          onConfirm={handleBlock}
+          onCancel={() => setShowBlockConfirm(false)}
+        />
       )}
 
       {/* ── Mutual friends + courts — visitor mode only ─────────────────────── */}
@@ -567,6 +630,7 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
                       await supabase.from('post_reports').insert({ post_id: postId, reported_by: user.id });
                     } catch { /* silent — toast shown by FeedPost */ }
                   }}
+                  onBlock={blockUser}
                 />
               ))}
             </div>
@@ -792,6 +856,8 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
             onEditProfile={openEditProfile}
             profile={profile}
             updateProfile={updateProfile}
+            blockedUsers={blockedUsers}
+            unblockUser={unblockUser}
           />
         </>
       )}
