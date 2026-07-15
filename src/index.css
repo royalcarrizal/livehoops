@@ -5426,18 +5426,47 @@ body {
   border-bottom: 1px solid var(--separator);
 }
 
-/* Court name — bold on the left */
+/* Court name + date/duration stack on the left; Map button on the right */
+.checkin-history-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0; /* allow the court name to truncate instead of pushing the button off-screen */
+}
+
+/* Court name — bold */
 .checkin-history-court {
   font-size: 15px;
   font-weight: 600;
-  color: var(--text);
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* "Apr 21 · 45 min" — muted on the right */
+/* "Apr 21 · 45 min" — muted, below the court name */
 .checkin-history-meta {
   font-size: 13px;
   color: var(--text-secondary);
 }
+
+/* "Map" button — jumps to this court on the Map tab */
+.checkin-history-map-btn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--separator-strong);
+  color: var(--orange);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+.checkin-history-map-btn:active { transform: scale(0.96); }
 
 /* ── Legal Sheet (Privacy Policy / Terms of Service) ──────────────────────── */
 /* Slides up over the Settings sheet — sits at z-index 400 (above settings 300) */

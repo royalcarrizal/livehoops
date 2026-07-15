@@ -493,6 +493,7 @@ export default function App() {
             user={user}
             onBack={viewedProfile ? handleBackFromProfile : null}
             onViewProfile={handleViewProfile}
+            onNavigateTab={setActiveTab}
           />
         )}
 

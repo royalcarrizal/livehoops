@@ -17,7 +17,7 @@
 //   6. Settings sheet     — owner only, full settings slide-up
 
 import { useState, useRef, useEffect } from 'react';
-import { Settings, X, ChevronLeft } from 'lucide-react';
+import { Settings, X, ChevronLeft, Map } from 'lucide-react';
 import { useFriends } from '../hooks/useFriends';
 import AchievementsSection from '../components/AchievementsSection';
 import Avatar from '../components/Avatar';
@@ -36,7 +36,12 @@ import { supabase } from '../lib/supabase';
 //                   This is the VIEWED user's profile — may or may not be the logged-in user.
 //   updateProfile — async function to update profile fields in Supabase (owner only)
 //   user          — the logged-in Supabase user object (has .id, .email)
-export default function ProfileScreen({ signOut, profile, updateProfile, user, onBack, onViewProfile }) {
+//   onNavigateTab — switches the APP to another tab (home/map/etc); used by
+//                   the Check-ins tab's "Map" button to jump to a past court.
+//                   Named distinctly from the local activeTab/setActiveTab
+//                   state below, which only toggles this screen's Posts vs.
+//                   Check-ins view.
+export default function ProfileScreen({ signOut, profile, updateProfile, user, onBack, onViewProfile, onNavigateTab }) {
   // ── Refs ──────────────────────────────────────────────────────────────────
   // Hidden file input — triggered when the owner taps "Change Photo"
   const fileInputRef = useRef(null);
@@ -243,7 +248,7 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
       setHistoryLoading(true);
       const { data } = await supabase
         .from('checkins')
-        .select('id, checked_in_at, duration_minutes, courts(name)')
+        .select('id, court_id, checked_in_at, duration_minutes, courts(name)')
         .eq('user_id', profile.id)
         .eq('is_active', false)
         .order('checked_in_at', { ascending: false })
@@ -255,6 +260,16 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
 
     loadHistory();
   }, [activeTab, profile?.id]);
+
+  // ── "Map" button on a check-in row ────────────────────────────────────────
+  // Same handoff every other "jump to this court" feature uses (friend
+  // check-ins, scheduled runs): stash the court id, switch to the Map tab,
+  // which flies the camera there and opens its detail sheet on load.
+  const handleViewOnMap = (courtId) => {
+    if (!courtId) return;
+    localStorage.setItem('lh_focus_court', courtId);
+    onNavigateTab?.('map');
+  };
 
   // ── Avatar upload handler (owner only) ───────────────────────────────────
   // When the owner picks a photo from the file picker:
@@ -580,18 +595,32 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
             // Real check-in rows from Supabase
             checkInHistory.map(item => (
               <div key={item.id} className="checkin-history-row">
-                {/* Court name from the courts table join */}
-                <div className="checkin-history-court">
-                  {item.courts?.name ?? 'Unknown Court'}
+                <div className="checkin-history-info">
+                  {/* Court name from the courts table join */}
+                  <div className="checkin-history-court">
+                    {item.courts?.name ?? 'Unknown Court'}
+                  </div>
+                  {/* Date + duration (e.g. "Apr 21 · 45 min") */}
+                  <div className="checkin-history-meta">
+                    {new Date(item.checked_in_at).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                    })}
+                    {item.duration_minutes ? ` · ${item.duration_minutes} min` : ''}
+                  </div>
                 </div>
-                {/* Date + duration (e.g. "Apr 21 · 45 min") */}
-                <div className="checkin-history-meta">
-                  {new Date(item.checked_in_at).toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                  })}
-                  {item.duration_minutes ? ` · ${item.duration_minutes} min` : ''}
-                </div>
+
+                {/* Jump to this court on the Map tab */}
+                {item.court_id && (
+                  <button
+                    className="checkin-history-map-btn"
+                    onClick={() => handleViewOnMap(item.court_id)}
+                    aria-label={`View ${item.courts?.name ?? 'court'} on the map`}
+                  >
+                    <Map size={13} strokeWidth={2} />
+                    Map
+                  </button>
+                )}
               </div>
             ))
           )}
