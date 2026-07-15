@@ -7,7 +7,7 @@ import { friendlyError } from '../useAuth';
 describe('friendlyError', () => {
   it('translates bad credentials', () => {
     expect(friendlyError('Invalid login credentials'))
-      .toBe('Wrong email or password. Double-check and try again.');
+      .toBe('Wrong email/username or password. Double-check and try again.');
   });
 
   it('translates duplicate account', () => {

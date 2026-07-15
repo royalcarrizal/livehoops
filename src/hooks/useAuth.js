@@ -156,9 +156,29 @@ export function useAuth() {
   }, []);
 
   // ── Sign In ─────────────────────────────────────────────────────────────
-  // Logs in an existing user with their email and password.
-  const signIn = useCallback(async (email, password) => {
+  // Logs a user in with EITHER their email or their username, plus password.
+  //
+  // Supabase Auth only accepts an email, so when the identifier is a username
+  // we first resolve it to the account's email via the get_email_for_username
+  // RPC (supabase/username_login.sql), then sign in with that. Email login is
+  // unchanged and keeps working even before that SQL is applied.
+  const signIn = useCallback(async (identifier, password) => {
     try {
+      let email = identifier.trim();
+
+      // Not an email → treat it as a username and resolve it to the email.
+      if (!looksLikeEmail(email)) {
+        const { data: resolved, error: rpcError } = await supabase
+          .rpc('get_email_for_username', { p_username: email });
+
+        // Unknown username, or the RPC isn't deployed yet. Return the generic
+        // wrong-credentials message — never reveal which field was wrong.
+        if (rpcError || !resolved) {
+          return { error: 'Wrong username or password. Double-check and try again.' };
+        }
+        email = resolved;
+      }
+
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -184,13 +204,25 @@ export function useAuth() {
   }, []);
 
   // ── Reset Password ──────────────────────────────────────────────────────
-  // Sends a password reset email to the given address. The link in the email
-  // brings the user back to the app root, where Supabase fires the
-  // PASSWORD_RECOVERY event and App.jsx shows the Set New Password screen.
-  // (We redirect to the root — not a sub-path — because the app is a
-  // single-page app with no routes; a sub-path could 404 on some hosts.)
-  const resetPassword = useCallback(async (email) => {
+  // Sends a password reset email. Accepts either an email or a username (the
+  // login field takes both) — a username is resolved to its email first, the
+  // same way signIn does. The link brings the user back to the app root, where
+  // Supabase fires the PASSWORD_RECOVERY event and App.jsx shows the Set New
+  // Password screen. (Root, not a sub-path — the SPA has no routes, and a
+  // sub-path could 404 on some hosts.)
+  const resetPassword = useCallback(async (identifier) => {
     try {
+      let email = identifier.trim();
+
+      if (!looksLikeEmail(email)) {
+        const { data: resolved } = await supabase
+          .rpc('get_email_for_username', { p_username: email });
+        // Unknown username → return the neutral success below without sending
+        // anything, so we never reveal whether an account exists.
+        if (!resolved) return { error: null };
+        email = resolved;
+      }
+
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: window.location.origin,
       });
@@ -233,13 +265,21 @@ export function useAuth() {
   };
 }
 
+// ── Helper: does this login identifier look like an email (vs a username)? ──
+// Used to decide whether to sign in directly or resolve a username to its
+// email first. A plain "contains @" is enough: usernames can't contain @
+// (enforced at signup), and Supabase does the real email validation.
+export function looksLikeEmail(identifier) {
+  return typeof identifier === 'string' && identifier.includes('@');
+}
+
 // ── Helper: Convert Supabase error messages to plain English ──────────────
 // Supabase returns technical error messages like "Invalid login credentials".
 // This function translates them into friendlier messages.
 export function friendlyError(message) {
   const lower = message.toLowerCase();
   if (lower.includes('invalid login credentials'))
-    return 'Wrong email or password. Double-check and try again.';
+    return 'Wrong email/username or password. Double-check and try again.';
   if (lower.includes('user already registered'))
     return 'An account with this email already exists. Try logging in instead.';
   if (lower.includes('password') && lower.includes('6'))

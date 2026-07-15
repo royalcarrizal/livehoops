@@ -51,7 +51,9 @@ export default function AuthScreen({ onSignUp, onSignIn, onResetPassword }) {
     // Check for obvious problems before sending anything to the server.
     // This gives instant feedback instead of waiting for a network round trip.
     if (!email.trim()) {
-      setError('Please enter your email address.');
+      setError(mode === 'signup'
+        ? 'Please enter your email address.'
+        : 'Please enter your email or username.');
       return;
     }
 
@@ -108,7 +110,7 @@ export default function AuthScreen({ onSignUp, onSignIn, onResetPassword }) {
   const handleForgotPassword = async () => {
     setError('');
     if (!email.trim()) {
-      setError('Enter your email above, then tap "Forgot password?" again.');
+      setError('Enter your email or username above, then tap "Forgot password?" again.');
       return;
     }
 
@@ -180,14 +182,16 @@ export default function AuthScreen({ onSignUp, onSignIn, onResetPassword }) {
           />
         )}
 
-        {/* Email field — shown on both forms */}
+        {/* Identifier field — shown on both forms. On signup it's the account
+            email; on login it accepts an email OR a username (resolved to the
+            email by useAuth.signIn), so it uses type="text" there. */}
         <input
           style={inputStyle}
-          type="email"
-          placeholder="Email"
+          type={mode === 'signup' ? 'email' : 'text'}
+          placeholder={mode === 'signup' ? 'Email' : 'Email or username'}
           value={email}
           onChange={e => setEmail(e.target.value)}
-          autoComplete="email"
+          autoComplete={mode === 'signup' ? 'email' : 'username'}
         />
 
         {/* Password field — shown on both forms */}
