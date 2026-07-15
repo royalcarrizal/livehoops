@@ -15,7 +15,7 @@
 //      reflect the current unread count without needing a page refresh.
 
 import { useState, useEffect, useCallback } from 'react';
-import { getToken, onMessage } from 'firebase/messaging';
+import { getToken, onMessage, deleteToken } from 'firebase/messaging';
 import { messaging } from '../firebase';
 import { supabase } from '../lib/supabase';
 import {
@@ -87,6 +87,45 @@ async function registerPushToken(userId) {
   }
 }
 
+// ── Un-register this device's push token ────────────────────────────────────
+// The counterpart to registerPushToken: the ONLY thing that actually stops
+// pushes reaching this device. Deleting the fcm_tokens row is load-bearing
+// (the send-push Edge Function fans out to whatever tokens are in that table,
+// nothing else), so we report success/failure based on that delete. The
+// Firebase-level deleteToken() is best-effort hygiene — even if it fails, a
+// token that's no longer in our table can never receive one of our pushes.
+//
+// Returns true when the device is confirmed un-registered (or there was
+// nothing to remove), false when the DB delete failed and pushes may continue.
+async function unregisterPushToken(userId) {
+  const token = localStorage.getItem('lh_fcm_token');
+
+  // No cached token → nothing registered from this device. Treat as success.
+  if (!token) return true;
+
+  // Delete the DB row first — this is what stops pushes. RLS
+  // (fcm_tokens_delete_own) already scopes deletes to the caller; the extra
+  // user_id filter is belt-and-suspenders.
+  const { error } = await supabase
+    .from('fcm_tokens')
+    .delete()
+    .eq('token', token)
+    .eq('user_id', userId);
+
+  if (error) {
+    console.error('[LiveHoops] Failed to remove push token:', error.message);
+    return false;
+  }
+
+  // Invalidate at the Firebase level too, so the SW stops holding a live
+  // token. Best-effort — a failure here doesn't matter for delivery.
+  if (messaging) {
+    try { await deleteToken(messaging); } catch { /* already gone */ }
+  }
+  localStorage.removeItem('lh_fcm_token');
+  return true;
+}
+
 export function useNotifications(userId) {
   // Notification.permission is a browser built-in:
   //   'default'  = the user hasn't been asked yet
@@ -102,6 +141,15 @@ export function useNotifications(userId) {
 
   // The full list shown inside the notification panel
   const [notifications, setNotifications] = useState(() => getStoredNotifications());
+
+  // Whether push is enabled ON THIS DEVICE. Per-device (backed by localStorage),
+  // separate from the account-level category prefs (notif_friend_requests, …).
+  // This is the single source of truth for the master toggle: it gates the
+  // auto-register effect below AND what enable/disablePush persist, so the
+  // token state can't drift from what the toggle shows.
+  const [pushEnabled, setPushEnabled] = useState(
+    () => localStorage.getItem('lh_notif_enabled') !== 'false'
+  );
 
   // ── Subscribe to store changes ─────────────────────────────────────────────
   // notificationStore dispatches 'livehoops:notification' whenever the list
@@ -140,37 +188,58 @@ export function useNotifications(userId) {
   }, []); // empty deps — set up once on mount
 
   // ── Keep this device registered for pushes ────────────────────────────────
-  // If the user already granted permission on a previous visit, re-register
-  // the token on app load: FCM tokens can rotate, and this also re-links the
-  // device if a different account logs in on it.
+  // If the user granted permission AND hasn't turned the master toggle off,
+  // re-register on app load: FCM tokens can rotate, and this also re-links the
+  // device if a different account logs in on it. The `pushEnabled` guard is
+  // what stops a turned-off device from silently re-registering on reload —
+  // without it, deleting the token would just come back on the next load.
   useEffect(() => {
-    if (permission === 'granted' && userId) {
+    if (permission === 'granted' && userId && pushEnabled) {
       registerPushToken(userId);
     }
-  }, [permission, userId]);
+  }, [permission, userId, pushEnabled]);
 
-  // ── Request permission + get FCM token ────────────────────────────────────
-  const requestPermission = useCallback(async () => {
+  // ── Enable push on this device ─────────────────────────────────────────────
+  // Asks the browser (if needed), registers the token, and remembers the
+  // choice. Returns the resulting permission so callers can message a block.
+  const enablePush = useCallback(async () => {
     // Can't request notifications in very old browsers
     if (typeof Notification === 'undefined') return 'denied';
 
-    // This opens the browser's "Allow notifications?" popup.
-    // After the user responds, the Promise resolves with their answer.
+    // Opens the browser's "Allow notifications?" popup; resolves with the answer.
     const result = await Notification.requestPermission();
     setPermission(result);
 
     if (result === 'granted') {
       await registerPushToken(userId);
+      setPushEnabled(true);
+      localStorage.setItem('lh_notif_enabled', 'true');
     }
 
     return result;
   }, [userId]);
 
+  // ── Disable push on this device ────────────────────────────────────────────
+  // Really removes the token (so pushes actually stop), and only flips the
+  // remembered state when that succeeded — so the toggle can never show "off"
+  // while pushes keep arriving. Returns success so the UI can surface a
+  // failure instead of lying.
+  const disablePush = useCallback(async () => {
+    const ok = await unregisterPushToken(userId);
+    if (ok) {
+      setPushEnabled(false);
+      localStorage.setItem('lh_notif_enabled', 'false');
+    }
+    return ok;
+  }, [userId]);
+
   return {
     permission,       // 'default' | 'granted' | 'denied'
+    pushEnabled,      // bool — master toggle state for THIS device
     unreadCount,      // number — shown on bell badge
     notifications,    // array — shown in the notification panel
-    requestPermission, // async fn — call when "Enable" button is clicked
+    enablePush,       // async fn — turn on: ask + register + persist
+    disablePush,      // async fn — turn off: un-register + persist; returns success
     markAllRead,      // fn — clears the unread badge
   };
 }

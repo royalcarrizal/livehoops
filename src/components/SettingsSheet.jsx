@@ -51,23 +51,19 @@ function Toggle({ on, onToggle }) {
 
 export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditProfile, profile, updateProfile, blockedUsers = [], unblockUser }) {
 
-  // ── Push notification permission + token registration ───────────────────
-  // Drives the master Push toggle. requestPermission asks the browser AND
-  // registers this device's token in Supabase (see useNotifications), so
-  // toggling on here is enough to start receiving pushes.
-  const { permission, requestPermission } = useNotifications(user?.id);
+  // ── Master push toggle (per-device) ─────────────────────────────────────
+  // The hook is the single source of truth: enablePush asks the browser +
+  // registers this device's token; disablePush actually removes it (so pushes
+  // stop) and reports success. pushEnabled reflects that persisted state.
+  const { permission, pushEnabled, enablePush, disablePush } = useNotifications(user?.id);
 
-  // ── Notification toggles ────────────────────────────────────────────────
-  // The master Push toggle reflects the real browser permission (see below).
-  // Friend Request Alerts and Court Goes Live Alerts are REAL settings
-  // stored on the user's profile row in Supabase (see
-  // supabase/notification_preferences.sql) rather than localStorage — they
-  // gate whether OTHER users' actions push a notification to this user, so
-  // they have to be readable by whoever triggers that notification, not
-  // just this device.
-  const [notifEnabled, setNotifEnabled] = useState(
-    () => localStorage.getItem('lh_notif_enabled') !== 'false'
-  );
+  // ── Category toggles (account-level) ────────────────────────────────────
+  // Friend Request / Court Goes Live / Run alerts are REAL settings stored on
+  // the profile row (supabase/notification_preferences.sql), not localStorage:
+  // they gate whether OTHER users' actions push to this user, so they must be
+  // readable by whoever triggers the notification. Independent of the
+  // per-device master toggle above — they still apply to the user's other
+  // devices even when this one is turned off.
   const notifFriends = profile?.notif_friend_requests ?? true;
   const notifCourts  = profile?.notif_court_checkins  ?? false;
   const notifMeetups = profile?.notif_meetups         ?? true;
@@ -142,21 +138,24 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
   const { toast, showToast } = useToast();
 
   // ── Handler: Push notification toggle ──────────────────────────────────
-  // If turning ON: ask the browser for notification permission first.
-  // If the user denies permission, we don't flip the toggle.
+  // Both directions do real work via the hook — no local flag to drift.
+  // Turning ON asks the browser + registers the token; turning OFF removes it
+  // and only reflects "off" if that succeeded, so the toggle can't show off
+  // while pushes keep arriving.
   const handleNotifToggle = async () => {
-    const next = !notifEnabled;
-    if (next) {
-      // Ask the browser AND register this device's token in one step, so
-      // enabling here is enough to actually start receiving pushes.
-      const result = await requestPermission();
+    if (!pushEnabled) {
+      const result = await enablePush();
       if (result !== 'granted') {
         showToast('Notifications blocked — check your browser settings');
-        return;
+      }
+    } else {
+      const ok = await disablePush();
+      if (ok) {
+        showToast('Notifications turned off on this device');
+      } else {
+        showToast("Couldn't turn off on this device — try again");
       }
     }
-    setNotifEnabled(next);
-    localStorage.setItem('lh_notif_enabled', String(next));
   };
 
   // ── Send a test notification to yourself ────────────────────────────────
@@ -406,26 +405,28 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
             <div className="settings-section-label">Notifications</div>
             <div className="settings-group">
 
-              {/* Push notifications — triggers browser permission prompt on first enable.
-                  The toggle reflects the real browser permission: it's only "on"
-                  when permission is granted AND the user hasn't turned it off. */}
+              {/* Push notifications — per-device master switch. On registers
+                  this device's token; off actually removes it (see the hook).
+                  Shows "on" only when granted AND enabled on this device. */}
               <div className="settings-row">
                 <div className="settings-row-icon" style={{ background: '#FF9500' }}>🔔</div>
                 <div className="settings-row-content">
                   <div className="settings-row-title">Push Notifications</div>
-                  {permission === 'denied' && (
-                    <div className="settings-row-desc">Blocked in your browser settings</div>
-                  )}
+                  <div className="settings-row-desc">
+                    {permission === 'denied'
+                      ? 'Blocked in your browser settings'
+                      : 'Receive pushes on this device'}
+                  </div>
                 </div>
                 <Toggle
-                  on={notifEnabled && permission === 'granted'}
+                  on={pushEnabled && permission === 'granted'}
                   onToggle={handleNotifToggle}
                 />
               </div>
 
-              {/* Send test notification — only shown once permission is granted.
-                  Fires a push to your own devices to verify the pipeline. */}
-              {permission === 'granted' && (
+              {/* Send test notification — only when push is actually on for this
+                  device (granted AND enabled), so it isn't offered with no token. */}
+              {pushEnabled && permission === 'granted' && (
                 <button className="settings-row" onClick={handleTestPush} disabled={testing}>
                   <div className="settings-row-icon" style={{ background: '#0A84FF' }}>🧪</div>
                   <div className="settings-row-content">

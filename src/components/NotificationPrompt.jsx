@@ -5,9 +5,9 @@
 //   - the browser hasn't been asked yet (Notification.permission === 'default')
 //   - the user hasn't dismissed it before (localStorage flag)
 //
-// Tapping "Enable" calls onEnable, which runs the full useNotifications
-// requestPermission flow — that shows the browser permission popup AND
-// registers this device's token in Supabase so pushes can actually reach it.
+// Tapping "Enable" calls onEnable (the hook's enablePush) — that shows the
+// browser permission popup, registers this device's token in Supabase so
+// pushes can actually reach it, and remembers the choice.
 
 import { useState } from 'react';
 import { Bell, X } from 'lucide-react';

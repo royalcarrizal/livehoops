@@ -22,7 +22,9 @@ const STORAGE_KEYS_TO_CLEAR = [
   'lh_onboarded',
   'lh_fcm_token',
   'lh_notifications',
-  'lh_notif_banner_dismissed',
+  'lh_notif_enabled',            // per-device master push toggle
+  'lh_notif_prompt_dismissed',   // the Home push-opt-in banner's dismiss flag
+  'lh_notif_banner_dismissed',   // legacy key, kept for older installs
   'lh_install_dismissed',
   'lh_ios_dismissed',
   'lh_notified_requests',
@@ -195,6 +197,20 @@ export function useAuth() {
   // Logs the user out and clears all app data from localStorage so the
   // next person who logs in gets a fresh start.
   const signOut = useCallback(async () => {
+    // Remove this device's push token FIRST — while we still have both the
+    // token (in localStorage) and a session (the fcm_tokens_delete_own RLS
+    // policy needs auth.uid()). Otherwise the row lingers and the next person
+    // to use this device keeps receiving the previous account's pushes.
+    // Best-effort: a failure here must never block logout.
+    try {
+      const fcmToken = localStorage.getItem('lh_fcm_token');
+      if (fcmToken) {
+        await supabase.from('fcm_tokens').delete().eq('token', fcmToken);
+      }
+    } catch (err) {
+      console.info('[LiveHoops] token cleanup on sign-out skipped:', err?.message ?? err);
+    }
+
     // Clear all LiveHoops-specific localStorage data
     STORAGE_KEYS_TO_CLEAR.forEach(key => localStorage.removeItem(key));
 

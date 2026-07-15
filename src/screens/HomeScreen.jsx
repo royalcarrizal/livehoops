@@ -58,8 +58,8 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
     unreadCount,
     notifications,
     markAllRead,
-    permission,        // 'default' | 'granted' | 'denied' — drives the prompt
-    requestPermission, // asks the browser AND registers this device's token
+    permission,   // 'default' | 'granted' | 'denied' — drives the prompt
+    enablePush,   // asks the browser, registers the token, remembers the choice
   } = useNotifications(user?.id); // userId → registers this device's push token
 
   // ── Real friends data from Supabase ────────────────────────────────────
@@ -279,7 +279,7 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
 
       {/* ── Notification opt-in prompt ──────────────────────────────────────── */}
       {/* Only renders when permission hasn't been decided and isn't dismissed. */}
-      <NotificationPrompt permission={permission} onEnable={requestPermission} />
+      <NotificationPrompt permission={permission} onEnable={enablePush} />
 
       {/* ── Active Friends row ──────────────────────────────────────────────── */}
       {/* Shows friends currently checked in at a court. Hidden when none are. */}
