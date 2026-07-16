@@ -17,6 +17,54 @@ import or defer to it and must not duplicate or contradict it.
 - Never commit `.env` files, API keys, service-role keys, access tokens, or
   other secrets.
 
+## Walk the user through the work
+
+Assume the user is learning the development process. Codex and Claude must not
+silently move through a task or only report the final result.
+
+- Before starting, explain the task in plain language, what will be inspected
+  or changed, and any important assumptions.
+- Before each major action, name the current stage and explain what it means,
+  why it is needed, and whether it affects only the computer or also GitHub,
+  Supabase, or production.
+- After each major action, report whether it succeeded, failed, or needs user
+  input. Explain errors without assuming the user knows Git terminology.
+- Translate commands and technical terms into everyday language. Show commands
+  when helpful, but do not overwhelm the user with raw terminal output.
+- Clearly distinguish actions that are safe and reversible from actions that
+  require approval, such as merging, deploying, destructive operations, or
+  production database changes.
+- When approval or manual user action is needed, explain exactly what the user
+  needs to do, what will happen afterward, and what remains safe while paused.
+- Keep progress updates concise, but never leave the user guessing which stage
+  is active or what the next stage will be.
+
+For Git and GitHub work, explicitly walk the user through these stages:
+
+1. **Inspect and update `main`:** confirm the starting point and explain that
+   `main` is the official version.
+2. **Create a branch:** name the branch and explain that it is a separate, safe
+   work lane on the computer.
+3. **Implement:** explain that changes currently exist only in the branch's
+   working files.
+4. **Validate:** report lint, tests, build, and any manual checks.
+5. **Commit:** provide the commit message and explain that a commit is a local
+   checkpoint saved by Git.
+6. **Push:** explain that the branch and its commits are being uploaded from the
+   computer to GitHub; pushing does not merge them into `main`.
+7. **Draft Pull Request:** provide the PR link and explain that it is the review
+   page proposing that the branch eventually join `main`.
+8. **Review:** summarize feedback, fixes, and remaining risks.
+9. **User-approved merge:** ask for explicit approval and explain that merging
+   makes the branch part of the official `main` history.
+10. **Refresh and clean up:** update local `main`, confirm the merged result,
+    remove the finished branch when safe, and explain that the next task starts
+    from a new branch.
+
+If a stage is skipped because the task is read-only, local-only, or blocked,
+say which stage was skipped and why. Never describe a stage as completed unless
+its result was actually verified.
+
 ## Non-negotiable Git workflow
 
 Every feature, bug fix, refactor, database change, or documentation change must
