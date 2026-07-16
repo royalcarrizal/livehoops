@@ -1572,6 +1572,14 @@ body {
   margin-bottom: 4px;
 }
 
+/* Jersey number shown next to a username (profile header + feed posts).
+   Inherits font-size from its parent, so it scales with each context. */
+.jersey-number {
+  color: var(--orange);
+  font-weight: 800;
+  margin-left: 6px;
+}
+
 /* Row of 3 stat pills */
 .profile-stats-row {
   display: flex;

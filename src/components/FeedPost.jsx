@@ -343,6 +343,9 @@ export default function FeedPost({
             onClick={() => onViewProfile?.(post.userId)}
           >
             {post.userName}
+            {post.userJersey != null && (
+              <span className="jersey-number">#{post.userJersey}</span>
+            )}
           </button>
           <span className="feed-post-action">{actionText}</span>
           <span className="feed-post-time">{post.timeAgo}</span>
@@ -432,6 +435,9 @@ export default function FeedPost({
                 onClick={() => onViewProfile?.(original.userId)}
               >
                 {original.userName}
+                {original.userJersey != null && (
+                  <span className="jersey-number">#{original.userJersey}</span>
+                )}
               </button>
               <span>{ACTION_TEXT[original.type]?.(original.courtName) ?? 'posted'} · {original.timeAgo}</span>
             </div>
