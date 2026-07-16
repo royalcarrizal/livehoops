@@ -11,7 +11,8 @@ arrive, and connect with the people you hoop with.
 - **Live court map** — real Mapbox map with every court as a marker; live
   player counts, favorites, "visited" badges, ratings, and directions
 - **Check-ins** — one tap to go "on the court"; counts update for everyone in
-  real time; sessions auto-expire after 3 hours (client- and server-side)
+  real time; sessions auto-expire after 3 hours (client- and server-side), and
+  active sessions can be shared through revocable 30-day invite links
 - **Social feed** — post text/photos, tag courts, like, comment, repost;
   Following and Nearby tabs with real-time new-post alerts
 - **Friends & DMs** — friend requests, crew list, mutual friends/courts,
@@ -49,6 +50,10 @@ arrive, and connect with the people you hoop with.
    Then fill in:
    - `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` — Supabase Dashboard →
      Project Settings → API
+   - `VITE_PUBLIC_APP_URL` — canonical deployed origin used for share links
+     and social previews (for example `https://app.example.com`). Production
+     builds intentionally fail when this value is missing, has a trailing
+     slash, or is not an origin.
    - `VITE_MAPBOX_TOKEN` — https://account.mapbox.com → Access tokens
 
 3. **Set up the database**
@@ -71,6 +76,7 @@ arrive, and connect with the people you hoop with.
    | `comment_likes_and_replies.sql` | comment_likes table + like_count and parent_comment_id on comments |
    | `notification_preferences.sql` | notif_friend_requests + notif_court_checkins columns for push gating |
    | `checkins_rls.sql` | Check-in read policies |
+   | `checkin_share_links.sql` | Private share tokens, safe public resolver, revocation, and privacy trigger |
    | `friends_active_checkins_rpc.sql` | "Which friends are on a court now" RPC |
    | `mutual_courts_rpc.sql` | Courts-in-common RPC for visitor profiles |
    | `posts_policies.sql` | Feed post policies |
@@ -82,6 +88,10 @@ arrive, and connect with the people you hoop with.
 
    Also enable **Realtime** on the `posts` and `messages` tables
    (Dashboard → Database → Replication).
+
+   If Supabase email confirmation is enabled, add
+   `<VITE_PUBLIC_APP_URL>/check-ins/**` to Authentication → URL Configuration →
+   Redirect URLs so an invited player returns to the same court after confirming.
 
 4. **Run it**
 

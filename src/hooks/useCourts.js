@@ -98,32 +98,43 @@ export function groupPlayersByCourt(rows) {
   return byCourt;
 }
 
-export function useCourts() {
+export function useCourts(enabled = true) {
   // The list of courts shown on the map and in court lists
   const [courts, setCourts] = useState([]);
 
   // True while the first load is in progress
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(enabled);
 
   // The user's GPS position — null until the browser grants location access
   const [userPos, setUserPos] = useState(null);
   const userPosRef = useRef(null);
+  const enabledRef = useRef(enabled);
+
+  useEffect(() => {
+    enabledRef.current = enabled;
+  }, [enabled]);
 
   // ── Request GPS on mount ──────────────────────────────────────────────────
   // We ask once when the hook mounts. If the user denies permission, distances
   // silently stay as "—" — no error is shown. If they grant it, setUserPos
   // triggers the effect below to fill in real distances.
   useEffect(() => {
+    if (!enabled) {
+      userPosRef.current = null;
+      setUserPos(null);
+      return;
+    }
     if (!navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition(
       pos => {
+        if (!enabledRef.current) return;
         const nextPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         userPosRef.current = nextPos;
         setUserPos(nextPos);
       },
       ()  => {} // permission denied or unavailable — distances stay as "—"
     );
-  }, []);
+  }, [enabled]);
 
   // ── Recompute distances whenever the user's position becomes available ────
   // Courts may already be loaded by the time GPS comes back, so we patch
@@ -146,7 +157,9 @@ export function useCourts() {
   // hasn't been created in Supabase yet — so callers can leave existing
   // checkins untouched and the app degrades to counts-only, never breaks.
   const fetchActivePlayers = useCallback(async () => {
+    if (!enabledRef.current) return null;
     const { data, error } = await supabase.rpc('get_court_active_players');
+    if (!enabledRef.current) return null;
     if (error) {
       console.info('[LiveHoops] Court players unavailable:', error.message);
       return null;
@@ -158,11 +171,15 @@ export function useCourts() {
   // Called on mount. Returns courts ordered by when they were added
   // (newest first so recently added courts appear at the top).
   const fetchCourts = useCallback(async () => {
+    if (!enabledRef.current) return;
+    setLoading(true);
     const { data, error } = await supabase
       .from('courts')
       .select('*')
       .eq('verified', true)
       .order('created_at', { ascending: false });
+
+    if (!enabledRef.current) return;
 
     if (error) {
       console.error('[LiveHoops] Error loading courts:', error.message);
@@ -187,8 +204,13 @@ export function useCourts() {
 
   // Run fetchCourts once when the hook first mounts
   useEffect(() => {
+    if (!enabled) {
+      setCourts([]);
+      setLoading(false);
+      return;
+    }
     fetchCourts();
-  }, [fetchCourts]);
+  }, [enabled, fetchCourts]);
 
   // ── Instantly update a court's player count in local state ────────────────
   // Called right after a check-in or check-out so the UI updates immediately,
@@ -209,6 +231,7 @@ export function useCourts() {
   // the players/checkins fields, not the full court objects, to avoid
   // unnecessary re-renders in the map and court lists.
   const refreshCounts = useCallback(async () => {
+    if (!enabledRef.current) return;
     // Counts and the player list come from different sources (courts table
     // vs the checkins RPC) — fetch both at once
     const [countsRes, playersMap] = await Promise.all([
@@ -216,6 +239,7 @@ export function useCourts() {
       fetchActivePlayers(),
     ]);
 
+    if (!enabledRef.current) return;
     const { data, error } = countsRes;
     if (error || !data) return;
 
