@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { useTheme } from './hooks/useTheme';
 import { useAuth } from './hooks/useAuth';
 import { useProfile } from './hooks/useProfile';
@@ -17,6 +17,9 @@ import AuthScreen from './components/AuthScreen';
 import ResetPasswordScreen from './components/ResetPasswordScreen';
 import Onboarding from './components/Onboarding';
 import SinglePostSheet from './components/SinglePostSheet';
+import SharedCheckInLanding from './components/SharedCheckInLanding';
+import { useSharedCheckIn } from './hooks/useSharedCheckIn';
+import { getSharedCourtDestination, parseCheckInSharePath } from './utils/checkInShare';
 
 // MapScreen is loaded lazily because it pulls in Mapbox GL (~1.6 MB of
 // JavaScript) — by far the heaviest thing in the app. Splitting it into its
@@ -42,6 +45,15 @@ function MapLoadingFallback() {
 export default function App() {
   useTheme(); // applies theme-dark/theme-light class to document.body
 
+  // A share path is the source of truth across guest landing, auth, email
+  // confirmation, and onboarding. It is consumed only after authenticated
+  // navigation succeeds.
+  const [shareRoute, setShareRoute] = useState(
+    () => parseCheckInSharePath(window.location.pathname)
+  );
+  const [shareAuthMode, setShareAuthMode] = useState(null);
+  const shareConsumedRef = useRef(false);
+
   // ── Authentication ──────────────────────────────────────────────────────
   // useAuth checks if anyone is logged in and provides sign-up / sign-in /
   // sign-out functions. 'loading' is true while the initial session check
@@ -57,6 +69,11 @@ export default function App() {
     passwordRecovery,
     clearPasswordRecovery,
   } = useAuth();
+  const sharedCheckIn = useSharedCheckIn(
+    shareRoute?.token,
+    shareRoute?.invalid ?? false,
+    user?.id ?? 'guest',
+  );
 
   // ── User Profile ────────────────────────────────────────────────────────
   // Once we know who's logged in (user.id), fetch their profile data from
@@ -72,7 +89,7 @@ export default function App() {
   //   courts            — array of court objects for the map, chips, and lists
   //   updatePlayerCount — instantly adjusts a court's player count in local state
   //   refreshCounts     — re-fetches player_count from DB (called every 60s)
-  const { courts, updatePlayerCount, refreshCounts, userPos } = useCourts();
+  const { courts, updatePlayerCount, refreshCounts, userPos } = useCourts(Boolean(user));
 
   // ── Check-In ────────────────────────────────────────────────────────────
   // Manages the user's current check-in against Supabase.
@@ -167,19 +184,24 @@ export default function App() {
   const [dmPartnerId, setDmPartnerId] = useState(null);
 
   useEffect(() => {
-    // Path a: cold start via URL params (then clean the URL)
-    const qs = new URLSearchParams(window.location.search);
-    if (qs.get('push')) {
-      setDeepLink({
-        kind:       qs.get('push'),
-        postId:     qs.get('postId'),
-        commentId:  qs.get('commentId'),
-        senderId:   qs.get('senderId'),
-        accepterId: qs.get('accepterId'),
-        courtId:    qs.get('courtId'),
-        meetupId:   qs.get('meetupId'),
-      });
-      window.history.replaceState({}, '', window.location.pathname);
+    // A check-in invite has precedence over a push URL on the same cold start.
+    // Only skip cold-start query parsing; the service-worker listener below
+    // must remain active after the invite path is consumed.
+    if (!parseCheckInSharePath(window.location.pathname)) {
+      // Path a: cold start via URL params (then clean the URL)
+      const qs = new URLSearchParams(window.location.search);
+      if (qs.get('push')) {
+        setDeepLink({
+          kind:       qs.get('push'),
+          postId:     qs.get('postId'),
+          commentId:  qs.get('commentId'),
+          senderId:   qs.get('senderId'),
+          accepterId: qs.get('accepterId'),
+          courtId:    qs.get('courtId'),
+          meetupId:   qs.get('meetupId'),
+        });
+        window.history.replaceState({}, '', window.location.pathname);
+      }
     }
 
     // Path b: app already open — the service worker messages us directly
@@ -193,7 +215,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!deepLink || !user) return;
+    if (!deepLink || !user || !onboardingDone || shareRoute) return;
     const link = deepLink;
     setDeepLink(null); // consume it — each tap navigates once
 
@@ -259,7 +281,7 @@ export default function App() {
       default:
         break; // 'test' and unknown kinds just open the app
     }
-  }, [deepLink, user]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [deepLink, user, onboardingDone, shareRoute]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Location label shown in the HomeScreen header ───────────────────────
   // null until we know the user's real city. Filled in by the effect below
@@ -412,6 +434,51 @@ export default function App() {
     unblockUser,
   };
 
+  // Complete an authenticated share intent exactly once. The existing map
+  // focus handoff safely waits for courts/Mapbox to finish loading.
+  useEffect(() => {
+    if (
+      !shareRoute ||
+      !user ||
+      !onboardingDone ||
+      passwordRecovery ||
+      sharedCheckIn.loading ||
+      sharedCheckIn.error ||
+      !sharedCheckIn.data ||
+      sharedCheckIn.resolvedFor !== user.id ||
+      shareConsumedRef.current
+    ) return;
+
+    shareConsumedRef.current = true;
+    const courtId = getSharedCourtDestination(sharedCheckIn.data);
+    if (courtId) localStorage.setItem('lh_focus_court', courtId);
+    setActiveTab('map');
+    setShareAuthMode(null);
+    setShareRoute(null);
+    window.history.replaceState({}, '', '/');
+  }, [
+    shareRoute,
+    user,
+    onboardingDone,
+    passwordRecovery,
+    sharedCheckIn.loading,
+    sharedCheckIn.error,
+    sharedCheckIn.data,
+    sharedCheckIn.resolvedFor,
+  ]);
+
+  const leaveShareFlow = () => {
+    shareConsumedRef.current = true;
+    setActiveTab('map');
+    setShareAuthMode(null);
+    setShareRoute(null);
+    window.history.replaceState({}, '', '/');
+  };
+
+  const shareEmailRedirectTo = shareRoute?.token
+    ? `${window.location.origin}/check-ins/${shareRoute.token}`
+    : null;
+
   const splashOverlay = !splashDone ? (
     <SplashScreen
       ready={!authLoading}
@@ -436,6 +503,40 @@ export default function App() {
             onUpdatePassword={updatePassword}
             onDone={clearPasswordRecovery}
           />
+        </div>
+        {splashOverlay}
+      </>
+    );
+  }
+
+  // ── Public check-in invite ───────────────────────────────────────────────
+  // Guests can see only the safe RPC projection. Choosing Join or Log In keeps
+  // the share path intact so it survives both immediate auth and email links.
+  if (shareRoute && !user) {
+    return (
+      <>
+        <div className={`app-shell${!splashDone ? ' app-shell-enter' : ''}`}>
+          {shareAuthMode ? (
+            <AuthScreen
+              key={`share-${shareAuthMode}`}
+              onSignUp={signUp}
+              onSignIn={signIn}
+              onResetPassword={resetPassword}
+              initialMode={shareAuthMode}
+              shareContext={sharedCheckIn.data ?? { state: 'unavailable' }}
+              emailRedirectTo={shareEmailRedirectTo}
+              onBack={() => setShareAuthMode(null)}
+            />
+          ) : (
+            <SharedCheckInLanding
+              data={sharedCheckIn.data}
+              loading={sharedCheckIn.loading}
+              error={sharedCheckIn.error}
+              onRetry={sharedCheckIn.retry}
+              onJoin={() => setShareAuthMode('signup')}
+              onLogin={() => setShareAuthMode('login')}
+            />
+          )}
         </div>
         {splashOverlay}
       </>
@@ -470,9 +571,30 @@ export default function App() {
         profile={profile}
         onComplete={(startScreen) => {
           setOnboardingDone(true);
-          setActiveTab(startScreen);
+          setActiveTab(shareRoute ? 'map' : startScreen);
         }}
       />
+    );
+  }
+
+  // Hold the authenticated shell for one render while the share resolves and
+  // the effect above hands the destination to MapScreen. Network failures stay
+  // retryable; the user may also continue to the normal map without the link.
+  if (shareRoute && user && onboardingDone) {
+    return (
+      <>
+        <div className={`app-shell${!splashDone ? ' app-shell-enter' : ''}`}>
+          <SharedCheckInLanding
+            data={sharedCheckIn.data}
+            loading={sharedCheckIn.loading || (!sharedCheckIn.error && !!sharedCheckIn.data)}
+            error={sharedCheckIn.error}
+            onRetry={sharedCheckIn.retry}
+            onJoin={leaveShareFlow}
+            signedIn
+          />
+        </div>
+        {splashOverlay}
+      </>
     );
   }
 

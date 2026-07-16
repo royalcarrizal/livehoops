@@ -17,7 +17,7 @@
 //   6. Settings sheet     — owner only, full settings slide-up
 
 import { useState, useRef, useEffect } from 'react';
-import { Settings, X, ChevronLeft, Map, UserX } from 'lucide-react';
+import { Settings, X, ChevronLeft, Link2, Map, UserX } from 'lucide-react';
 import { useFriends } from '../hooks/useFriends';
 import AchievementsSection from '../components/AchievementsSection';
 import Avatar from '../components/Avatar';
@@ -30,6 +30,7 @@ import { useToast } from '../hooks/useToast';
 import { usePosts } from '../hooks/usePosts';
 import { useStorage } from '../hooks/useStorage';
 import { supabase } from '../lib/supabase';
+import { listMyCheckInShares, revokeCheckInShare } from '../lib/checkInShares';
 
 // Props:
 //   signOut       — logs the user out (from useAuth in App.jsx)
@@ -223,6 +224,9 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
   // Loaded from Supabase when the user taps the "Check-ins" tab.
   const [checkInHistory, setCheckInHistory]     = useState([]);
   const [historyLoading, setHistoryLoading]     = useState(false);
+  const [sharesByCheckIn, setSharesByCheckIn]   = useState({});
+  const [confirmRevokeToken, setConfirmRevokeToken] = useState(null);
+  const [revokingShareToken, setRevokingShareToken] = useState(null);
 
   // ── Fetch the viewed user's posts when the screen loads ───────────────────
   // We use profile?.id (the viewed user), NOT user.id (the logged-in user),
@@ -272,24 +276,78 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
   // an unnecessary Supabase query every time the profile screen opens.
   // The query joins with the courts table to get the court name for each session.
   useEffect(() => {
-    if (activeTab !== 'checkins' || !profile?.id) return;
+    if (activeTab !== 'checkins' || !profile?.id || !isOwner) return;
 
     async function loadHistory() {
       setHistoryLoading(true);
-      const { data } = await supabase
-        .from('checkins')
-        .select('id, court_id, checked_in_at, duration_minutes, courts(name)')
-        .eq('user_id', profile.id)
-        .eq('is_active', false)
-        .order('checked_in_at', { ascending: false })
-        .limit(20);
+      const [historyResult, shares] = await Promise.all([
+        supabase
+          .from('checkins')
+          .select('id, court_id, checked_in_at, duration_minutes, courts(name)')
+          .eq('user_id', profile.id)
+          .eq('is_active', false)
+          .order('checked_in_at', { ascending: false })
+          .limit(20),
+        listMyCheckInShares().catch(error => {
+          // Graceful during the migration rollout: history still works even if
+          // the share RPC has not reached this environment yet.
+          console.info('[LiveHoops] Shared check-in management unavailable:', error?.message ?? error);
+          return [];
+        }),
+      ]);
 
-      if (data) setCheckInHistory(data);
+      const recentHistory = historyResult.data ?? [];
+      const recentIds = new Set(recentHistory.map(item => item.id));
+      const missingSharedIds = shares
+        .map(share => share.checkin_id)
+        .filter(checkinId => checkinId && !recentIds.has(checkinId));
+      let sharedHistory = [];
+
+      // A still-valid 30-day recap must remain revocable even when the owner
+      // has completed more than 20 newer sessions.
+      if (missingSharedIds.length > 0) {
+        const { data, error } = await supabase
+          .from('checkins')
+          .select('id, court_id, checked_in_at, duration_minutes, courts(name)')
+          .eq('user_id', profile.id)
+          .eq('is_active', false)
+          .in('id', missingSharedIds);
+        if (error) {
+          console.info('[LiveHoops] Older shared check-ins unavailable:', error.message);
+        } else {
+          sharedHistory = data ?? [];
+        }
+      }
+
+      setCheckInHistory([...recentHistory, ...sharedHistory].sort(
+        (a, b) => new Date(b.checked_in_at) - new Date(a.checked_in_at)
+      ));
+      setSharesByCheckIn(Object.fromEntries(shares.map(share => [share.checkin_id, share])));
       setHistoryLoading(false);
     }
 
     loadHistory();
-  }, [activeTab, profile?.id]);
+  }, [activeTab, profile?.id, isOwner]);
+
+  const handleRevokeHistoryShare = async (share) => {
+    if (!share?.token || revokingShareToken) return;
+    setRevokingShareToken(share.token);
+    try {
+      const revoked = await revokeCheckInShare(share.token);
+      if (!revoked) throw new Error('Link was already stopped');
+      setSharesByCheckIn(previous => {
+        const next = { ...previous };
+        delete next[share.checkin_id];
+        return next;
+      });
+      setConfirmRevokeToken(null);
+      showToast('Sharing stopped — the old link no longer works');
+    } catch {
+      showToast('Failed to stop sharing — try again');
+    } finally {
+      setRevokingShareToken(null);
+    }
+  };
 
   // ── "Map" button on a check-in row ────────────────────────────────────────
   // Same handoff every other "jump to this court" feature uses (friend
@@ -682,7 +740,10 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
             </div>
           ) : (
             // Real check-in rows from Supabase
-            checkInHistory.map(item => (
+            checkInHistory.map(item => {
+              const share = sharesByCheckIn[item.id];
+              const confirming = share && confirmRevokeToken === share.token;
+              return (
               <div key={item.id} className="checkin-history-row">
                 <div className="checkin-history-info">
                   {/* Court name from the courts table join */}
@@ -697,21 +758,52 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
                     })}
                     {item.duration_minutes ? ` · ${item.duration_minutes} min` : ''}
                   </div>
+                  {share && (
+                    <div className="checkin-history-shared">
+                      <Link2 size={11} strokeWidth={2.3} />
+                      Shared until {new Date(share.expires_at).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                      })}
+                    </div>
+                  )}
                 </div>
 
-                {/* Jump to this court on the Map tab */}
-                {item.court_id && (
-                  <button
-                    className="checkin-history-map-btn"
-                    onClick={() => handleViewOnMap(item.court_id)}
-                    aria-label={`View ${item.courts?.name ?? 'court'} on the map`}
-                  >
-                    <Map size={13} strokeWidth={2} />
-                    Map
-                  </button>
-                )}
+                <div className="checkin-history-actions">
+                  {share && !confirming && (
+                    <button
+                      className="checkin-history-share-btn"
+                      onClick={() => setConfirmRevokeToken(share.token)}
+                    >
+                      Stop sharing
+                    </button>
+                  )}
+                  {confirming && (
+                    <div className="checkin-history-stop-confirm">
+                      <button onClick={() => setConfirmRevokeToken(null)}>Keep</button>
+                      <button
+                        onClick={() => handleRevokeHistoryShare(share)}
+                        disabled={revokingShareToken === share.token}
+                      >
+                        {revokingShareToken === share.token ? 'Stopping…' : 'Stop'}
+                      </button>
+                    </div>
+                  )}
+                  {/* Jump to this court on the Map tab */}
+                  {item.court_id && (
+                    <button
+                      className="checkin-history-map-btn"
+                      onClick={() => handleViewOnMap(item.court_id)}
+                      aria-label={`View ${item.courts?.name ?? 'court'} on the map`}
+                    >
+                      <Map size={13} strokeWidth={2} />
+                      Map
+                    </button>
+                  )}
+                </div>
               </div>
-            ))
+              );
+            })
           )}
         </div>
       )}

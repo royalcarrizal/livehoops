@@ -274,12 +274,12 @@ export default function SplashScreen({ onComplete, ready = true }) {
   }, []);
 
   useEffect(() => {
-    if (!ready || !introComplete || fadingOut) return undefined;
+    if (!ready || !introComplete) return undefined;
 
     setFadingOut(true);
     const doneTimer = setTimeout(() => onCompleteRef.current(), 560);
     return () => clearTimeout(doneTimer);
-  }, [fadingOut, introComplete, ready]); // onComplete intentionally excluded — use ref
+  }, [introComplete, ready]); // onComplete intentionally excluded — use ref
 
   return (
     <>
