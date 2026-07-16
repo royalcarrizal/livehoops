@@ -57,6 +57,8 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
     courtsVisited: profile?.courts_visited ?? 0,
     hoursOnCourt:  profile?.hours_played   ?? 0,
     favoriteCourt: profile?.favorite_court || 'None yet',
+    // Jersey number: 0 is valid and falsy, so keep null distinct from a set 0.
+    jerseyNumber:  profile?.jersey_number ?? null,
   };
 
   // ── Derive ownership ───────────────────────────────────────────────────────
@@ -108,6 +110,7 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
   // Edit modal form fields — pre-filled when the modal opens (owner only)
   const [editUsername, setEditUsername]         = useState('');
   const [editFavCourt, setEditFavCourt]         = useState('');
+  const [editJersey, setEditJersey]             = useState('');
 
   // True while the Save button is processing
   const [saving, setSaving]                     = useState(false);
@@ -345,6 +348,8 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
   const openEditProfile = () => {
     setEditUsername(displayUser.name);
     setEditFavCourt(displayUser.favoriteCourt);
+    // 0 is a valid number, so check != null rather than truthiness
+    setEditJersey(profile?.jersey_number != null ? String(profile.jersey_number) : '');
     setShowEditProfile(true);
   };
 
@@ -358,10 +363,24 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
       showToast('❌ Username must be at least 2 characters');
       return;
     }
+
+    // Jersey number: blank clears it (null); otherwise must be an integer 0-99.
+    const trimmedJersey = editJersey.trim();
+    let jerseyNumber = null;
+    if (trimmedJersey !== '') {
+      // Reject anything that isn't purely digits (e.g. "2a", "-1", "1.5")
+      if (!/^\d{1,2}$/.test(trimmedJersey)) {
+        showToast('❌ Jersey number must be 0–99');
+        return;
+      }
+      jerseyNumber = parseInt(trimmedJersey, 10);
+    }
+
     setSaving(true);
     const { error } = await updateProfile({
       username:       trimmedUsername,
       favorite_court: editFavCourt.trim(),
+      jersey_number:  jerseyNumber,
     });
     setSaving(false);
     if (error) {
@@ -411,8 +430,14 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
           />
         </div>
 
-        {/* Username — large bold text */}
-        <div className="profile-username">{displayUser.name}</div>
+        {/* Username — large bold text, with optional jersey number.
+            0 is a valid number, so guard on != null, not truthiness. */}
+        <div className="profile-username">
+          {displayUser.name}
+          {displayUser.jerseyNumber != null && (
+            <span className="jersey-number">#{displayUser.jerseyNumber}</span>
+          )}
+        </div>
 
         {/* 3 stat pills showing the user's key numbers.
             Hidden when the profile is locked to us (friends-only/private). */}
@@ -777,6 +802,33 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
                 type="text"
                 value={editUsername}
                 onChange={e => setEditUsername(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '10px 14px',
+                  background: 'var(--bg-card)',
+                  border: '1px solid var(--separator-strong)',
+                  borderRadius: 10,
+                  color: 'var(--text-primary)',
+                  fontSize: 15,
+                  fontFamily: 'var(--font)',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                }}
+              />
+            </div>
+
+            {/* Jersey Number input (0–99, optional) */}
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6 }}>
+                Jersey Number
+              </label>
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={2}
+                value={editJersey}
+                onChange={e => setEditJersey(e.target.value.replace(/[^0-9]/g, ''))}
+                placeholder="e.g. 23"
                 style={{
                   width: '100%',
                   padding: '10px 14px',

@@ -88,6 +88,8 @@ function normPost(row, likedIds) {
     // Two-letter abbreviation for the avatar fallback (e.g. "MA" for "marcus")
     userInitials: username.slice(0, 2).toUpperCase(),
     userAvatarUrl: row.profiles?.avatar_url ?? null,
+    // Jersey number (0 is valid, so ?? null keeps a set 0 distinct from unset)
+    userJersey:   row.profiles?.jersey_number ?? null,
     // Post type: 'status', 'checkin', 'photo', 'video'
     type:         row.type ?? 'status',
     courtName:    row.court_name ?? null,
@@ -112,6 +114,7 @@ function normPost(row, likedIds) {
       userName:     originalUsername,
       userInitials: originalUsername.slice(0, 2).toUpperCase(),
       userAvatarUrl: original.profiles?.avatar_url ?? null,
+      userJersey:   original.profiles?.jersey_number ?? null,
       type:         original.type ?? 'status',
       courtName:    original.court_name ?? null,
       courtId:      original.court_id ?? null,
