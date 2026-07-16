@@ -55,14 +55,29 @@ Deno.serve(async (req) => {
     }
     const serviceAccount = JSON.parse(rawServiceAccount);
 
-    // ── Look up the recipient's registered devices ──────────────────────────
     // The service role key bypasses RLS — required because the fcm_tokens
-    // policies (correctly) block users from reading each other's tokens.
+    // policies (correctly) block users from reading each other's tokens, and
+    // because this function writes notifications on behalf of OTHER users
+    // (the notifications table only allows self-inserts from the client).
     const admin = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
 
+    // ── Persist the notification ─────────────────────────────────────────
+    // This is what makes the in-app bell panel work: a durable row exists
+    // regardless of whether the recipient has any registered devices, and
+    // regardless of whether their app is open, backgrounded, or fully
+    // closed when the FCM send below happens. Best-effort — a failed insert
+    // here shouldn't block the actual push.
+    const { error: insertError } = await admin
+      .from('notifications')
+      .insert({ user_id, title, body: body ?? '', data: data ?? {} });
+    if (insertError) {
+      console.error('Failed to persist notification:', insertError.message);
+    }
+
+    // ── Look up the recipient's registered devices ──────────────────────────
     const { data: tokenRows, error: tokenError } = await admin
       .from('fcm_tokens')
       .select('token')

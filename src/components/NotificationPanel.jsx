@@ -1,15 +1,16 @@
 // src/components/NotificationPanel.jsx
 //
 // A slide-down panel that appears below the header when the bell icon is
-// tapped. It lists all recent notifications stored in localStorage, shows
-// which ones are unread (highlighted), and lets the user clear them.
+// tapped. It lists recent notifications fetched from Supabase (see
+// useNotifications.js), shows which ones are unread (highlighted), and lets
+// the user clear them. Purely presentational — the data layer lives in the
+// hook/store, this component just renders what it's given.
 
 import { X } from 'lucide-react';
-import { clearNotifications } from '../utils/notificationStore';
 
-export default function NotificationPanel({ notifications, onClose }) {
+export default function NotificationPanel({ notifications, onClose, onClearAll }) {
   const handleClearAll = () => {
-    clearNotifications(); // wipes localStorage + dispatches update event
+    onClearAll?.();
     onClose();
   };
 
@@ -62,7 +63,7 @@ export default function NotificationPanel({ notifications, onClose }) {
                     <div className="notif-item-desc">{n.body}</div>
                   )}
                   <div className="notif-item-time">
-                    {formatRelativeTime(n.timestamp)}
+                    {formatRelativeTime(n.created_at)}
                   </div>
                 </div>
 
@@ -78,9 +79,10 @@ export default function NotificationPanel({ notifications, onClose }) {
 }
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
-// Converts a Unix timestamp (ms) into a human-readable "time ago" string.
-function formatRelativeTime(timestamp) {
-  const diff = Date.now() - timestamp;
+// Converts a Supabase timestamptz (ISO string) into a human-readable
+// "time ago" string.
+function formatRelativeTime(createdAt) {
+  const diff = Date.now() - new Date(createdAt).getTime();
   if (diff < 60_000)        return 'Just now';
   if (diff < 3_600_000)     return `${Math.floor(diff / 60_000)}m ago`;
   if (diff < 86_400_000)    return `${Math.floor(diff / 3_600_000)}h ago`;

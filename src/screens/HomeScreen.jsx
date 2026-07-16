@@ -58,6 +58,7 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
     unreadCount,
     notifications,
     markAllRead,
+    clearAll,     // deletes all notifications server-side (panel's "Clear all")
     permission,   // 'default' | 'granted' | 'denied' — drives the prompt
     enablePush,   // asks the browser, registers the token, remembers the choice
   } = useNotifications(user?.id); // userId → registers this device's push token
@@ -514,6 +515,7 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
         <NotificationPanel
           notifications={notifications}
           onClose={() => setShowPanel(false)}
+          onClearAll={clearAll}
         />
       )}
 

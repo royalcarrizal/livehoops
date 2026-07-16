@@ -17,10 +17,11 @@
 import { supabase } from './supabase';
 
 // Name of the deployed Supabase Edge Function that sends the push.
-// It's called "smart-api" (Supabase's default name at deploy time) rather
-// than "send-push" — the code inside it is our send-push function. If you
-// ever redeploy under a cleaner name, change this one constant to match.
-const PUSH_FUNCTION = 'smart-api';
+// Deployed under its actual folder name, "send-push" (supabase/functions/send-push).
+// It used to run under "smart-api" (Supabase's default name from an earlier
+// deploy) — that function is now stale/unused now that this constant points
+// at "send-push", which also persists a notifications row (see supabase/notifications.sql).
+const PUSH_FUNCTION = 'send-push';
 
 /**
  * Send a push notification to a user. Safe to call without awaiting.

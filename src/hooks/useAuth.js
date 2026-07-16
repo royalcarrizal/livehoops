@@ -21,7 +21,6 @@ const STORAGE_KEYS_TO_CLEAR = [
   'livehoops_theme',
   'lh_onboarded',
   'lh_fcm_token',
-  'lh_notifications',
   'lh_notif_enabled',            // per-device master push toggle
   'lh_notif_prompt_dismissed',   // the Home push-opt-in banner's dismiss flag
   'lh_notif_banner_dismissed',   // legacy key, kept for older installs

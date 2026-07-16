@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Heart, MessageCircle, Share2, MoreHorizontal, Play, MapPin, Send, Trash2, Flag, X, UserX } from 'lucide-react';
 import Avatar from './Avatar';
 import BlockUserConfirm from './BlockUserConfirm';
-import { sendLocalNotification } from '../utils/notificationStore';
+import { insertSelfNotification } from '../utils/notificationStore';
 import { useComments } from '../hooks/useComments';
 
 const ACTION_TEXT = {
@@ -129,13 +129,13 @@ export default function FeedPost({
 
         // Fire a notification when liking someone else's post
         if (currentUser?.id && post.userId !== currentUser.id) {
-          sendLocalNotification(
-            `You liked ${post.userName}'s post ❤️`,
-            post.content
+          insertSelfNotification(currentUser.id, {
+            title: `You liked ${post.userName}'s post ❤️`,
+            body: post.content
               ? post.content.slice(0, 60) + (post.content.length > 60 ? '…' : '')
               : `at ${post.courtName}`,
-            '❤️'
-          );
+            icon: '❤️',
+          });
         }
       }
     } catch {

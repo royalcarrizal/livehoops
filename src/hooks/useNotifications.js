@@ -7,22 +7,26 @@
 //      and provides requestPermission() to ask them.
 //
 //   2. FCM TOKEN — after permission is granted, gets a unique device token from
-//      Firebase and saves it to localStorage. In a real app you'd send this
-//      token to your server so it can deliver pushes to this specific device.
+//      Firebase and saves it to localStorage + the fcm_tokens table.
 //
-//   3. LIVE STATE — subscribes to localStorage changes (via the custom
-//      'livehoops:notification' event) so the bell badge and panel always
-//      reflect the current unread count without needing a page refresh.
+//   3. LIVE STATE — the notification list/unread count are backed by the
+//      Supabase `notifications` table (see supabase/notifications.sql), not
+//      localStorage: we fetch on mount and subscribe to Realtime for new
+//      rows. This is what makes the bell panel the same on every device, and
+//      what makes a push that arrived while the app was closed still show up
+//      once it's reopened (the send-push Edge Function already wrote the row
+//      before the FCM message went out).
 
 import { useState, useEffect, useCallback } from 'react';
 import { getToken, onMessage, deleteToken } from 'firebase/messaging';
 import { messaging } from '../firebase';
 import { supabase } from '../lib/supabase';
 import {
-  getStoredNotifications,
-  getUnreadCount,
-  markAllRead,
-  sendLocalNotification,
+  fetchNotifications,
+  subscribeToNotifications,
+  markAllRead as markAllReadInStore,
+  clearNotifications as clearNotificationsInStore,
+  showNativePopup,
 } from '../utils/notificationStore';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -137,10 +141,10 @@ export function useNotifications(userId) {
   });
 
   // The number shown on the bell badge
-  const [unreadCount, setUnreadCount] = useState(() => getUnreadCount());
+  const [unreadCount, setUnreadCount] = useState(0);
 
   // The full list shown inside the notification panel
-  const [notifications, setNotifications] = useState(() => getStoredNotifications());
+  const [notifications, setNotifications] = useState([]);
 
   // Whether push is enabled ON THIS DEVICE. Per-device (backed by localStorage),
   // separate from the account-level category prefs (notif_friend_requests, …).
@@ -151,23 +155,45 @@ export function useNotifications(userId) {
     () => localStorage.getItem('lh_notif_enabled') !== 'false'
   );
 
-  // ── Subscribe to store changes ─────────────────────────────────────────────
-  // notificationStore dispatches 'livehoops:notification' whenever the list
-  // changes. We listen here so React re-renders the badge and panel.
+  // ── Load + subscribe to notifications ──────────────────────────────────────
+  // Fetches this user's notification history from Supabase on mount/login,
+  // then subscribes to Realtime for live updates. New rows land here whether
+  // they came from the send-push Edge Function (friend request, DM,
+  // comment…) or a client self-insert (liking a post — see FeedPost.jsx).
+  // This is the sync mechanism: the panel reflects the server, not this
+  // device, so it's identical across tabs and devices, and a notification
+  // that arrived while the app was fully closed is still here once reopened.
   useEffect(() => {
-    const handleStoreUpdate = () => {
-      setUnreadCount(getUnreadCount());
-      setNotifications(getStoredNotifications());
+    if (!userId) {
+      setNotifications([]);
+      setUnreadCount(0);
+      return;
+    }
+
+    let cancelled = false;
+    fetchNotifications(userId).then((rows) => {
+      if (cancelled) return;
+      setNotifications(rows);
+      setUnreadCount(rows.filter(n => !n.read).length);
+    });
+
+    const unsubscribe = subscribeToNotifications(userId, (row) => {
+      setNotifications(prev => [row, ...prev]);
+      setUnreadCount(prev => prev + 1);
+    });
+
+    return () => {
+      cancelled = true;
+      unsubscribe();
     };
-    window.addEventListener('livehoops:notification', handleStoreUpdate);
-    // Cleanup: remove the listener when this component unmounts
-    return () => window.removeEventListener('livehoops:notification', handleStoreUpdate);
-  }, []);
+  }, [userId]);
 
   // ── FCM foreground message handler ────────────────────────────────────────
   // When a push arrives while the app IS open (foreground), the service
-  // worker doesn't display it — we handle it here instead, passing it
-  // through sendLocalNotification so it appears in the panel.
+  // worker doesn't display it — show a native popup here for immediate
+  // feedback. The panel/badge itself updates via the Realtime subscription
+  // above (the send-push Edge Function already wrote the row before sending
+  // the FCM message), so this handler has no storage responsibility anymore.
   useEffect(() => {
     // Skip if FCM isn't available (null messaging = empty config or unsupported browser)
     if (!messaging) return;
@@ -178,10 +204,9 @@ export function useNotifications(userId) {
       // send-push delivers data-only messages: title/body live in payload.data
       // (payload.notification is kept as a fallback for older payloads)
       const data = payload.data ?? {};
-      sendLocalNotification(
+      showNativePopup(
         data.title || payload.notification?.title || 'LiveHoops',
-        data.body  || payload.notification?.body  || '',
-        '🏀'
+        data.body  || payload.notification?.body  || ''
       );
     });
     return unsubscribe;
@@ -233,6 +258,29 @@ export function useNotifications(userId) {
     return ok;
   }, [userId]);
 
+  // ── Mark every notification as read ─────────────────────────────────────────
+  // Optimistic: updates local state immediately (instant badge clear), then
+  // fires the Supabase update. Low-stakes if that write is slow/fails — the
+  // next fetch on mount will resync, and the failure is already logged from
+  // inside markAllReadInStore.
+  const markAllRead = useCallback(() => {
+    if (!userId) return;
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    setUnreadCount(0);
+    markAllReadInStore(userId);
+  }, [userId]);
+
+  // ── Clear all notifications ─────────────────────────────────────────────────
+  // Deletes this user's notifications server-side (not just on this device),
+  // so "Clear all" stays cleared across every device, matching how the list
+  // itself is now shared across devices.
+  const clearAll = useCallback(() => {
+    if (!userId) return;
+    setNotifications([]);
+    setUnreadCount(0);
+    clearNotificationsInStore(userId);
+  }, [userId]);
+
   return {
     permission,       // 'default' | 'granted' | 'denied'
     pushEnabled,      // bool — master toggle state for THIS device
@@ -241,5 +289,6 @@ export function useNotifications(userId) {
     enablePush,       // async fn — turn on: ask + register + persist
     disablePush,      // async fn — turn off: un-register + persist; returns success
     markAllRead,      // fn — clears the unread badge
+    clearAll,         // fn — deletes all notifications server-side
   };
 }
