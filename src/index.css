@@ -1324,6 +1324,83 @@ body {
   margin-top: 6px;
 }
 
+/* ── King of the Court ─────────────────────────────────────────────────── */
+/* The two reigning per-court leaders (most hours, most check-ins). Shown   */
+/* as horizontal rows below "Playing now" in the court detail sheets.       */
+.court-king {
+  margin: 14px 0 2px;
+}
+
+.court-king-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+/* One king row: crown · avatar · (title + name) · stat pushed to the right */
+.court-king-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  background: var(--bg-elevated);
+  border: none;
+  border-radius: 12px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+}
+.court-king-row:last-child { margin-bottom: 0; }
+.court-king-row:active { opacity: 0.7; }
+
+.court-king-crown {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.court-king-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.court-king-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--orange);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.court-king-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Stat (e.g. "12h" or "8 check-ins") pinned to the right edge of the row */
+.court-king-stat {
+  margin-left: auto;
+  padding-left: 8px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text-primary);
+  flex-shrink: 0;
+}
+
+/* Shown when a court has no completed check-ins yet */
+.court-king-empty {
+  font-size: 13px;
+  color: var(--text-secondary);
+  padding: 2px 0;
+}
+
 .map-courts-sheet {
   background: var(--bg-card);
   border-top: 1px solid var(--separator-strong);
