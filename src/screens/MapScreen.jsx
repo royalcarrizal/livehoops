@@ -17,9 +17,11 @@ import { usePosts } from '../hooks/usePosts';
 import { useCourtFavorites } from '../hooks/useCourtFavorites';
 import MapPostModal from '../components/MapPostModal';
 import CourtMeetups from '../components/CourtMeetups';
+import CourtRoyalty from '../components/CourtRoyalty';
 import Toast from '../components/Toast';
 import Avatar from '../components/Avatar';
 import { useToast } from '../hooks/useToast';
+import { useCourtKing } from '../hooks/useCourtKing';
 import { formatMeetupTime } from '../utils/datetime';
 
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -53,6 +55,7 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
   const { createPost } = usePosts();
   const { toast, showToast } = useToast();
   const { favoriteIds, toggleFavorite } = useCourtFavorites(user?.id);
+  const { kings, fetchKings } = useCourtKing();
 
   // ── Fetch this user's check-in history ───────────────────────────────────
   useEffect(() => {
@@ -69,6 +72,12 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
         setVisitMap(map);
       });
   }, [user?.id]);
+
+  // ── Load the two "kings" whenever a court sheet opens ─────────────────────
+  // Lazy: only the opened court is aggregated, never the whole list.
+  useEffect(() => {
+    if (selectedPark?.id) fetchKings(selectedPark.id);
+  }, [selectedPark?.id, fetchKings]);
 
   // ── Fly the map camera to a specific court ────────────────────────────────
   // Called when the user taps a chip at the bottom or selects a court
@@ -384,6 +393,13 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
                 )}
               </div>
             )}
+
+            {/* ── King of the Court — the two reigning per-court leaders ────── */}
+            <CourtRoyalty
+              kings={kings}
+              currentUserId={user?.id}
+              onViewProfile={onViewProfile}
+            />
 
             {/* Action buttons */}
             <div className="map-sheet-buttons" style={{ flexWrap: 'wrap' }}>

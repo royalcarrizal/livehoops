@@ -19,7 +19,9 @@ import { useState, useEffect } from 'react';
 import { Trash2 } from 'lucide-react';
 import Avatar from './Avatar';
 import CourtMeetups from './CourtMeetups';
+import CourtRoyalty from './CourtRoyalty';
 import { useCourtReviews } from '../hooks/useCourtReviews';
+import { useCourtKing } from '../hooks/useCourtKing';
 
 // ── Renders 1–5 filled/empty star characters ─────────────────────────────────
 function StarRow({ rating, size = 14 }) {
@@ -61,12 +63,19 @@ export default function CourtDetailSheet({
     deleteReview,
   } = useCourtReviews();
 
+  const { kings, fetchKings } = useCourtKing();
+
   // Lazy-load reviews the first time the section is expanded
   useEffect(() => {
     if (showReviews && court?.id) {
       fetchReviews(court.id, user?.id);
     }
   }, [showReviews, court?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Load the two "kings" whenever this sheet opens for a court
+  useEffect(() => {
+    if (court?.id) fetchKings(court.id);
+  }, [court?.id, fetchKings]);
 
   // Pre-fill the draft editor when the user's own review loads
   const myReview = reviews.find(r => r.isOwn);
@@ -192,6 +201,13 @@ export default function CourtDetailSheet({
             )}
           </div>
         )}
+
+        {/* ── King of the Court — the two reigning per-court leaders ─────────── */}
+        <CourtRoyalty
+          kings={kings}
+          currentUserId={user?.id}
+          onViewProfile={onViewProfile}
+        />
 
         {/* ── Check-in / Directions buttons ─────────────────────────────────── */}
         <div className="map-sheet-buttons">
