@@ -155,6 +155,15 @@ export function useNotifications(userId) {
     () => localStorage.getItem('lh_notif_enabled') !== 'false'
   );
 
+  // This device's FCM token, or null if it never registered. Backed by the
+  // same localStorage key registerPushToken writes, so it survives reloads and
+  // reflects the real "is this device reachable by a push" state. Exposed for
+  // the Settings diagnostics panel — a null token here is exactly why a push
+  // can reach the bell (server-side row) but never the phone (no device).
+  const [deviceToken, setDeviceToken] = useState(
+    () => localStorage.getItem('lh_fcm_token')
+  );
+
   // ── Load + subscribe to notifications ──────────────────────────────────────
   // Fetches this user's notification history from Supabase on mount/login,
   // then subscribes to Realtime for live updates. New rows land here whether
@@ -220,7 +229,9 @@ export function useNotifications(userId) {
   // without it, deleting the token would just come back on the next load.
   useEffect(() => {
     if (permission === 'granted' && userId && pushEnabled) {
-      registerPushToken(userId);
+      registerPushToken(userId).then((token) => {
+        if (token) setDeviceToken(token);
+      });
     }
   }, [permission, userId, pushEnabled]);
 
@@ -236,7 +247,8 @@ export function useNotifications(userId) {
     setPermission(result);
 
     if (result === 'granted') {
-      await registerPushToken(userId);
+      const token = await registerPushToken(userId);
+      if (token) setDeviceToken(token);
       setPushEnabled(true);
       localStorage.setItem('lh_notif_enabled', 'true');
     }
@@ -253,6 +265,7 @@ export function useNotifications(userId) {
     const ok = await unregisterPushToken(userId);
     if (ok) {
       setPushEnabled(false);
+      setDeviceToken(null);
       localStorage.setItem('lh_notif_enabled', 'false');
     }
     return ok;
@@ -284,6 +297,7 @@ export function useNotifications(userId) {
   return {
     permission,       // 'default' | 'granted' | 'denied'
     pushEnabled,      // bool — master toggle state for THIS device
+    deviceToken,      // string|null — this device's FCM token (null = unregistered)
     unreadCount,      // number — shown on bell badge
     notifications,    // array — shown in the notification panel
     enablePush,       // async fn — turn on: ask + register + persist
