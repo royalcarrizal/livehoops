@@ -11,7 +11,7 @@ vi.mock('../supabase', () => ({
 }));
 
 // Imported after the mock is declared (vi.mock is hoisted above imports).
-import { preview, sendPush } from '../push';
+import { preview, sendPush, pushRegistrationMessage } from '../push';
 
 describe('preview', () => {
   it('returns empty string for missing text', () => {
@@ -33,6 +33,27 @@ describe('preview', () => {
   it('does not truncate text exactly at the limit', () => {
     const exact = 'b'.repeat(120);
     expect(preview(exact, 120)).toBe(exact);
+  });
+});
+
+describe('pushRegistrationMessage', () => {
+  it('maps known reason codes to friendly text', () => {
+    expect(pushRegistrationMessage('ok')).toBe('Registered ✅');
+    expect(pushRegistrationMessage('no-user')).toBe('Not signed in');
+    expect(pushRegistrationMessage('vapid-missing')).toBe('VAPID key missing from this build');
+    expect(pushRegistrationMessage('messaging-unavailable')).toMatch(/didn't start/);
+    expect(pushRegistrationMessage('no-token')).toMatch(/no token/);
+  });
+
+  it('passes an unknown raw error message straight through', () => {
+    expect(pushRegistrationMessage('messaging/unsupported-browser'))
+      .toBe('messaging/unsupported-browser');
+    expect(pushRegistrationMessage('db-error: boom')).toBe('db-error: boom');
+  });
+
+  it('shows a placeholder when no attempt has been made', () => {
+    expect(pushRegistrationMessage(null)).toBe('Not attempted yet');
+    expect(pushRegistrationMessage(undefined)).toBe('Not attempted yet');
   });
 });
 
