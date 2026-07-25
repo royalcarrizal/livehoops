@@ -26,26 +26,47 @@ const PUSH_FUNCTION = 'send-push';
 /**
  * Send a push notification to a user. Safe to call without awaiting.
  *
+ * Returns a promise that always resolves (never rejects) to a normalized
+ * `{ data, error }` shape, so callers that DO want the outcome (e.g. the
+ * Settings "Send Test Notification" diagnostic) can `await` it without a
+ * try/catch. `data` is the Edge Function's `{ sent, pruned, reason? }` payload;
+ * `error` is set on network/function failure. Fire-and-forget callers can keep
+ * ignoring the return entirely — the console.info swallow still happens here.
+ *
  * @param {string} userId  — recipient's profile id
  * @param {string} title   — notification title (e.g. "Marcus sent you a message")
  * @param {string} [body]  — notification body (e.g. the message preview)
  * @param {object} [data]  — string→string map for deep-linking (e.g. { kind: 'dm' })
+ * @returns {Promise<{ data: object|null, error: Error|null }>}
  */
 export function sendPush(userId, title, body = '', data = {}) {
-  if (!userId || !title) return;
+  if (!userId || !title) {
+    return Promise.resolve({
+      data: null,
+      error: new Error('userId and title are required'),
+    });
+  }
 
   // Coerce data values to strings — FCM requires the data payload to be
   // entirely string→string.
   const stringData = {};
   for (const [k, v] of Object.entries(data)) stringData[k] = String(v);
 
-  supabase.functions
+  return supabase.functions
     .invoke(PUSH_FUNCTION, {
       body: { user_id: userId, title, body, data: stringData },
     })
+    .then(({ data: result, error }) => {
+      if (error) {
+        console.info('[LiveHoops] Push not sent:', error.message ?? error);
+      }
+      return { data: result ?? null, error: error ?? null };
+    })
     .catch((err) => {
-      // Swallow — a failed push is never worth surfacing to the sender.
+      // Swallow — a failed push is never worth surfacing to the sender, but
+      // still hand the outcome back to callers that asked for it.
       console.info('[LiveHoops] Push not sent:', err?.message ?? err);
+      return { data: null, error: err instanceof Error ? err : new Error(String(err)) };
     });
 }
 

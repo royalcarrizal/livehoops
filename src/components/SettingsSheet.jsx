@@ -26,11 +26,29 @@ import { useTheme } from '../hooks/useTheme';
 import { useToast } from '../hooks/useToast';
 import { useNotifications } from '../hooks/useNotifications';
 import { sendPush } from '../lib/push';
+import { firebaseConfigured } from '../firebase';
 import Toast from './Toast';
 import LegalSheet from './LegalSheet';
 import FeatureTour from './FeatureTour';
 import AdminSheet from './AdminSheet';
 import BlockedAccountsSheet from './BlockedAccountsSheet';
+
+// ── Environment detection (for the notification diagnostics) ────────────────
+// Mirrors the standalone check in Onboarding.jsx: navigator.standalone is the
+// iOS-specific signal, display-mode covers the standard PWA case. iOS only
+// delivers web push when the app is launched from its Home-Screen icon, so
+// "on iOS but NOT installed" is a common reason the phone stays silent.
+function isIOSDevice() {
+  const ua = navigator.userAgent || '';
+  // iPadOS 13+ reports as Mac but has touch — catch it via maxTouchPoints.
+  return /iphone|ipad|ipod/i.test(ua) ||
+    (/macintosh/i.test(ua) && navigator.maxTouchPoints > 1);
+}
+
+function isStandalonePWA() {
+  return navigator.standalone === true ||
+    window.matchMedia?.('(display-mode: standalone)').matches === true;
+}
 
 // ── Toggle sub-component ────────────────────────────────────────────────────
 // A simple on/off pill toggle. Styled in index.css as .settings-toggle.
@@ -49,13 +67,34 @@ function Toggle({ on, onToggle }) {
   );
 }
 
+// ── Diagnostics line ────────────────────────────────────────────────────────
+// One label/value row inside the notification Diagnostics block. Colors inherit
+// from the sheet (theme-safe): the label is muted via opacity, the value turns
+// red only when `ok` is explicitly false so a broken hop stands out.
+function DiagLine({ label, value, ok }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 4 }}>
+      <span style={{ opacity: 0.7 }}>{label}</span>
+      <span
+        style={{
+          textAlign: 'right',
+          fontWeight: 500,
+          color: ok === false ? '#FF453A' : 'inherit',
+        }}
+      >
+        {value}
+      </span>
+    </div>
+  );
+}
+
 export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditProfile, profile, updateProfile, blockedUsers = [], unblockUser }) {
 
   // ── Master push toggle (per-device) ─────────────────────────────────────
   // The hook is the single source of truth: enablePush asks the browser +
   // registers this device's token; disablePush actually removes it (so pushes
   // stop) and reports success. pushEnabled reflects that persisted state.
-  const { permission, pushEnabled, enablePush, disablePush } = useNotifications(user?.id);
+  const { permission, pushEnabled, deviceToken, enablePush, disablePush } = useNotifications(user?.id);
 
   // ── Category toggles (account-level) ────────────────────────────────────
   // Friend Request / Court Goes Live / Run alerts are REAL settings stored on
@@ -163,12 +202,33 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
   // Fires a push to the current user's own devices via the send-push
   // Edge Function — handy for confirming the whole pipeline end to end.
   const [testing, setTesting] = useState(false);
+  // Whether the collapsible Diagnostics block is expanded, and the plain-
+  // language outcome of the most recent test send (null until one runs).
+  const [diagOpen, setDiagOpen] = useState(false);
+  const [testResult, setTestResult] = useState(null);
   const handleTestPush = async () => {
     if (testing || !user?.id) return;
     setTesting(true);
-    sendPush(user.id, 'LiveHoops 🏀', 'Your notifications are working!', { kind: 'test' });
-    showToast('Test sent — watch for the notification');
-    setTimeout(() => setTesting(false), 1500);
+    setTestResult('Sending…');
+    // Await the real result so we can tell "delivered to a device" apart from
+    // "sent to nobody" (sent: 0) or an outright failure — the whole point of
+    // the diagnostics. The panel auto-opens so the outcome is visible.
+    const { data, error } = await sendPush(
+      user.id, 'LiveHoops 🏀', 'Your notifications are working!', { kind: 'test' }
+    );
+    if (error) {
+      setTestResult(`❌ Failed: ${error.message}`);
+      showToast('Test failed — see Diagnostics');
+    } else if ((data?.sent ?? 0) >= 1) {
+      setTestResult(`✅ Delivered to ${data.sent} device${data.sent === 1 ? '' : 's'}`);
+      showToast('Test delivered — watch for the banner');
+    } else {
+      const reason = data?.reason ? ` (${data.reason})` : '';
+      setTestResult(`⚠️ This device isn't registered — no banner will show${reason}`);
+      showToast('No registered device — see Diagnostics');
+    }
+    setDiagOpen(true);
+    setTesting(false);
   };
 
   // ── Handler: Friend request alerts toggle ───────────────────────────────
@@ -435,6 +495,63 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
                   </div>
                   <div className="settings-row-right"><ChevronRight size={16} /></div>
                 </button>
+              )}
+
+              {/* Diagnostics — collapsed by default. Reveals exactly where the
+                  push chain breaks: OS permission, whether Firebase is
+                  configured in THIS build (catches env vars missing in the
+                  deployed/Vercel build), whether this device registered a
+                  token, and the real result of the last test send. Always
+                  available (even with push off) since that's when it's needed. */}
+              <button
+                className="settings-row"
+                onClick={() => setDiagOpen((o) => !o)}
+                aria-expanded={diagOpen}
+                type="button"
+              >
+                <div className="settings-row-icon" style={{ background: '#8E8E93' }}>🩺</div>
+                <div className="settings-row-content">
+                  <div className="settings-row-title">Diagnostics</div>
+                  <div className="settings-row-desc">Why notifications may not reach this phone</div>
+                </div>
+                <div className="settings-row-right">
+                  <ChevronRight
+                    size={16}
+                    style={{
+                      transform: diagOpen ? 'rotate(90deg)' : 'none',
+                      transition: 'transform 0.15s ease',
+                    }}
+                  />
+                </div>
+              </button>
+
+              {diagOpen && (
+                <div className="settings-row" style={{ display: 'block' }}>
+                  <div style={{ width: '100%', fontSize: '0.85rem', lineHeight: 1.5 }}>
+                    <DiagLine label="OS permission" value={permission} />
+                    <DiagLine
+                      label="Firebase configured in this build"
+                      value={firebaseConfigured ? 'Yes' : 'No — push cannot register'}
+                      ok={firebaseConfigured}
+                    />
+                    <DiagLine
+                      label="This device registered"
+                      value={deviceToken ? `Yes (${deviceToken.slice(0, 8)}…)` : 'No — no banners will arrive'}
+                      ok={!!deviceToken}
+                    />
+                    <DiagLine
+                      label="Last test send"
+                      value={testResult ?? 'Not tested yet'}
+                    />
+                    {isIOSDevice() && !isStandalonePWA() && (
+                      <div style={{ marginTop: 8, opacity: 0.8 }}>
+                        ⚠️ On iPhone, web push only works when LiveHoops is opened from its
+                        Home-Screen icon. In Safari, tap Share → “Add to Home Screen,” then
+                        open it from there and enable notifications.
+                      </div>
+                    )}
+                  </div>
+                </div>
               )}
 
               {/* Friend request alerts — notified when someone sends a friend request */}
