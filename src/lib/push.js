@@ -70,6 +70,34 @@ export function sendPush(userId, title, body = '', data = {}) {
     });
 }
 
+/**
+ * Turn a push-registration reason code into a human-readable line for the
+ * Settings → Diagnostics panel. registerPushToken (useNotifications.js) returns
+ * a stable `reason` for each way it can succeed or bail; this maps the known
+ * ones to friendly text and passes anything else (a raw getToken / service
+ * worker error message) straight through, so the real cause reaches the user.
+ *
+ * @param {string} reason — reason code from registerPushToken
+ * @returns {string}
+ */
+export function pushRegistrationMessage(reason) {
+  switch (reason) {
+    case 'ok':
+      return 'Registered ✅';
+    case 'no-user':
+      return 'Not signed in';
+    case 'messaging-unavailable':
+      return "Firebase Messaging didn't start (browser unsupported or blocked)";
+    case 'vapid-missing':
+      return 'VAPID key missing from this build';
+    case 'no-token':
+      return 'Firebase returned no token (push unavailable on this device)';
+    default:
+      // A raw error message (getToken / service-worker failure) or db-error.
+      return reason || 'Not attempted yet';
+  }
+}
+
 // Truncate a message/preview so notifications stay short and readable.
 export function preview(text, max = 120) {
   if (!text) return '';

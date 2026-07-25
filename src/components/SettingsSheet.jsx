@@ -25,7 +25,7 @@ import { supabase } from '../lib/supabase';
 import { useTheme } from '../hooks/useTheme';
 import { useToast } from '../hooks/useToast';
 import { useNotifications } from '../hooks/useNotifications';
-import { sendPush } from '../lib/push';
+import { sendPush, pushRegistrationMessage } from '../lib/push';
 import { firebaseConfigured } from '../firebase';
 import Toast from './Toast';
 import LegalSheet from './LegalSheet';
@@ -94,7 +94,11 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
   // The hook is the single source of truth: enablePush asks the browser +
   // registers this device's token; disablePush actually removes it (so pushes
   // stop) and reports success. pushEnabled reflects that persisted state.
-  const { permission, pushEnabled, deviceToken, enablePush, disablePush } = useNotifications(user?.id);
+  const {
+    permission, pushEnabled, deviceToken, pushReason,
+    messagingReady, vapidPresent, reregister,
+    enablePush, disablePush,
+  } = useNotifications(user?.id);
 
   // ── Category toggles (account-level) ────────────────────────────────────
   // Friend Request / Court Goes Live / Run alerts are REAL settings stored on
@@ -229,6 +233,20 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
     }
     setDiagOpen(true);
     setTesting(false);
+  };
+
+  // ── Re-register this device on demand (Diagnostics) ─────────────────────
+  // Runs the FCM token request again and surfaces the exact outcome — the
+  // on-device probe for why a phone isn't getting banners. Auto-opens the
+  // panel so the result (success or the real error) is visible.
+  const [reReging, setReReging] = useState(false);
+  const handleReregister = async () => {
+    if (reReging || !user?.id) return;
+    setReReging(true);
+    setDiagOpen(true);
+    const { token } = await reregister();
+    showToast(token ? 'Device registered ✅' : 'Still not registered — see Diagnostics');
+    setReReging(false);
   };
 
   // ── Handler: Friend request alerts toggle ───────────────────────────────
@@ -535,14 +553,50 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
                       ok={firebaseConfigured}
                     />
                     <DiagLine
+                      label="Firebase Messaging started"
+                      value={messagingReady ? 'Yes' : 'No — unsupported or blocked'}
+                      ok={messagingReady}
+                    />
+                    <DiagLine
+                      label="VAPID key present"
+                      value={vapidPresent ? 'Yes' : 'No — missing from build'}
+                      ok={vapidPresent}
+                    />
+                    <DiagLine
                       label="This device registered"
                       value={deviceToken ? `Yes (${deviceToken.slice(0, 8)}…)` : 'No — no banners will arrive'}
                       ok={!!deviceToken}
                     />
                     <DiagLine
+                      label="Last registration result"
+                      value={pushRegistrationMessage(pushReason)}
+                      ok={pushReason == null ? undefined : pushReason === 'ok'}
+                    />
+                    <DiagLine
                       label="Last test send"
                       value={testResult ?? 'Not tested yet'}
                     />
+
+                    {/* On-demand probe: re-run the token request and show the
+                        exact outcome/error. This is what pins down WHY a phone
+                        with permission granted still isn't getting banners. */}
+                    <button
+                      className="settings-row"
+                      onClick={handleReregister}
+                      disabled={reReging}
+                      type="button"
+                      style={{ marginTop: 10 }}
+                    >
+                      <div className="settings-row-icon" style={{ background: '#5E5CE6' }}>🔄</div>
+                      <div className="settings-row-content">
+                        <div className="settings-row-title">
+                          {reReging ? 'Re-registering…' : 'Re-register this device'}
+                        </div>
+                        <div className="settings-row-desc">Retry the push token and show the result</div>
+                      </div>
+                      <div className="settings-row-right"><ChevronRight size={16} /></div>
+                    </button>
+
                     {isIOSDevice() && !isStandalonePWA() && (
                       <div style={{ marginTop: 8, opacity: 0.8 }}>
                         ⚠️ On iPhone, web push only works when LiveHoops is opened from its

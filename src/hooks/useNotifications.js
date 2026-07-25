@@ -49,8 +49,20 @@ const FCM_VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY ?? '';
 // lets the send-push Edge Function deliver notifications to this device when
 // OTHER people do things (friend request, DM). localStorage alone isn't
 // enough — nobody else can read your localStorage.
+// Returns { token, reason } rather than just the token so the Settings
+// diagnostics can explain WHY a device failed to register — the whole reason a
+// push can reach the bell (server row) but never the phone (no device token).
+// `reason` is a stable code for the known bail-outs ('messaging-unavailable',
+// 'vapid-missing', 'no-token', 'no-user'), 'ok' on success, or the raw
+// getToken / service-worker error string otherwise. pushRegistrationMessage()
+// in lib/push.js turns these into human-readable lines.
 async function registerPushToken(userId) {
-  if (!messaging || !FCM_VAPID_KEY || !userId) return null;
+  if (!userId) return { token: null, reason: 'no-user' };
+  // messaging is null when Firebase Messaging couldn't initialize in this
+  // browser (getMessaging threw — e.g. unsupported/blocked). This is distinct
+  // from "Firebase configured" (which only means the API key is present).
+  if (!messaging) return { token: null, reason: 'messaging-unavailable' };
+  if (!FCM_VAPID_KEY) return { token: null, reason: 'vapid-missing' };
 
   try {
     // The service worker must be registered before FCM can route
@@ -64,7 +76,7 @@ async function registerPushToken(userId) {
       serviceWorkerRegistration: registration,
     });
 
-    if (!token) return null;
+    if (!token) return { token: null, reason: 'no-token' };
 
     localStorage.setItem('lh_fcm_token', token);
 
@@ -80,14 +92,17 @@ async function registerPushToken(userId) {
 
     if (error) {
       console.error('[LiveHoops] Failed to save push token:', error.message);
+      return { token, reason: `db-error: ${error.message}` };
     }
 
-    return token;
+    return { token, reason: 'ok' };
   } catch (err) {
-    // Typically: Firebase env vars not set yet, or the browser blocks
-    // service workers. Local (in-app) notifications still work fine.
-    console.info('[LiveHoops] FCM token unavailable:', err.message);
-    return null;
+    // Typically: the browser blocks service workers, or getToken fails on
+    // iOS. Surface the real message so diagnostics can show it. Local
+    // (in-app) notifications still work fine.
+    const message = err?.message ?? String(err);
+    console.info('[LiveHoops] FCM token unavailable:', message);
+    return { token: null, reason: message };
   }
 }
 
@@ -164,6 +179,11 @@ export function useNotifications(userId) {
     () => localStorage.getItem('lh_fcm_token')
   );
 
+  // Reason code from the most recent registration attempt (null until one
+  // runs). Surfaced in Settings → Diagnostics via pushRegistrationMessage so a
+  // failed device shows WHY (e.g. an iOS getToken error) instead of just "No".
+  const [pushReason, setPushReason] = useState(null);
+
   // ── Load + subscribe to notifications ──────────────────────────────────────
   // Fetches this user's notification history from Supabase on mount/login,
   // then subscribes to Realtime for live updates. New rows land here whether
@@ -229,8 +249,9 @@ export function useNotifications(userId) {
   // without it, deleting the token would just come back on the next load.
   useEffect(() => {
     if (permission === 'granted' && userId && pushEnabled) {
-      registerPushToken(userId).then((token) => {
+      registerPushToken(userId).then(({ token, reason }) => {
         if (token) setDeviceToken(token);
+        setPushReason(reason);
       });
     }
   }, [permission, userId, pushEnabled]);
@@ -247,8 +268,9 @@ export function useNotifications(userId) {
     setPermission(result);
 
     if (result === 'granted') {
-      const token = await registerPushToken(userId);
+      const { token, reason } = await registerPushToken(userId);
       if (token) setDeviceToken(token);
+      setPushReason(reason);
       setPushEnabled(true);
       localStorage.setItem('lh_notif_enabled', 'true');
     }
@@ -269,6 +291,17 @@ export function useNotifications(userId) {
       localStorage.setItem('lh_notif_enabled', 'false');
     }
     return ok;
+  }, [userId]);
+
+  // ── Re-run token registration on demand (Diagnostics) ──────────────────────
+  // Fires the same registration path as the auto-effect but returns the
+  // { token, reason } so the Settings panel can show exactly what happened —
+  // the on-device probe that tells us why a phone isn't getting banners.
+  const reregister = useCallback(async () => {
+    const result = await registerPushToken(userId);
+    setDeviceToken(result.token);
+    setPushReason(result.reason);
+    return result;
   }, [userId]);
 
   // ── Mark every notification as read ─────────────────────────────────────────
@@ -298,6 +331,10 @@ export function useNotifications(userId) {
     permission,       // 'default' | 'granted' | 'denied'
     pushEnabled,      // bool — master toggle state for THIS device
     deviceToken,      // string|null — this device's FCM token (null = unregistered)
+    pushReason,       // string|null — reason code from the last registration attempt
+    messagingReady: !!messaging,   // bool — Firebase Messaging initialized in this browser
+    vapidPresent: !!FCM_VAPID_KEY, // bool — VAPID key present in this build
+    reregister,       // async fn — re-run registration on demand; returns { token, reason }
     unreadCount,      // number — shown on bell badge
     notifications,    // array — shown in the notification panel
     enablePush,       // async fn — turn on: ask + register + persist
