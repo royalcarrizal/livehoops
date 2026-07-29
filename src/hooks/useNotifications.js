@@ -43,6 +43,40 @@ import {
 // ─────────────────────────────────────────────────────────────────────────────
 const FCM_VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY ?? '';
 
+// Firebase's messaging worker gets its OWN scope so it doesn't collide with the
+// Vite/Workbox offline worker that main.jsx registers at '/'. Two service
+// workers at the same scope is tolerated on Chrome/Android but makes iOS reject
+// the push subscription — getToken() throws "TypeError: Type error" and the
+// device never registers. This path is FCM's conventional default scope; the
+// worker file still lives at the root URL (/firebase-messaging-sw.js), which is
+// allowed to control this sub-scope.
+const FCM_SW_SCOPE = '/firebase-cloud-messaging-push-scope';
+
+// Register (or reuse) the Firebase messaging service worker at its dedicated
+// scope, resolving only once it has an ACTIVE worker. iOS throws if getToken()
+// asks for a subscription before the worker has finished activating, so we wait
+// for the installing/waiting worker to reach 'activated' first.
+async function registerMessagingSW() {
+  const existing = await navigator.serviceWorker.getRegistration(FCM_SW_SCOPE);
+  const registration =
+    existing ??
+    (await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+      scope: FCM_SW_SCOPE,
+    }));
+
+  if (registration.active) return registration;
+
+  await new Promise((resolve) => {
+    const worker = registration.installing || registration.waiting;
+    if (!worker) return resolve();
+    worker.addEventListener('statechange', () => {
+      if (worker.state === 'activated') resolve();
+    });
+  });
+
+  return registration;
+}
+
 // ── Get this device's push token and register it server-side ────────────────
 // The token is like a phone number for this specific browser/device. Saving
 // it to the fcm_tokens table (see supabase/push_notifications.sql) is what
@@ -65,11 +99,9 @@ async function registerPushToken(userId) {
   if (!FCM_VAPID_KEY) return { token: null, reason: 'vapid-missing' };
 
   try {
-    // The service worker must be registered before FCM can route
-    // background messages to it.
-    const registration = await navigator.serviceWorker.register(
-      '/firebase-messaging-sw.js'
-    );
+    // Register the messaging worker at its own scope (see FCM_SW_SCOPE) and
+    // wait for it to activate before FCM can route background messages to it.
+    const registration = await registerMessagingSW();
 
     const token = await getToken(messaging, {
       vapidKey: FCM_VAPID_KEY,
@@ -98,11 +130,12 @@ async function registerPushToken(userId) {
     return { token, reason: 'ok' };
   } catch (err) {
     // Typically: the browser blocks service workers, or getToken fails on
-    // iOS. Surface the real message so diagnostics can show it. Local
-    // (in-app) notifications still work fine.
-    const message = err?.message ?? String(err);
-    console.info('[LiveHoops] FCM token unavailable:', message);
-    return { token: null, reason: message };
+    // iOS. Surface the error NAME + message (e.g. "TypeError: Type error") so
+    // diagnostics show something identifiable. Local (in-app) notifications
+    // still work fine.
+    const reason = [err?.name, err?.message].filter(Boolean).join(': ') || String(err);
+    console.info('[LiveHoops] FCM token unavailable:', reason);
+    return { token: null, reason };
   }
 }
 
