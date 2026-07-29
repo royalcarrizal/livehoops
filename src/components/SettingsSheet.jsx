@@ -97,6 +97,7 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
   const {
     permission, pushEnabled, deviceToken, pushReason,
     messagingReady, vapidPresent, reregister,
+    pushProbe, runPushProbe,
     enablePush, disablePush,
   } = useNotifications(user?.id);
 
@@ -247,6 +248,18 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
     const { token } = await reregister();
     showToast(token ? 'Device registered ✅' : 'Still not registered — see Diagnostics');
     setReReging(false);
+  };
+
+  // ── Run the step-by-step push probe (Diagnostics) ───────────────────────
+  // Runs each layer of getToken() separately so the panel shows exactly which
+  // step fails (service worker / Apple subscription / Firebase exchange).
+  const [probing, setProbing] = useState(false);
+  const handleProbe = async () => {
+    if (probing) return;
+    setProbing(true);
+    setDiagOpen(true);
+    await runPushProbe();
+    setProbing(false);
   };
 
   // ── Handler: Friend request alerts toggle ───────────────────────────────
@@ -596,6 +609,50 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
                       </div>
                       <div className="settings-row-right"><ChevronRight size={16} /></div>
                     </button>
+
+                    {/* Step-by-step probe: runs each layer of getToken()
+                        separately so we can see WHICH step throws — the service
+                        worker, the browser/Apple subscription, or Firebase's
+                        exchange. Diagnostic-only; writes nothing. */}
+                    <button
+                      className="settings-row"
+                      onClick={handleProbe}
+                      disabled={probing}
+                      type="button"
+                    >
+                      <div className="settings-row-icon" style={{ background: '#FF375F' }}>🔬</div>
+                      <div className="settings-row-content">
+                        <div className="settings-row-title">
+                          {probing ? 'Running probe…' : 'Run push probe'}
+                        </div>
+                        <div className="settings-row-desc">Test each step and show which one fails</div>
+                      </div>
+                      <div className="settings-row-right"><ChevronRight size={16} /></div>
+                    </button>
+
+                    {pushProbe && (
+                      <div style={{ marginTop: 8 }}>
+                        <DiagLine
+                          label="1. Service worker"
+                          value={pushProbe.sw || '—'}
+                          ok={pushProbe.sw === 'ok'}
+                        />
+                        <DiagLine
+                          label="2. Push subscription (Apple)"
+                          value={
+                            pushProbe.subscribe === 'ok'
+                              ? `ok${pushProbe.endpointHost ? ` (${pushProbe.endpointHost})` : ''}`
+                              : (pushProbe.subscribe || '—')
+                          }
+                          ok={pushProbe.subscribe === 'ok'}
+                        />
+                        <DiagLine
+                          label="3. FCM token exchange (Google)"
+                          value={pushProbe.getToken || '—'}
+                          ok={pushProbe.getToken === 'ok'}
+                        />
+                      </div>
+                    )}
 
                     {isIOSDevice() && !isStandalonePWA() && (
                       <div style={{ marginTop: 8, opacity: 0.8 }}>

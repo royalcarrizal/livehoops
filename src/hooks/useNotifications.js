@@ -28,6 +28,7 @@ import {
   clearNotifications as clearNotificationsInStore,
   showNativePopup,
 } from '../utils/notificationStore';
+import { urlBase64ToUint8Array } from '../lib/push';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // VAPID KEY (from .env)
@@ -75,6 +76,63 @@ async function registerMessagingSW() {
   });
 
   return registration;
+}
+
+// Format a caught error as "Name: message" (e.g. "TypeError: Type error") so
+// the diagnostics probe surfaces something identifiable.
+const fmtErr = (err) =>
+  [err?.name, err?.message].filter(Boolean).join(': ') || String(err);
+
+// ── Push probe (Diagnostics) ────────────────────────────────────────────────
+// getToken() is opaque: it (1) asks the browser/Apple for a push subscription,
+// then (2) hands it to Firebase's servers. On iOS both surface as the same
+// generic "TypeError: Type error", so we run each step ourselves and report
+// which one throws. Diagnostic-only: it does NOT touch Supabase or the normal
+// registration path, so the working (Android/desktop) path is untouched.
+// Returns { sw, subscribe, endpointHost, getToken } — each 'ok' or an error.
+async function pushProbeSteps() {
+  const result = { sw: '', subscribe: '', endpointHost: '', getToken: '' };
+
+  if (!messaging) { result.sw = 'messaging-unavailable'; return result; }
+  if (!FCM_VAPID_KEY) { result.sw = 'vapid-missing'; return result; }
+
+  let registration;
+  try {
+    registration = await registerMessagingSW();
+    result.sw = 'ok';
+  } catch (err) {
+    result.sw = fmtErr(err);
+    return result;
+  }
+
+  // Step 1 — the browser/Apple push subscription (the OS side).
+  try {
+    const sub =
+      (await registration.pushManager.getSubscription()) ??
+      (await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(FCM_VAPID_KEY),
+      }));
+    result.subscribe = 'ok';
+    // Host only — the full endpoint path is credential-like, never shown.
+    try { result.endpointHost = new URL(sub.endpoint).host; } catch { /* ignore */ }
+  } catch (err) {
+    result.subscribe = fmtErr(err);
+    return result;
+  }
+
+  // Step 2 — Firebase's exchange of that subscription for an FCM token.
+  try {
+    const token = await getToken(messaging, {
+      vapidKey: FCM_VAPID_KEY,
+      serviceWorkerRegistration: registration,
+    });
+    result.getToken = token ? 'ok' : 'no-token';
+  } catch (err) {
+    result.getToken = fmtErr(err);
+  }
+
+  return result;
 }
 
 // ── Get this device's push token and register it server-side ────────────────
@@ -133,7 +191,7 @@ async function registerPushToken(userId) {
     // iOS. Surface the error NAME + message (e.g. "TypeError: Type error") so
     // diagnostics show something identifiable. Local (in-app) notifications
     // still work fine.
-    const reason = [err?.name, err?.message].filter(Boolean).join(': ') || String(err);
+    const reason = fmtErr(err);
     console.info('[LiveHoops] FCM token unavailable:', reason);
     return { token: null, reason };
   }
@@ -216,6 +274,10 @@ export function useNotifications(userId) {
   // runs). Surfaced in Settings → Diagnostics via pushRegistrationMessage so a
   // failed device shows WHY (e.g. an iOS getToken error) instead of just "No".
   const [pushReason, setPushReason] = useState(null);
+
+  // Result of the last on-demand push probe (null until one runs). Object of
+  // { sw, subscribe, endpointHost, getToken } — see pushProbeSteps above.
+  const [pushProbe, setPushProbe] = useState(null);
 
   // ── Load + subscribe to notifications ──────────────────────────────────────
   // Fetches this user's notification history from Supabase on mount/login,
@@ -337,6 +399,16 @@ export function useNotifications(userId) {
     return result;
   }, [userId]);
 
+  // ── Run the step-by-step push probe (Diagnostics) ─────────────────────────
+  // Localizes an opaque getToken() failure to a single layer (service worker /
+  // Apple subscription / Firebase exchange). Diagnostic-only — no Supabase
+  // writes, doesn't change deviceToken. Returns the step result too.
+  const runPushProbe = useCallback(async () => {
+    const result = await pushProbeSteps();
+    setPushProbe(result);
+    return result;
+  }, []);
+
   // ── Mark every notification as read ─────────────────────────────────────────
   // Optimistic: updates local state immediately (instant badge clear), then
   // fires the Supabase update. Low-stakes if that write is slow/fails — the
@@ -368,6 +440,8 @@ export function useNotifications(userId) {
     messagingReady: !!messaging,   // bool — Firebase Messaging initialized in this browser
     vapidPresent: !!FCM_VAPID_KEY, // bool — VAPID key present in this build
     reregister,       // async fn — re-run registration on demand; returns { token, reason }
+    pushProbe,        // object|null — last step-by-step probe result
+    runPushProbe,     // async fn — run the step-by-step probe; returns the result
     unreadCount,      // number — shown on bell badge
     notifications,    // array — shown in the notification panel
     enablePush,       // async fn — turn on: ask + register + persist

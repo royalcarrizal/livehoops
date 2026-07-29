@@ -98,6 +98,26 @@ export function pushRegistrationMessage(reason) {
   }
 }
 
+/**
+ * Convert a VAPID public key (base64url string) into the Uint8Array that the
+ * Web Push API's pushManager.subscribe({ applicationServerKey }) requires.
+ * Handles url-safe alphabet (-/_) and missing '=' padding. Used by the
+ * Settings push probe (useNotifications.js) to run the raw browser
+ * subscription step directly, so we can tell an Apple-side failure apart from
+ * a Firebase-side one.
+ *
+ * @param {string} base64String — VAPID public key, base64url-encoded
+ * @returns {Uint8Array}
+ */
+export function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = atob(base64);
+  const output = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) output[i] = raw.charCodeAt(i);
+  return output;
+}
+
 // Truncate a message/preview so notifications stay short and readable.
 export function preview(text, max = 120) {
   if (!text) return '';
