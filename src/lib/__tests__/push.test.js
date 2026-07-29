@@ -11,7 +11,7 @@ vi.mock('../supabase', () => ({
 }));
 
 // Imported after the mock is declared (vi.mock is hoisted above imports).
-import { preview, sendPush, pushRegistrationMessage } from '../push';
+import { preview, sendPush, pushRegistrationMessage, urlBase64ToUint8Array } from '../push';
 
 describe('preview', () => {
   it('returns empty string for missing text', () => {
@@ -54,6 +54,20 @@ describe('pushRegistrationMessage', () => {
   it('shows a placeholder when no attempt has been made', () => {
     expect(pushRegistrationMessage(null)).toBe('Not attempted yet');
     expect(pushRegistrationMessage(undefined)).toBe('Not attempted yet');
+  });
+});
+
+describe('urlBase64ToUint8Array', () => {
+  it('decodes a padded base64 string', () => {
+    const out = urlBase64ToUint8Array('AAAA'); // 3 zero bytes
+    expect(out).toBeInstanceOf(Uint8Array);
+    expect(Array.from(out)).toEqual([0, 0, 0]);
+  });
+
+  it('handles url-safe chars (-, _) and missing padding', () => {
+    // base64url "-_8" == base64 "+/8=" == bytes [251, 255]
+    const out = urlBase64ToUint8Array('-_8');
+    expect(Array.from(out)).toEqual([251, 255]);
   });
 });
 
