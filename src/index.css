@@ -5595,6 +5595,419 @@ body {
 }
 .checkin-history-map-btn:active { transform: scale(0.96); }
 
+/* ══ Shareable check-ins ═══════════════════════════════════════════════════ */
+
+.btn-share-checkin {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  background: var(--orange);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  font-family: var(--font);
+  cursor: pointer;
+}
+
+.btn-share-checkin:active { opacity: 0.85; }
+
+.share-checkin-sheet {
+  max-height: calc(100dvh - var(--safe-top) - 16px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.share-checkin-body {
+  display: grid;
+  gap: 12px;
+}
+
+.share-checkin-preview {
+  margin: 0;
+  padding: 16px;
+}
+
+.share-checkin-preview .session-badge {
+  color: var(--orange);
+  margin-bottom: 10px;
+}
+
+.share-checkin-preview-copy {
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.share-checkin-loading {
+  padding: 12px;
+  color: var(--text-secondary);
+  text-align: center;
+  font-size: 14px;
+}
+
+.share-checkin-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.share-checkin-actions .auth-submit-btn,
+.share-checkin-actions .map-directions-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin: 0;
+}
+
+.share-checkin-note {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.share-checkin-manual-copy {
+  display: grid;
+  gap: 6px;
+}
+
+.share-checkin-manual-copy label {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.share-checkin-revoke {
+  background: none;
+  border: none;
+  color: #FF453A;
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px;
+  cursor: pointer;
+}
+
+.share-checkin-revoke-confirm {
+  padding: 10px;
+  border: 1px solid rgba(255, 69, 58, 0.25);
+  border-radius: 12px;
+  background: rgba(255, 69, 58, 0.08);
+  color: var(--text-secondary);
+  font-size: 12px;
+  text-align: center;
+}
+
+.share-checkin-revoke-confirm > div {
+  display: flex;
+  gap: 8px;
+  margin-top: 9px;
+}
+
+.share-checkin-revoke-confirm button {
+  flex: 1;
+  border: none;
+  border-radius: 9px;
+  padding: 9px;
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  font-family: var(--font);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.share-checkin-revoke-confirm button:last-child {
+  background: #FF453A;
+  color: #fff;
+}
+
+.checkin-history-actions {
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-end;
+  flex-direction: column;
+  gap: 6px;
+  margin-left: 10px;
+}
+
+.checkin-history-shared {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 3px;
+  color: var(--orange);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.checkin-history-share-btn {
+  border: none;
+  background: none;
+  color: #FF453A;
+  font-family: var(--font);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.checkin-history-stop-confirm {
+  display: flex;
+  gap: 5px;
+}
+
+.checkin-history-stop-confirm button {
+  border: 1px solid var(--separator-strong);
+  border-radius: 999px;
+  padding: 5px 8px;
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  font-family: var(--font);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.checkin-history-stop-confirm button:last-child {
+  border-color: rgba(255, 69, 58, 0.35);
+  color: #FF453A;
+}
+
+.shared-checkin-landing {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 28px 22px calc(32px + var(--safe-bottom));
+  background:
+    radial-gradient(circle at 50% 14%, rgba(255, 107, 0, 0.18), transparent 34%),
+    var(--bg);
+}
+
+.shared-checkin-brand {
+  text-align: center;
+  margin-bottom: 22px;
+}
+
+.shared-checkin-ball {
+  font-size: 48px;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.shared-checkin-brand p {
+  margin-top: 4px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.shared-checkin-card {
+  width: 100%;
+  padding: 20px;
+  border-radius: 20px;
+  border: 1px solid var(--orange-border);
+  background: linear-gradient(135deg, rgba(255, 107, 0, 0.16), rgba(255, 107, 0, 0.04));
+  box-shadow: var(--card-shadow);
+}
+
+.shared-checkin-card--neutral {
+  background: var(--bg-card);
+  border-color: var(--separator-strong);
+}
+
+.shared-checkin-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.45px;
+}
+
+.shared-checkin-status.live {
+  color: var(--green);
+  background: var(--green-dim);
+}
+
+.shared-checkin-player {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0 16px;
+}
+
+.shared-checkin-player-fallback {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+}
+
+.shared-checkin-player-name {
+  color: var(--text-primary);
+  font-size: 18px;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.shared-checkin-player-action {
+  color: var(--text-secondary);
+  font-size: 13px;
+  margin-top: 2px;
+}
+
+.shared-checkin-court {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 14px;
+  border-radius: 14px;
+  background: var(--bg-card);
+  color: var(--orange);
+}
+
+.shared-checkin-court div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.shared-checkin-court strong {
+  color: var(--text-primary);
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+
+.shared-checkin-court span {
+  color: var(--text-secondary);
+  font-size: 12px;
+  margin-top: 3px;
+}
+
+.shared-checkin-state {
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 8px;
+}
+
+.shared-checkin-state h2 {
+  color: var(--text-primary);
+  font-size: 19px;
+}
+
+.shared-checkin-state p {
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.shared-checkin-state-icon { font-size: 36px; }
+
+.shared-checkin-spinner {
+  width: 34px;
+  height: 34px;
+  border: 3px solid var(--separator-strong);
+  border-top-color: var(--orange);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.shared-checkin-retry {
+  flex: none;
+  margin-top: 8px;
+  gap: 6px;
+}
+
+.shared-checkin-cta {
+  text-align: center;
+  margin-top: 22px;
+}
+
+.shared-checkin-cta h2 {
+  color: var(--text-primary);
+  font-size: 19px;
+  margin-bottom: 6px;
+}
+
+.shared-checkin-cta p {
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.45;
+  margin-bottom: 14px;
+}
+
+.auth-screen--shared {
+  justify-content: flex-start;
+  overflow-y: auto;
+  padding-top: 24px;
+  padding-bottom: calc(32px + var(--safe-bottom));
+}
+
+.auth-logo--shared { margin-bottom: 16px; }
+.auth-logo--shared .auth-emoji { font-size: 40px; }
+
+.auth-back-link {
+  align-self: flex-start;
+  margin-bottom: 12px;
+  border: none;
+  background: none;
+  color: var(--orange);
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.auth-invite-context {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  border: 1px solid var(--orange-border);
+  border-radius: 12px;
+  background: var(--orange-dim);
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.auth-invite-context strong { color: var(--text-primary); }
+
+.auth-invite-label {
+  color: var(--orange);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.45px;
+  text-transform: uppercase;
+}
+
+@media (max-height: 650px) {
+  .shared-checkin-landing { justify-content: flex-start; }
+}
+
 /* ── Legal Sheet (Privacy Policy / Terms of Service) ──────────────────────── */
 /* Slides up over the Settings sheet — sits at z-index 400 (above settings 300) */
 

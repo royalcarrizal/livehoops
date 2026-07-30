@@ -12,6 +12,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import { getSafeCheckInShareRedirect } from '../utils/checkInShare';
 
 // ── All localStorage keys used by LiveHoops ──────────────────────────────
 // When the user signs out, we clear all of these so the next person who
@@ -96,7 +97,7 @@ export function useAuth() {
   // Returns { error } on failure, or { error: null, needsConfirmation }
   // on success — needsConfirmation is true when Supabase sent a
   // confirmation email and the user must click it before they're logged in.
-  const signUp = useCallback(async (email, password, username) => {
+  const signUp = useCallback(async (email, password, username, emailRedirectTo = null) => {
     try {
       // Step 1: Check the username is free BEFORE creating the account —
       // once the auth user exists there's no clean way to undo it.
@@ -111,10 +112,17 @@ export function useAuth() {
 
       // Step 2: Create the account. options.data lands in the new auth
       // user's raw_user_meta_data, where the trigger reads the username.
+      const safeRedirect = getSafeCheckInShareRedirect(
+        emailRedirectTo,
+        window.location.origin,
+      );
+      const options = { data: { username } };
+      if (safeRedirect) options.emailRedirectTo = safeRedirect;
+
       const { data, error: authError } = await supabase.auth.signUp({
         email,
         password,
-        options: { data: { username } },
+        options,
       });
 
       if (authError) return { error: friendlyError(authError.message) };
@@ -221,11 +229,10 @@ export function useAuth() {
   // ── Reset Password ──────────────────────────────────────────────────────
   // Sends a password reset email. Accepts either an email or a username (the
   // login field takes both) — a username is resolved to its email first, the
-  // same way signIn does. The link brings the user back to the app root, where
-  // Supabase fires the PASSWORD_RECOVERY event and App.jsx shows the Set New
-  // Password screen. (Root, not a sub-path — the SPA has no routes, and a
-  // sub-path could 404 on some hosts.)
-  const resetPassword = useCallback(async (identifier) => {
+  // same way signIn does. A validated invite path may be preserved; otherwise
+  // the link returns to the app root. Supabase then fires PASSWORD_RECOVERY and
+  // App.jsx shows the Set New Password screen before continuing the invite.
+  const resetPassword = useCallback(async (identifier, emailRedirectTo = null) => {
     try {
       let email = identifier.trim();
 
@@ -238,8 +245,12 @@ export function useAuth() {
         email = resolved;
       }
 
+      const safeRedirect = getSafeCheckInShareRedirect(
+        emailRedirectTo,
+        window.location.origin,
+      );
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin,
+        redirectTo: safeRedirect || window.location.origin,
       });
       if (error) return { error: friendlyError(error.message) };
       return { error: null };

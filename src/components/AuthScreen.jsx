@@ -30,9 +30,17 @@ function calculateAge(dateStr) {
   return age;
 }
 
-export default function AuthScreen({ onSignUp, onSignIn, onResetPassword }) {
+export default function AuthScreen({
+  onSignUp,
+  onSignIn,
+  onResetPassword,
+  initialMode = 'login',
+  shareContext = null,
+  onBack = null,
+  emailRedirectTo = null,
+}) {
   // Which form is showing: 'login' or 'signup'
-  const [mode, setMode] = useState('login');
+  const [mode, setMode] = useState(initialMode === 'signup' ? 'signup' : 'login');
 
   // Form field values
   const [username, setUsername]             = useState('');
@@ -120,7 +128,7 @@ export default function AuthScreen({ onSignUp, onSignIn, onResetPassword }) {
 
     let result;
     if (mode === 'signup') {
-      result = await onSignUp(email.trim(), password, username.trim());
+      result = await onSignUp(email.trim(), password, username.trim(), emailRedirectTo);
     } else {
       result = await onSignIn(email.trim(), password);
     }
@@ -148,7 +156,7 @@ export default function AuthScreen({ onSignUp, onSignIn, onResetPassword }) {
     }
 
     setSubmitting(true);
-    const result = await onResetPassword(email.trim());
+    const result = await onResetPassword(email.trim(), emailRedirectTo);
     setSubmitting(false);
 
     if (result.error) {
@@ -173,15 +181,38 @@ export default function AuthScreen({ onSignUp, onSignIn, onResetPassword }) {
   };
 
   return (
-    <div className="auth-screen">
+    <div className={`auth-screen${shareContext ? ' auth-screen--shared' : ''}`}>
+      {onBack && (
+        <button className="auth-back-link" onClick={onBack} type="button">
+          ← Back to invite
+        </button>
+      )}
+
       {/* ── Logo / Title ─────────────────────────────────────────────────── */}
-      <div className="auth-logo">
+      <div className={`auth-logo${shareContext ? ' auth-logo--shared' : ''}`}>
         <span className="auth-emoji">🏀</span>
         <h1 className="app-title" style={{ fontSize: 32 }}>
           Live<span>Hoops</span>
         </h1>
         <p className="auth-tagline">Find your run.</p>
       </div>
+
+      {shareContext && (
+        <div className="auth-invite-context">
+          <div className="auth-invite-label">Check-in invite</div>
+          {['live', 'ended'].includes(shareContext.state) ? (
+            <>
+              <strong>{shareContext.player_name || 'A LiveHoops player'}</strong>
+              <span>
+                {shareContext.state === 'live' ? 'is playing at' : 'played at'}{' '}
+                {shareContext.court_name || 'a LiveHoops court'}
+              </span>
+            </>
+          ) : (
+            <span>Create an account to find live basketball courts near you.</span>
+          )}
+        </div>
+      )}
 
       {/* ── Tab Toggle (Sign Up / Log In) ────────────────────────────────── */}
       <div className="feed-tab-row" style={{ margin: '0 0 20px' }}>

@@ -4,9 +4,11 @@
 // courts to check in to. Uses real Supabase data via the useCheckIn hook
 // passed down from App.jsx — no more hardcoded timers or mock state.
 
-import { useState, useEffect } from 'react';
+import { useCallback, useState, useEffect } from 'react';
+import { Share2 } from 'lucide-react';
 import ParkCard from '../components/ParkCard';
 import AddCourtSheet from '../components/AddCourtSheet';
+import ShareCheckInSheet from '../components/ShareCheckInSheet';
 import { useToast } from '../hooks/useToast';
 import Toast from '../components/Toast';
 
@@ -42,6 +44,7 @@ export default function CheckInScreen({
   checkOut,        // function(checkinId, courtId, userId)
   setActiveTab,
   user,
+  profile,
   refreshCounts,   // re-fetches player counts from DB
 }) {
   // Forces a re-render every minute so the elapsed / remaining timers update
@@ -49,6 +52,11 @@ export default function CheckInScreen({
 
   // Controls whether the "Add a Court" slide-up sheet is visible
   const [showAddCourt, setShowAddCourt] = useState(false);
+
+  // The two-step share sheet prepares an opaque link, then lets a second user
+  // gesture open the native share UI without losing browser activation.
+  const [showShare, setShowShare] = useState(false);
+  const closeShare = useCallback(() => setShowShare(false), []);
 
   // Loading state while the checkout Supabase call is in progress
   const [checkingOut, setCheckingOut] = useState(false);
@@ -92,6 +100,16 @@ export default function CheckInScreen({
     await checkOut(activeCheckIn.checkinId, activeCheckIn.courtId, user.id);
     setCheckingOut(false);
     showToast(`Great run! Checked out of ${activeCheckIn.courtName} 🏀`);
+  }
+
+  function handleOpenShare() {
+    if (profile?.show_location !== true) {
+      showToast(profile
+        ? 'Turn on Show My Location in Settings before sharing'
+        : 'Your privacy settings are still loading — try again in a moment');
+      return;
+    }
+    setShowShare(true);
   }
 
   return (
@@ -143,6 +161,11 @@ export default function CheckInScreen({
                   <span className="session-stat-label">remaining</span>
                 </div>
               </div>
+
+              <button className="btn-share-checkin" onClick={handleOpenShare}>
+                <Share2 size={17} strokeWidth={2.3} />
+                Share Check-In
+              </button>
 
               {/* Check Out button — shows "Checking out..." while the Supabase update runs */}
               <button
@@ -230,6 +253,15 @@ export default function CheckInScreen({
         onClose={() => setShowAddCourt(false)}
         user={user}
       />
+
+      {showShare && activeCheckIn && (
+        <ShareCheckInSheet
+          checkinId={activeCheckIn.checkinId}
+          courtName={checkedInPark?.name ?? activeCheckIn.courtName}
+          onClose={closeShare}
+          onFeedback={showToast}
+        />
+      )}
 
       {/* Checkout success toast */}
       <Toast message={toast} />

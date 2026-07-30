@@ -4,12 +4,43 @@
 // JavaScript that browsers can understand. This config file tells Vite
 // how to build your project and which plugins to use.
 
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
-export default defineConfig({
-  plugins: [
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, '.', '');
+  const publicAppUrl = env.VITE_PUBLIC_APP_URL?.trim();
+
+  if (mode === 'production') {
+    if (!publicAppUrl) {
+      throw new Error('VITE_PUBLIC_APP_URL is required for production builds.');
+    }
+
+    let parsedPublicUrl;
+    try {
+      parsedPublicUrl = new URL(publicAppUrl);
+    } catch {
+      throw new Error('VITE_PUBLIC_APP_URL must be a valid HTTP(S) origin.');
+    }
+
+    if (
+      !['http:', 'https:'].includes(parsedPublicUrl.protocol) ||
+      parsedPublicUrl.username ||
+      parsedPublicUrl.password ||
+      parsedPublicUrl.pathname !== '/' ||
+      parsedPublicUrl.search ||
+      parsedPublicUrl.hash ||
+      publicAppUrl !== parsedPublicUrl.origin
+    ) {
+      throw new Error(
+        'VITE_PUBLIC_APP_URL must be an HTTP(S) origin without a path or trailing slash.'
+      );
+    }
+  }
+
+  return {
+    plugins: [
     // The React plugin lets Vite understand JSX (the HTML-like syntax in .jsx files)
     react(),
 
@@ -95,5 +126,6 @@ export default defineConfig({
         ],
       },
     }),
-  ],
+    ],
+  };
 });
