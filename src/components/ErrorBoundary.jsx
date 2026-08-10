@@ -67,8 +67,12 @@ export default class ErrorBoundary extends Component {
         <button
           onClick={this.handleReload}
           style={{
-            background: '#FF6B00',
-            color: '#fff',
+            // Fallback literal on purpose: this screen renders when the app has
+            // already crashed, so it must not assume the theme variables were
+            // ever applied to <body>. Everything else here is hardcoded for the
+            // same reason.
+            background: 'var(--accent, #FF6B00)',
+            color: 'var(--accent-contrast, #fff)',
             border: 'none',
             borderRadius: 12,
             padding: '13px 28px',

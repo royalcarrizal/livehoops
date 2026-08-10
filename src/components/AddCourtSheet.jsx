@@ -527,7 +527,7 @@ export default function AddCourtSheet({ isOpen, onClose, user }) {
                 disabled={locLoading}
                 type="button"
                 style={{
-                  borderColor: locationMode === 'gps' ? 'var(--orange)' : undefined,
+                  borderColor: locationMode === 'gps' ? 'var(--accent)' : undefined,
                 }}
               >
                 {locLoading ? 'Getting location...' : '📍 Use my current location'}
@@ -556,8 +556,8 @@ export default function AddCourtSheet({ isOpen, onClose, user }) {
                 onClick={handleUseAddress}
                 type="button"
                 style={{
-                  background: locationMode === 'address' ? 'rgba(255, 107, 0, 0.12)' : 'transparent',
-                  border: `0.5px solid ${locationMode === 'address' ? 'var(--orange)' : 'var(--separator)'}`,
+                  background: locationMode === 'address' ? 'rgb(var(--accent-rgb) / 0.12)' : 'transparent',
+                  border: `0.5px solid ${locationMode === 'address' ? 'var(--accent)' : 'var(--separator)'}`,
                 }}
               >
                 Use address instead

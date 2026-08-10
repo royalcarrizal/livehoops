@@ -61,7 +61,7 @@ export default function CourtPickerSheet({ courts, selected, onSelect, onClose }
                     </div>
                   </div>
                   {isSelected && (
-                    <Check size={16} strokeWidth={2.5} color="var(--orange)" />
+                    <Check size={16} strokeWidth={2.5} color="var(--accent)" />
                   )}
                 </button>
               );

@@ -47,10 +47,17 @@ input, textarea, select, [contenteditable] {
   --bg-elevated: #2C2C2E;
   --bg-input: #1C1C1E;
   --bg-nav: rgba(18, 18, 18, 0.95);
-  --orange: #FF6B00;
-  --orange-bright: #FF8040;
-  --orange-dim: rgba(255, 107, 0, 0.15);
-  --orange-border: rgba(255, 107, 0, 0.3);
+  /* Accent — orange by default, overridden per choice below. Declared as an
+     RGB triple so the translucent variants derive from it: a [data-accent]
+     rule only has to restate --accent-rgb, and --accent / -dim / -border all
+     follow. --accent-contrast is the text colour for FILLED accent surfaces
+     (see src/utils/accents.js — white is unreadable on several of them). */
+  --accent-rgb: 255 107 0;
+  --accent-bright: #FF8040;
+  --accent-contrast: #FFFFFF;
+  --accent: rgb(var(--accent-rgb));
+  --accent-dim: rgb(var(--accent-rgb) / 0.15);
+  --accent-border: rgb(var(--accent-rgb) / 0.3);
   --green: #30D158;
   --green-dim: rgba(48, 209, 88, 0.12);
   --blue: #0A84FF;
@@ -71,10 +78,13 @@ input, textarea, select, [contenteditable] {
   --bg-elevated: #E5E5EA;
   --bg-input: #FFFFFF;
   --bg-nav: rgba(248, 248, 248, 0.95);
-  --orange: #FF6B00;
-  --orange-bright: #FF7A00;
-  --orange-dim: rgba(255, 107, 0, 0.12);
-  --orange-border: rgba(255, 107, 0, 0.25);
+  /* Light theme uses softer alphas than dark — kept as they were. */
+  --accent-rgb: 255 107 0;
+  --accent-bright: #FF7A00;
+  --accent-contrast: #FFFFFF;
+  --accent: rgb(var(--accent-rgb));
+  --accent-dim: rgb(var(--accent-rgb) / 0.12);
+  --accent-border: rgb(var(--accent-rgb) / 0.25);
   --green: #34C759;
   --green-dim: rgba(52, 199, 89, 0.12);
   --blue: #007AFF;
@@ -87,6 +97,41 @@ input, textarea, select, [contenteditable] {
   --map-bg: #E0E4EC;
   --map-road: rgba(0, 0, 0, 0.06);
 }
+
+/* ── Accent palettes ────────────────────────────────────────────────────────
+   The chosen accent lives on <body> as data-accent, alongside the theme class,
+   so these attribute selectors out-specify the theme defaults above. Only the
+   RGB triple is restated — --accent, --accent-dim and --accent-border all
+   re-resolve from it automatically.
+
+   These values mirror ACCENTS in src/utils/accents.js, which is the source of
+   truth and carries tests asserting each stays readable. Change both together.
+
+   Light variants are deliberately darker: several of these disappear against a
+   near-white background at their dark-mode brightness (literal yellow scores
+   ~1.4:1). --accent-contrast is the text colour for FILLED accent surfaces,
+   and drops to black on the three dark-mode accents where white is unreadable.
+
+   Orange is the pre-existing brand colour and is exempt from both rules, so
+   that keeping it as the default really does leave the app looking unchanged. */
+
+.theme-dark[data-accent="orange"] { --accent-rgb: 255 107 0; --accent-bright: #FF8040; --accent-contrast: #FFFFFF; }
+.theme-dark[data-accent="blue"] { --accent-rgb: 10 132 255; --accent-bright: #4FA6FF; --accent-contrast: #FFFFFF; }
+.theme-dark[data-accent="yellow"] { --accent-rgb: 255 214 10; --accent-bright: #FFE14F; --accent-contrast: #000000; }
+.theme-dark[data-accent="red"] { --accent-rgb: 255 69 58; --accent-bright: #FF7971; --accent-contrast: #FFFFFF; }
+.theme-dark[data-accent="purple"] { --accent-rgb: 191 90 242; --accent-bright: #D188F6; --accent-contrast: #FFFFFF; }
+.theme-dark[data-accent="green"] { --accent-rgb: 48 209 88; --accent-bright: #6ADE87; --accent-contrast: #000000; }
+.theme-dark[data-accent="brown"] { --accent-rgb: 172 142 104; --accent-bright: #C3AE92; --accent-contrast: #FFFFFF; }
+.theme-dark[data-accent="grey"] { --accent-rgb: 152 152 157; --accent-bright: #B5B5B8; --accent-contrast: #000000; }
+
+.theme-light[data-accent="orange"] { --accent-rgb: 255 107 0; --accent-bright: #FF7A00; --accent-contrast: #FFFFFF; }
+.theme-light[data-accent="blue"] { --accent-rgb: 0 102 204; --accent-bright: #4791DA; --accent-contrast: #FFFFFF; }
+.theme-light[data-accent="yellow"] { --accent-rgb: 169 124 0; --accent-bright: #C1A147; --accent-contrast: #FFFFFF; }
+.theme-light[data-accent="red"] { --accent-rgb: 215 0 21; --accent-bright: #E24757; --accent-contrast: #FFFFFF; }
+.theme-light[data-accent="purple"] { --accent-rgb: 137 68 171; --accent-bright: #AA78C3; --accent-contrast: #FFFFFF; }
+.theme-light[data-accent="green"] { --accent-rgb: 36 138 61; --accent-bright: #61AB73; --accent-contrast: #FFFFFF; }
+.theme-light[data-accent="brown"] { --accent-rgb: 107 68 35; --accent-bright: #947861; --accent-contrast: #FFFFFF; }
+.theme-light[data-accent="grey"] { --accent-rgb: 108 108 112; --accent-bright: #959598; --accent-contrast: #FFFFFF; }
 
 html {
   /* Prevent iOS from auto-scaling text on orientation change */
@@ -206,7 +251,7 @@ body {
 }
 
 .app-title span {
-  color: var(--orange);
+  color: var(--accent);
 }
 
 .location-row {
@@ -318,8 +363,8 @@ body {
   display: flex;
   align-items: center;
   gap: 5px;
-  background: var(--orange-dim);
-  border: 1px solid var(--orange-border);
+  background: var(--accent-dim);
+  border: 1px solid var(--accent-border);
   border-radius: 20px;
   padding: 3px 8px;
   flex-shrink: 0;
@@ -329,14 +374,14 @@ body {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--orange);
+  background: var(--accent);
   animation: pulse 1.5s ease-in-out infinite;
 }
 
 .live-text {
   font-size: 11px;
   font-weight: 700;
-  color: var(--orange);
+  color: var(--accent);
   letter-spacing: 0.5px;
   text-transform: uppercase;
 }
@@ -389,7 +434,7 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: var(--orange-dim);
+  background: var(--accent-dim);
   border-radius: 10px;
   padding: 5px 10px;
   flex-shrink: 0;
@@ -398,13 +443,13 @@ body {
 .player-count-num {
   font-size: 18px;
   font-weight: 800;
-  color: var(--orange);
+  color: var(--accent);
   line-height: 1;
 }
 
 .player-count-label {
   font-size: 11px;
-  color: var(--orange);
+  color: var(--accent);
   font-weight: 600;
   line-height: 1.1;
 }
@@ -448,8 +493,8 @@ body {
 
 /* ── Check In Button ── */
 .btn-checkin {
-  background: var(--orange);
-  color: #fff;
+  background: var(--accent);
+  color: var(--accent-contrast);
   border: none;
   border-radius: 10px;
   padding: 9px 16px;
@@ -464,7 +509,7 @@ body {
 
 .btn-checkin:active {
   transform: scale(0.95);
-  background: var(--orange-bright);
+  background: var(--accent-bright);
 }
 
 .btn-checkin.checked-in {
@@ -536,7 +581,7 @@ body {
 }
 
 .nav-tab.active {
-  color: var(--orange);
+  color: var(--accent);
 }
 
 .nav-tab .nav-icon {
@@ -564,16 +609,16 @@ body {
 .nav-tab.checkin-tab .nav-icon {
   width: 52px;
   height: 36px;
-  background: var(--orange);
+  background: var(--accent);
   border-radius: 14px;
-  box-shadow: 0 4px 16px rgba(255, 107, 26, 0.4);
-  color: #fff;
+  box-shadow: 0 4px 16px rgb(var(--accent-rgb) / 0.4);
+  color: var(--accent-contrast);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .nav-tab.checkin-tab:active .nav-icon {
   transform: scale(0.92);
-  box-shadow: 0 2px 8px rgba(255, 107, 26, 0.3);
+  box-shadow: 0 2px 8px rgb(var(--accent-rgb) / 0.3);
 }
 
 .nav-tab.checkin-tab.has-checkin .nav-icon {
@@ -586,7 +631,7 @@ body {
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: var(--orange);
+  background: var(--accent);
   position: absolute;
   bottom: -6px;
 }
@@ -731,7 +776,7 @@ body {
   font-family: var(--font);
 }
 
-.map-loading-title span { color: var(--orange); }
+.map-loading-title span { color: var(--accent); }
 
 .map-loading-text {
   font-size: 14px;
@@ -826,7 +871,7 @@ body {
   transition: color 0.15s ease;
 }
 .map-sheet-favorite:active { opacity: 0.7; }
-.map-sheet-favorite.is-favorited { color: var(--orange); }
+.map-sheet-favorite.is-favorited { color: var(--accent); }
 
 /* Court name — large and bold */
 .map-sheet-name {
@@ -975,13 +1020,13 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  background: rgba(255, 107, 26, 0.12);
-  border: 1px solid rgba(255, 107, 26, 0.3);
+  background: rgb(var(--accent-rgb) / 0.12);
+  border: 1px solid rgb(var(--accent-rgb) / 0.3);
   border-radius: 20px;
   padding: 5px 12px;
   font-size: 13px;
   font-weight: 600;
-  color: var(--orange);
+  color: var(--accent);
   margin-bottom: 14px;
 }
 
@@ -1067,8 +1112,8 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: var(--orange);
-  color: #fff;
+  background: var(--accent);
+  color: var(--accent-contrast);
   border: none;
   border-radius: 20px;
   padding: 8px 18px;
@@ -1103,9 +1148,9 @@ body {
 
 /* Orange background + glow when players are live at this court */
 .mb-marker.live {
-  background: var(--orange);
-  border-color: var(--orange);
-  box-shadow: 0 4px 14px rgba(255, 107, 26, 0.55);
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 4px 14px rgb(var(--accent-rgb) / 0.55);
 }
 
 /* Teal ring on courts the logged-in user has visited before */
@@ -1116,8 +1161,8 @@ body {
 
 /* Live overrides visited ring — orange takes priority */
 .mb-marker.live.visited {
-  border-color: var(--orange);
-  box-shadow: 0 4px 14px rgba(255, 107, 26, 0.55);
+  border-color: var(--accent);
+  box-shadow: 0 4px 14px rgb(var(--accent-rgb) / 0.55);
 }
 
 /* Gold star badge on bottom-left corner of favorited court markers */
@@ -1199,7 +1244,7 @@ body {
   height: 18px;
   border-radius: 50%;
   background: var(--bg-elevated);
-  border: 1.5px solid var(--orange);
+  border: 1.5px solid var(--accent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1240,8 +1285,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--orange);
-  color: #fff;
+  background: var(--accent);
+  color: var(--accent-contrast);
   font-size: 8px;
   font-weight: 800;
   letter-spacing: 0.3px;
@@ -1370,7 +1415,7 @@ body {
 .court-king-title {
   font-size: 11px;
   font-weight: 700;
-  color: var(--orange);
+  color: var(--accent);
   text-transform: uppercase;
   letter-spacing: 0.3px;
 }
@@ -1447,7 +1492,7 @@ body {
 }
 
 .map-court-chip.has-players {
-  border-color: var(--orange-border);
+  border-color: var(--accent-border);
 }
 
 .map-court-chip.visited {
@@ -1456,12 +1501,12 @@ body {
 
 /* Orange left accent on a favorited chip */
 .map-court-chip.is-favorite {
-  border-left: 3px solid var(--orange);
+  border-left: 3px solid var(--accent);
 }
 
 /* Orange heart prefix inside a favorited chip's name */
 .chip-fav-badge {
-  color: var(--orange);
+  color: var(--accent);
   font-size: 11px;
 }
 
@@ -1495,8 +1540,8 @@ body {
 }
 
 .active-session-card {
-  background: linear-gradient(135deg, rgba(255,107,26,0.15), rgba(255,107,26,0.05));
-  border: 1px solid var(--orange-border);
+  background: linear-gradient(135deg, rgb(var(--accent-rgb) / 0.15), rgb(var(--accent-rgb) / 0.05));
+  border: 1px solid var(--accent-border);
   border-radius: 20px;
   padding: 20px;
   margin-bottom: 24px;
@@ -1506,7 +1551,7 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: var(--orange-dim);
+  background: var(--accent-dim);
   border-radius: 20px;
   padding: 4px 10px;
   margin-bottom: 14px;
@@ -1515,7 +1560,7 @@ body {
 .session-badge-text {
   font-size: 11px;
   font-weight: 700;
-  color: var(--orange);
+  color: var(--accent);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -1549,7 +1594,7 @@ body {
 .session-stat-value {
   font-size: 22px;
   font-weight: 800;
-  color: var(--orange);
+  color: var(--accent);
   line-height: 1;
 }
 
@@ -1603,8 +1648,8 @@ body {
 }
 
 .btn-primary {
-  background: var(--orange);
-  color: #fff;
+  background: var(--accent);
+  color: var(--accent-contrast);
   border: none;
   border-radius: 14px;
   padding: 14px 28px;
@@ -1613,7 +1658,7 @@ body {
   font-family: var(--font);
   cursor: pointer;
   transition: transform 0.1s ease;
-  box-shadow: 0 4px 16px rgba(255,107,26,0.35);
+  box-shadow: 0 4px 16px rgb(var(--accent-rgb) / 0.35);
 }
 
 .btn-primary:active {
@@ -1652,7 +1697,7 @@ body {
 /* Jersey number shown next to a username (profile header + feed posts).
    Inherits font-size from its parent, so it scales with each context. */
 .jersey-number {
-  color: var(--orange);
+  color: var(--accent);
   font-weight: 800;
   margin-left: 6px;
 }
@@ -1680,7 +1725,7 @@ body {
 .profile-stat-value {
   font-size: 20px;
   font-weight: 800;
-  color: var(--orange);
+  color: var(--accent);
   line-height: 1;
   margin-bottom: 4px;
 }
@@ -1717,8 +1762,8 @@ body {
 /* Outlined variant — orange border + text (Achievements button) */
 .profile-action-btn.outlined {
   background: transparent;
-  border: 1.5px solid var(--orange);
-  color: var(--orange);
+  border: 1.5px solid var(--accent);
+  color: var(--accent);
 }
 
 /* Filled variant — dark card background (Edit Profile button) */
@@ -1836,8 +1881,8 @@ body {
 
 /* Active tab — orange underline + text */
 .profile-tab.active {
-  color: var(--orange);
-  border-bottom-color: var(--orange);
+  color: var(--accent);
+  border-bottom-color: var(--accent);
 }
 
 /* Posts feed area below the tabs */
@@ -1927,7 +1972,7 @@ body {
   left: 16px;
   background: none;
   border: none;
-  color: var(--orange);
+  color: var(--accent);
   cursor: pointer;
   padding: 4px;
   display: flex;
@@ -2099,6 +2144,43 @@ body {
   margin-top: 1px;
 }
 
+/* ── Accent colour picker ── */
+/* A row of eight swatches under the Accent Colour row. Each button carries its
+   own colour as an inline --swatch custom property, set from the ACCENTS table
+   for the CURRENT theme, so the swatches preview accurately in both modes. */
+.accent-swatch-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 4px 14px 16px;
+}
+
+.accent-swatch {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--swatch);
+  border: 2px solid transparent;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Keeps pale swatches (yellow, grey) from dissolving into the sheet */
+  box-shadow: inset 0 0 0 1px rgb(128 128 128 / 0.25);
+  transition: transform 0.12s ease, border-color 0.12s ease;
+}
+
+.accent-swatch:active {
+  transform: scale(0.92);
+}
+
+/* Selected ring sits OUTSIDE the swatch in the sheet's own colour, so it reads
+   against every one of the eight fills rather than competing with them. */
+.accent-swatch.is-selected {
+  border-color: var(--text-primary);
+}
+
 /* Right side element — muted value text or chevron arrow */
 .settings-row-right {
   font-size: 12px;
@@ -2120,8 +2202,8 @@ body {
   transition: background 0.2s;
   border: none;
 }
-/* Orange background when the toggle is ON */
-.settings-toggle.on { background: #FF6B00; }
+/* Accent background when the toggle is ON */
+.settings-toggle.on { background: var(--accent); }
 
 /* The sliding white dot inside the toggle */
 .settings-toggle-dot {
@@ -2134,8 +2216,13 @@ body {
   left: 2px;
   transition: left 0.2s;
 }
-/* Slide the dot to the right when ON */
-.settings-toggle.on .settings-toggle-dot { left: 18px; }
+/* Slide the dot to the right when ON. It also takes the accent's contrast
+   colour, because ON it sits on the accent fill rather than the grey track —
+   a white dot on the yellow accent is barely visible. */
+.settings-toggle.on .settings-toggle-dot {
+  left: 18px;
+  background: var(--accent-contrast);
+}
 
 /* Inline email input field (expands below the Change Email row) */
 .settings-email-input {
@@ -2153,10 +2240,10 @@ body {
 /* Save button next to the email input */
 .settings-email-save-btn {
   padding: 8px 14px;
-  background: var(--orange);
+  background: var(--accent);
   border: none;
   border-radius: 8px;
-  color: white;
+  color: var(--accent-contrast);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -2256,7 +2343,7 @@ body {
 .section-action {
   font-size: 13px;
   font-weight: 600;
-  color: var(--orange);
+  color: var(--accent);
   background: none;
   border: none;
   padding: 0;
@@ -2294,7 +2381,7 @@ body {
 }
 
 .crew-chip:active {
-  border-color: var(--orange-border);
+  border-color: var(--accent-border);
 }
 
 .crew-chip-avatar-wrap {
@@ -2322,7 +2409,7 @@ body {
   line-height: 1.2;
 }
 
-.crew-chip-court.active  { color: var(--orange); }
+.crew-chip-court.active  { color: var(--accent); }
 .crew-chip-court.offline { color: var(--text-secondary); }
 
 /* Friend card */
@@ -2396,7 +2483,7 @@ body {
   gap: 4px;
   margin-top: 4px;
   font-size: 11px;
-  color: var(--orange);
+  color: var(--accent);
   font-weight: 600;
   flex-wrap: wrap;
 }
@@ -2444,7 +2531,7 @@ body {
 .friend-stat-value {
   font-size: 18px;
   font-weight: 800;
-  color: var(--orange);
+  color: var(--accent);
   line-height: 1;
   margin-bottom: 3px;
 }
@@ -2599,7 +2686,7 @@ body {
 }
 
 .modal-input:focus {
-  border-color: var(--orange-border);
+  border-color: var(--accent-border);
 }
 
 .modal-input::placeholder {
@@ -2674,8 +2761,8 @@ body {
 }
 
 .badge-tile.earned {
-  background: var(--orange-dim);
-  border-color: var(--orange-border);
+  background: var(--accent-dim);
+  border-color: var(--accent-border);
 }
 
 .badge-tile.locked {
@@ -2702,7 +2789,7 @@ body {
 }
 
 .badge-tile.earned .badge-label {
-  color: var(--orange);
+  color: var(--accent);
 }
 
 .badge-tile.locked .badge-label {
@@ -2725,7 +2812,7 @@ body {
 
 .badge-progress-fill {
   height: 100%;
-  background: var(--orange);
+  background: var(--accent);
   border-radius: 2px;
   transition: width 0.4s ease;
 }
@@ -2781,7 +2868,7 @@ body {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--orange);
+  background: var(--accent);
   flex-shrink: 0;
   animation: pulse 1.5s ease-in-out infinite;
 }
@@ -2834,7 +2921,7 @@ body {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: #FF6B00;
+  background: var(--accent);
   border: 2px solid var(--bg-card);
   animation: pulse 1.5s ease-in-out infinite;
 }
@@ -2911,7 +2998,7 @@ body {
   height: 16px;
   border-radius: 50%;
   background: var(--bg-card);
-  border: 1.5px solid var(--orange);
+  border: 1.5px solid var(--accent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2922,7 +3009,7 @@ body {
 .meetup-card-time {
   font-size: 12px;
   font-weight: 800;
-  color: var(--orange);
+  color: var(--accent);
   text-align: center;
   white-space: nowrap;
   overflow: hidden;
@@ -2953,8 +3040,8 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  background: rgba(255, 107, 0, 0.14);
-  color: var(--orange);
+  background: rgb(var(--accent-rgb) / 0.14);
+  color: var(--accent);
   font-size: 12px;
   font-weight: 700;
   padding: 3px 8px;
@@ -2962,7 +3049,7 @@ body {
   white-space: nowrap;
 }
 
-.map-court-chip-meetup { color: var(--orange); margin-left: 4px; white-space: nowrap; }
+.map-court-chip-meetup { color: var(--accent); margin-left: 4px; white-space: nowrap; }
 
 /* ── CourtMeetups section (inside a court bottom sheet) ─────────────────────── */
 .court-meetups {
@@ -3009,7 +3096,7 @@ body {
   padding: 6px 0 2px;
   font-size: 13px;
   font-weight: 600;
-  color: var(--orange);
+  color: var(--accent);
   cursor: pointer;
   font-family: inherit;
 }
@@ -3033,7 +3120,7 @@ body {
   color: var(--text-secondary);
   cursor: pointer;
 }
-.meetup-anon-check input { accent-color: var(--orange); }
+.meetup-anon-check input { accent-color: var(--accent); }
 
 .meetup-btn-join,
 .meetup-btn-leave,
@@ -3048,7 +3135,7 @@ body {
   border: none;
 }
 
-.meetup-btn-join     { background: var(--orange); color: #fff; margin-left: auto; }
+.meetup-btn-join     { background: var(--accent); color: var(--accent-contrast); margin-left: auto; }
 .meetup-btn-leave    { background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--separator-strong); margin-left: auto; }
 .meetup-btn-cancel   { background: none; color: #FF453A; padding: 8px 4px; }
 .meetup-btn-join:disabled,
@@ -3058,8 +3145,8 @@ body {
 /* Full-width "Schedule a Run" button under the list */
 .meetup-schedule-btn {
   width: 100%;
-  background: rgba(255, 107, 0, 0.12);
-  color: var(--orange);
+  background: rgb(var(--accent-rgb) / 0.12);
+  color: var(--accent);
   padding: 12px;
   margin-top: 4px;
 }
@@ -3075,7 +3162,7 @@ body {
 .meetup-form-preview {
   font-size: 13px;
   font-weight: 700;
-  color: var(--orange);
+  color: var(--accent);
   margin: 6px 0 4px;
 }
 
@@ -3094,9 +3181,9 @@ body {
   cursor: pointer;
 }
 .meetup-visibility-btn.selected {
-  border-color: var(--orange);
-  background: rgba(255, 107, 0, 0.12);
-  color: var(--orange);
+  border-color: var(--accent);
+  background: rgb(var(--accent-rgb) / 0.12);
+  color: var(--accent);
 }
 
 .meetup-visibility-hint {
@@ -3165,8 +3252,8 @@ body {
 .composer-media-btn:active { opacity: 0.5; }
 
 .composer-post-btn {
-  background: var(--orange);
-  color: #fff;
+  background: var(--accent);
+  color: var(--accent-contrast);
   border: none;
   border-radius: 20px;
   padding: 6px 16px;
@@ -3201,14 +3288,14 @@ body {
   display: block;
   margin: 8px auto 0;
   padding: 8px 20px;
-  background: var(--orange);
-  color: #fff;
+  background: var(--accent);
+  color: var(--accent-contrast);
   font-size: 13px;
   font-weight: 700;
   border-radius: 20px;
   border: none;
   cursor: pointer;
-  box-shadow: 0 2px 12px rgba(255, 107, 0, 0.35);
+  box-shadow: 0 2px 12px rgb(var(--accent-rgb) / 0.35);
   animation: slideDown 0.2s ease;
   font-family: var(--font);
 }
@@ -3341,7 +3428,7 @@ body {
   padding: 0;
   font-size: 13px;
   font-weight: 600;
-  color: var(--orange);
+  color: var(--accent);
   cursor: pointer;
   font-family: var(--font);
   margin-top: 2px;
@@ -3395,20 +3482,20 @@ body {
   align-items: center;
   gap: 5px;
   margin: 8px 16px;
-  background: var(--orange-dim);
-  border: 1px solid var(--orange-border);
+  background: var(--accent-dim);
+  border: 1px solid var(--accent-border);
   border-radius: 20px;
   padding: 5px 10px;
   font-size: 12px;
   font-weight: 600;
-  color: var(--orange);
+  color: var(--accent);
   cursor: pointer;
   font-family: var(--font);
   transition: background 0.15s;
 }
 
 .feed-checkin-pill:hover {
-  background: var(--orange-border);
+  background: var(--accent-border);
 }
 
 .feed-court-pill-hint {
@@ -3486,13 +3573,13 @@ body {
   align-items: center;
   gap: 5px;
   margin: 0 0 8px;
-  background: var(--orange-dim);
-  border: 1px solid var(--orange-border);
+  background: var(--accent-dim);
+  border: 1px solid var(--accent-border);
   border-radius: 20px;
   padding: 4px 10px;
   font-size: 12px;
   font-weight: 600;
-  color: var(--orange);
+  color: var(--accent);
 }
 
 .composer-court-tag-remove {
@@ -3500,7 +3587,7 @@ body {
   border: none;
   padding: 0;
   cursor: pointer;
-  color: var(--orange);
+  color: var(--accent);
   display: flex;
   align-items: center;
   opacity: 0.7;
@@ -3532,17 +3619,17 @@ body {
 }
 
 .composer-checkin-offer.is-on {
-  background: var(--orange-dim);
-  border-color: var(--orange-border);
-  color: var(--orange);
+  background: var(--accent-dim);
+  border-color: var(--accent-border);
+  color: var(--accent);
 }
 
 /* The "already checked in here" variant — informational, nothing to tap */
 .composer-checkin-offer.is-static {
   cursor: default;
-  background: var(--orange-dim);
-  border-color: var(--orange-border);
-  color: var(--orange);
+  background: var(--accent-dim);
+  border-color: var(--accent-border);
+  color: var(--accent);
 }
 
 .composer-checkin-box {
@@ -3554,13 +3641,14 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  /* Always white: the tick only ever sits on the filled orange box below. */
-  color: #fff;
 }
 
 .composer-checkin-box.is-on {
-  background: var(--orange);
-  border-color: var(--orange);
+  background: var(--accent);
+  border-color: var(--accent);
+  /* The tick sits ON the accent fill, so it takes the accent's own contrast
+     colour — white would vanish on the yellow and green accents. */
+  color: var(--accent-contrast);
 }
 
 /* "You're here" — why the box arrived already ticked */
@@ -3571,7 +3659,7 @@ body {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  color: var(--orange);
+  color: var(--accent);
   opacity: 0.85;
 }
 
@@ -3638,7 +3726,7 @@ body {
 }
 
 .court-picker-search:focus {
-  border-color: var(--orange);
+  border-color: var(--accent);
 }
 
 .court-picker-list {
@@ -3663,7 +3751,7 @@ body {
 
 .court-picker-item:active,
 .court-picker-item.selected {
-  background: var(--orange-dim);
+  background: var(--accent-dim);
 }
 
 .court-picker-item-info {
@@ -3849,7 +3937,7 @@ body {
   transition: color 0.15s;
 }
 
-.feed-comment-action.liked { color: var(--orange); }
+.feed-comment-action.liked { color: var(--accent); }
 .feed-comment-action:active { opacity: 0.7; }
 
 /* "Replying to @name" chip above the input */
@@ -3862,7 +3950,7 @@ body {
   padding: 2px 4px;
 }
 
-.feed-comment-replying strong { color: var(--orange); font-weight: 700; }
+.feed-comment-replying strong { color: var(--accent); font-weight: 700; }
 
 .feed-comment-replying-cancel {
   display: flex;
@@ -3910,7 +3998,7 @@ body {
 }
 
 .feed-comment-input:focus {
-  border-color: var(--orange);
+  border-color: var(--accent);
 }
 
 .feed-comment-input:disabled {
@@ -3920,7 +4008,7 @@ body {
 .feed-comment-send {
   position: absolute;
   right: 8px;
-  background: var(--orange);
+  background: var(--accent);
   border: none;
   border-radius: 50%;
   width: 24px;
@@ -3929,7 +4017,7 @@ body {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: #fff;
+  color: var(--accent-contrast);
   transition: opacity 0.15s, transform 0.1s;
   flex-shrink: 0;
 }
@@ -4072,8 +4160,8 @@ body {
   right: -4px;
   min-width: 16px;
   height: 16px;
-  background: var(--orange);
-  color: #fff;
+  background: var(--accent);
+  color: var(--accent-contrast);
   font-size: 9px;
   font-weight: 800;
   font-family: var(--font);
@@ -4096,7 +4184,7 @@ body {
   background: var(--bg-card);
   border: 1px solid var(--separator-strong);
   border-radius: 14px;
-  color: var(--orange);
+  color: var(--accent);
   font-size: 14px;
   font-weight: 700;
   font-family: var(--font);
@@ -4182,8 +4270,8 @@ body {
 .admin-report-count {
   font-size: 11px;
   font-weight: 700;
-  color: var(--orange);
-  background: var(--orange-dim);
+  color: var(--accent);
+  background: var(--accent-dim);
   border-radius: 10px;
   padding: 2px 8px;
 }
@@ -4240,8 +4328,8 @@ body {
 .settings-admin-badge {
   min-width: 20px;
   height: 20px;
-  background: var(--orange);
-  color: #fff;
+  background: var(--accent);
+  color: var(--accent-contrast);
   font-size: 11px;
   font-weight: 800;
   border-radius: 10px;
@@ -4260,7 +4348,7 @@ body {
   margin: 0 16px 12px;
   padding: 12px 14px;
   background: var(--bg-card);
-  border: 1px solid var(--orange-border);
+  border: 1px solid var(--accent-border);
   border-radius: 14px;
   box-shadow: var(--card-shadow);
   animation: slideDown 0.2s ease;
@@ -4271,8 +4359,8 @@ body {
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: var(--orange-dim);
-  color: var(--orange);
+  background: var(--accent-dim);
+  color: var(--accent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -4300,8 +4388,8 @@ body {
 
 .notif-prompt-enable {
   flex-shrink: 0;
-  background: var(--orange);
-  color: #fff;
+  background: var(--accent);
+  color: var(--accent-contrast);
   border: none;
   border-radius: 20px;
   padding: 7px 16px;
@@ -4452,7 +4540,7 @@ body {
 
 /* Unread notifications get a subtle orange tint */
 .notif-item.unread {
-  background: var(--orange-dim);
+  background: var(--accent-dim);
 }
 
 .notif-item-icon {
@@ -4502,7 +4590,7 @@ body {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--orange);
+  background: var(--accent);
   flex-shrink: 0;
 }
 
@@ -4601,8 +4689,8 @@ body {
 .auth-submit-btn {
   width: 100%;
   padding: 14px;
-  background: var(--orange);
-  color: #fff;
+  background: var(--accent);
+  color: var(--accent-contrast);
   border: none;
   border-radius: 12px;
   font-size: 16px;
@@ -4620,7 +4708,7 @@ body {
 .auth-link {
   background: none;
   border: none;
-  color: var(--orange);
+  color: var(--accent);
   font-size: 14px;
   font-weight: 600;
   font-family: var(--font);
@@ -4802,8 +4890,8 @@ body {
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: var(--orange);
-  color: #fff;
+  background: var(--accent);
+  color: var(--accent-contrast);
   font-size: 13px;
   font-weight: 800;
   display: flex;
@@ -4840,7 +4928,7 @@ body {
 }
 
 .onboarding-dot.active {
-  background: var(--orange);
+  background: var(--accent);
 }
 
 /* Transparent secondary button (e.g. "Go to Home Feed") */
@@ -5011,8 +5099,8 @@ body {
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: var(--orange);
-  color: #fff;
+  background: var(--accent);
+  color: var(--accent-contrast);
   font-size: 12px;
   font-weight: 700;
   display: flex;
@@ -5034,7 +5122,7 @@ body {
   width: 24px;
   height: 24px;
   border: 2.5px solid var(--separator-strong);
-  border-top-color: var(--orange);
+  border-top-color: var(--accent);
   border-radius: 50%;
   transition: opacity 0.2s ease;
 }
@@ -5074,8 +5162,8 @@ body {
 
 /* The "Add", "Pending", or "Friends" button on each search result */
 .search-add-btn {
-  background: var(--orange);
-  color: #fff;
+  background: var(--accent);
+  color: var(--accent-contrast);
   border: none;
   border-radius: 20px;
   padding: 6px 14px;
@@ -5236,7 +5324,7 @@ body {
 
 /* Active dot is wider and orange */
 .add-court-progress-dot.active {
-  background: #FF6B00;
+  background: var(--accent);
   width: 24px;
 }
 
@@ -5310,8 +5398,8 @@ body {
 
 /* Selected card gets an orange border and subtle orange tint */
 .add-court-type-card.selected {
-  border-color: #FF6B00;
-  background: rgba(255, 107, 0, 0.08);
+  border-color: var(--accent);
+  background: rgb(var(--accent-rgb) / 0.08);
 }
 
 .add-court-type-card:active {
@@ -5358,7 +5446,7 @@ body {
 
 /* Orange border when the input is focused */
 .add-court-input:focus {
-  border-color: var(--orange-border);
+  border-color: var(--accent-border);
 }
 
 /* Placeholder text color */
@@ -5389,9 +5477,9 @@ body {
 
 /* Selected chip — orange border, tinted background, orange text */
 .add-court-chip.selected {
-  border-color: #FF6B00;
-  background: rgba(255, 107, 0, 0.12);
-  color: #FF6B00;
+  border-color: var(--accent);
+  background: rgb(var(--accent-rgb) / 0.12);
+  color: var(--accent);
 }
 
 /* ── Number of courts row ─────────────────────────────────────────────────── */
@@ -5418,9 +5506,9 @@ body {
 
 /* Selected number button — orange */
 .add-court-count-btn.selected {
-  border-color: #FF6B00;
-  background: rgba(255, 107, 0, 0.12);
-  color: #FF6B00;
+  border-color: var(--accent);
+  background: rgb(var(--accent-rgb) / 0.12);
+  color: var(--accent);
 }
 
 /* ── Step 3: Location buttons ─────────────────────────────────────────────── */
@@ -5448,7 +5536,7 @@ body {
 /* "Location captured" confirmation text */
 .add-court-location-captured {
   font-size: 14px;
-  color: #FF6B00;
+  color: var(--accent);
   text-align: center;
   margin: 12px 0;
   font-weight: 600;
@@ -5481,8 +5569,8 @@ body {
   transition: border-color 0.15s, color 0.15s;
 }
 .add-court-photo-btn:active {
-  border-color: var(--orange);
-  color: var(--orange);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 /* Thumbnail preview + remove button */
@@ -5556,8 +5644,8 @@ body {
   padding: 14px;
   border-radius: 12px;
   border: none;
-  background: #FF6B00;
-  color: white;
+  background: var(--accent);
+  color: var(--accent-contrast);
   font-size: 15px;
   font-weight: 700;
   cursor: pointer;
@@ -5578,9 +5666,9 @@ body {
   margin-top: 12px;
   padding: 14px;
   border-radius: 12px;
-  border: 1.5px solid var(--orange);
+  border: 1.5px solid var(--accent);
   background: transparent;
-  color: var(--orange);
+  color: var(--accent);
   font-size: 16px;
   font-weight: 700;
   font-family: var(--font);
@@ -5589,7 +5677,7 @@ body {
 }
 
 .btn-add-court:active {
-  background: var(--orange-dim);
+  background: var(--accent-dim);
 }
 
 /* ── CheckInScreen: "Know a court?" text link ─────────────────────────────── */
@@ -5598,7 +5686,7 @@ body {
   text-align: center;
   margin-top: 12px;
   font-size: 13px;
-  color: var(--orange);
+  color: var(--accent);
   cursor: pointer;
   font-weight: 500;
 }
@@ -5652,7 +5740,7 @@ body {
   border-radius: 999px;
   background: var(--bg-elevated);
   border: 1px solid var(--separator-strong);
-  color: var(--orange);
+  color: var(--accent);
   font-size: 13px;
   font-weight: 600;
   font-family: inherit;
@@ -5739,7 +5827,7 @@ body {
 .legal-section-title {
   font-size: 14px;
   font-weight: 700;
-  color: var(--orange);
+  color: var(--accent);
   margin: 20px 0 6px;
 }
 
@@ -5777,13 +5865,13 @@ body {
 /* Message button on FriendCard */
 .btn-message {
   flex-shrink: 0;
-  background: var(--orange);
+  background: var(--accent);
   border: none;
   border-radius: 8px;
   padding: 6px 12px;
   font-size: 12px;
   font-weight: 600;
-  color: #fff;
+  color: var(--accent-contrast);
   cursor: pointer;
   font-family: var(--font);
   transition: opacity 0.15s ease;
@@ -5796,8 +5884,8 @@ body {
 /* Unread DM count shown in the Friends screen header */
 .crew-unread-badge {
   margin-left: 8px;
-  background: var(--orange);
-  color: #fff;
+  background: var(--accent);
+  color: var(--accent-contrast);
   font-size: 11px;
   font-weight: 700;
   border-radius: 10px;
@@ -5810,8 +5898,8 @@ body {
   position: absolute;
   top: -4px;
   right: -6px;
-  background: var(--orange);
-  color: #fff;
+  background: var(--accent);
+  color: var(--accent-contrast);
   font-size: 9px;
   font-weight: 700;
   border-radius: 8px;
@@ -5832,8 +5920,8 @@ body {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: var(--orange);
-  box-shadow: 0 0 6px 2px rgba(255, 107, 26, 0.6);
+  background: var(--accent);
+  box-shadow: 0 0 6px 2px rgb(var(--accent-rgb) / 0.6);
   border: 1.5px solid var(--bg-nav);
 }
 
@@ -5949,8 +6037,11 @@ body {
 }
 
 .dm-bubble-mine {
-  background: var(--orange);
+  background: var(--accent);
   border-bottom-right-radius: 4px;
+  /* Your own message bubbles are filled with the accent, so their text needs
+     the accent's contrast colour rather than the base bubble's white. */
+  color: var(--accent-contrast);
 }
 
 .dm-bubble-theirs {
@@ -6020,13 +6111,13 @@ body {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: var(--orange);
+  background: var(--accent);
   border: none;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
+  color: var(--accent-contrast);
   transition: opacity 0.15s ease;
 }
 
@@ -6136,13 +6227,13 @@ body {
 
 .discover-player-status {
   font-size: 12px;
-  color: var(--orange);
+  color: var(--accent);
   margin-top: 2px;
 }
 
 .search-add-btn {
-  background: var(--orange);
-  color: #fff;
+  background: var(--accent);
+  color: var(--accent-contrast);
   border: none;
   border-radius: 20px;
   padding: 6px 14px;
@@ -6179,7 +6270,7 @@ body {
 }
 
 .star {
-  color: var(--orange);
+  color: var(--accent);
   line-height: 1;
 }
 
@@ -6283,8 +6374,8 @@ body {
 
 .review-submit-btn {
   margin-top: 10px;
-  background: var(--orange);
-  color: #fff;
+  background: var(--accent);
+  color: var(--accent-contrast);
   border: none;
   border-radius: 20px;
   padding: 8px 22px;
@@ -6390,7 +6481,7 @@ body {
   right: 1px;
   width: 10px;
   height: 10px;
-  background: var(--orange);
+  background: var(--accent);
   border-radius: 50%;
   border: 2px solid var(--bg);
 }
@@ -6437,8 +6528,8 @@ body {
 }
 
 .dm-thread-count {
-  background: var(--orange);
-  color: #fff;
+  background: var(--accent);
+  color: var(--accent-contrast);
   font-size: 11px;
   font-weight: 700;
   font-family: var(--font);

@@ -56,7 +56,9 @@ export default function Avatar({
     borderRadius: '50%',
     flexShrink: 0,
     display: 'block',
-    ...(isCheckedIn && { outline: '2px solid #FF6B1A', outlineOffset: 2 }),
+    // The "on the court" ring follows the chosen accent. The PALETTE above
+    // deliberately does not — those are per-user avatar colours, not accents.
+    ...(isCheckedIn && { outline: '2px solid var(--accent)', outlineOffset: 2 }),
     ...(ringColor && { border: `2px solid ${ringColor}` }),
   };
 

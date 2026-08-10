@@ -208,7 +208,7 @@ export default function PostComposer({
           {/* ── Tagged court pill ────────────────────────────────────────────── */}
           {selectedCourt && (
             <div className="composer-court-tag">
-              <MapPin size={12} strokeWidth={2.5} color="var(--orange)" />
+              <MapPin size={12} strokeWidth={2.5} color="var(--accent)" />
               <span>{selectedCourt.name}</span>
               <button
                 className="composer-court-tag-remove"
@@ -275,7 +275,7 @@ export default function PostComposer({
                 <Image
                   size={18}
                   strokeWidth={2}
-                  color={selectedFile ? 'var(--orange)' : 'var(--text-secondary)'}
+                  color={selectedFile ? 'var(--accent)' : 'var(--text-secondary)'}
                 />
               </button>
 
@@ -297,7 +297,7 @@ export default function PostComposer({
                 <MapPin
                   size={18}
                   strokeWidth={2}
-                  color={selectedCourt ? 'var(--orange)' : 'var(--text-secondary)'}
+                  color={selectedCourt ? 'var(--accent)' : 'var(--text-secondary)'}
                 />
               </button>
             </div>

@@ -20,9 +20,9 @@
 //   onEditProfile — callback to open the Edit Profile sheet in ProfileScreen
 
 import { useState, useEffect } from 'react';
-import { X, ChevronRight } from 'lucide-react';
+import { X, ChevronRight, Check } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useTheme } from '../hooks/useTheme';
+import { useTheme, ACCENTS } from '../hooks/useTheme';
 import { useToast } from '../hooks/useToast';
 import { useNotifications } from '../hooks/useNotifications';
 import { sendPush, pushRegistrationMessage } from '../lib/push';
@@ -176,7 +176,7 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
 
   // ── Theme and toast ─────────────────────────────────────────────────────
   // useTheme drives the dark/light mode toggle for the whole app
-  const { isDark, toggleTheme } = useTheme();
+  const { isDark, toggleTheme, accent, setAccent } = useTheme();
 
   // SettingsSheet has its own toast so messages show on top of the overlay
   const { toast, showToast } = useToast();
@@ -676,7 +676,7 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
 
               {/* Court goes live — notified when activity is detected at a saved court */}
               <div className="settings-row">
-                <div className="settings-row-icon" style={{ background: '#FF6B00' }}>🏀</div>
+                <div className="settings-row-icon" style={{ background: 'var(--accent)' }}>🏀</div>
                 <div className="settings-row-content">
                   <div className="settings-row-title">Court Goes Live Alerts</div>
                 </div>
@@ -708,6 +708,47 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
                   <div className="settings-row-title">Dark Mode</div>
                 </div>
                 <Toggle on={isDark} onToggle={toggleTheme} />
+              </div>
+
+              {/* Accent Colour — repaints the app instantly and remembers the
+                  choice. Swatches show each colour's variant for the CURRENT
+                  mode, so what you tap is what you get: several accents are
+                  deliberately darker in light mode to stay readable. */}
+              <div className="settings-row">
+                <div className="settings-row-icon" style={{ background: 'var(--accent)' }}>🎨</div>
+                <div className="settings-row-content">
+                  <div className="settings-row-title">Accent Colour</div>
+                  <div className="settings-row-desc">
+                    {ACCENTS.find(a => a.id === accent)?.label ?? 'Orange'}
+                  </div>
+                </div>
+              </div>
+
+              <div className="accent-swatch-row" role="radiogroup" aria-label="Accent colour">
+                {ACCENTS.map(a => {
+                  const selected = a.id === accent;
+                  return (
+                    <button
+                      key={a.id}
+                      type="button"
+                      role="radio"
+                      aria-checked={selected}
+                      aria-label={a.label}
+                      title={a.label}
+                      className={`accent-swatch${selected ? ' is-selected' : ''}`}
+                      style={{ '--swatch': isDark ? a.dark : a.light }}
+                      onClick={() => setAccent(a.id)}
+                    >
+                      {selected && (
+                        <Check
+                          size={14}
+                          strokeWidth={3.5}
+                          color={isDark ? a.darkOn : a.lightOn}
+                        />
+                      )}
+                    </button>
+                  );
+                })}
               </div>
 
             </div>
@@ -799,7 +840,7 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
                 className="settings-row"
                 onClick={() => setShowTour(true)}
               >
-                <div className="settings-row-icon" style={{ background: '#FF6B00' }}>📖</div>
+                <div className="settings-row-icon" style={{ background: 'var(--accent)' }}>📖</div>
                 <div className="settings-row-content">
                   <div className="settings-row-title">How LiveHoops Works</div>
                   <div className="settings-row-desc">A quick tour of the app</div>

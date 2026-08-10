@@ -156,15 +156,15 @@ export default function Onboarding({ profile, onComplete }) {
               {/* Three feature highlights in a row */}
               <div className="onboarding-feature-row">
                 <div className="onboarding-feature-item">
-                  <MapPin size={18} color="var(--orange)" strokeWidth={2} />
+                  <MapPin size={18} color="var(--accent)" strokeWidth={2} />
                   <span className="onboarding-feature-label">Live Courts</span>
                 </div>
                 <div className="onboarding-feature-item">
-                  <CheckCircle size={18} color="var(--orange)" strokeWidth={2} />
+                  <CheckCircle size={18} color="var(--accent)" strokeWidth={2} />
                   <span className="onboarding-feature-label">Check In</span>
                 </div>
                 <div className="onboarding-feature-item">
-                  <Trophy size={18} color="var(--orange)" strokeWidth={2} />
+                  <Trophy size={18} color="var(--accent)" strokeWidth={2} />
                   <span className="onboarding-feature-label">King of the Court</span>
                 </div>
               </div>

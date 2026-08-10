@@ -343,7 +343,7 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
                 {selectedPark.lighting ? '💡 Lit' : 'No lights'}
               </span>
               {selectedPark.reviewCount > 0 && (
-                <span className="map-sheet-meta-item" style={{ color: 'var(--orange)' }}>
+                <span className="map-sheet-meta-item" style={{ color: 'var(--accent)' }}>
                   ★ {Number(selectedPark.avgRating).toFixed(1)} ({selectedPark.reviewCount})
                 </span>
               )}
@@ -512,7 +512,7 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
                   ? `🏀 ${park.players} players · ${park.distance}`
                   : `Empty · ${park.distance}`}
                 {park.reviewCount > 0 && (
-                  <span style={{ color: 'var(--orange)', marginLeft: 4 }}>
+                  <span style={{ color: 'var(--accent)', marginLeft: 4 }}>
                     · ★ {Number(park.avgRating).toFixed(1)}
                   </span>
                 )}

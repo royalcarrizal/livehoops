@@ -292,7 +292,7 @@ export default function CourtDetailSheet({
                     onClick={() => setDraftRating(n)}
                     aria-label={`${n} star${n > 1 ? 's' : ''}`}
                   >
-                    <span style={{ color: n <= draftRating ? 'var(--orange)' : 'var(--text-tertiary)' }}>
+                    <span style={{ color: n <= draftRating ? 'var(--accent)' : 'var(--text-tertiary)' }}>
                       ★
                     </span>
                   </button>
@@ -327,7 +327,7 @@ export default function CourtDetailSheet({
               <div style={{ color: 'var(--text-secondary)', fontSize: 13, textAlign: 'center', padding: '8px 0' }}>
                 Failed to load reviews —{' '}
                 <button
-                  style={{ background: 'none', border: 'none', color: 'var(--orange)', cursor: 'pointer', padding: 0, font: 'inherit' }}
+                  style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', padding: 0, font: 'inherit' }}
                   onClick={() => fetchReviews(court.id, user?.id)}
                 >
                   tap to retry
