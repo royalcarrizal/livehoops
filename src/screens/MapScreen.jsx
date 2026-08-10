@@ -530,7 +530,9 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
       {/* ── Post from map modal ───────────────────────────────────────────── */}
       {showPostModal && selectedPark && (
         <MapPostModal
-          court={{ id: selectedPark.id, name: selectedPark.name }}
+          // Full court object (not just id + name) so the check-in offer can
+          // read distanceMi and arm itself when the user is actually here.
+          court={livePark}
           currentUser={{
             id:        user?.id,
             username:  profile?.username ?? 'Player',
@@ -546,10 +548,14 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
               data.court_name,
               profile,
             );
-            setShowPostModal(false);
-            showToast('✅ Posted!');
           }}
+          // This screen's toast, not the modal's own — the modal's lives inside
+          // its portal and would be torn down before the message could be read.
+          onToast={showToast}
           onClose={() => setShowPostModal(false)}
+          activeCheckIn={activeCheckIn}
+          onCheckIn={onCheckIn}
+          isCheckingIn={isCheckingIn}
         />
       )}
 

@@ -95,10 +95,12 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
     return (posts ?? []).filter(post => {
       if (!post.courtId) return true;
       const park = (parks ?? []).find(p => p.id === post.courtId);
-      if (!park || !park.distance || park.distance === '—') return true;
-      const miles = parseFloat(park.distance.replace('<', ''));
-      if (Number.isNaN(miles)) return true;
-      return miles <= NEARBY_RADIUS_MILES;
+      // distanceMi is null when GPS is unavailable or the court has no
+      // coordinates — keep those posts rather than hiding the tab's contents.
+      // (This used to parse the "0.3 mi" / "< 0.1 mi" display string back into
+      // a number; normalizeCourt now carries the raw value alongside it.)
+      if (!park || !Number.isFinite(park.distanceMi)) return true;
+      return park.distanceMi <= NEARBY_RADIUS_MILES;
     });
   }, [parks]);
 
@@ -187,9 +189,11 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
   // Called by PostComposer after it has already uploaded any attached image.
   // image_url is the Supabase Storage public URL, or null for text-only posts.
   // We re-throw on error so PostComposer's catch block can show the error toast.
+  // The success toast lives in PostComposer now — it's the only place that
+  // knows whether an optional check-in rode along, and two toasts firing in
+  // sequence would just overwrite each other.
   const handlePost = async ({ type, content, image_url, court_id, court_name }) => {
     await createPost(user.id, content, type, image_url, court_id, court_name, profile);
-    showToast('✅ Posted!');
   };
 
   const patchNearbyPostLike = (postId, next) => {
@@ -300,6 +304,9 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
         userInitials={userInitials}
         userAvatarUrl={userAvatarUrl}
         courts={parks ?? []}
+        activeCheckIn={activeCheckIn}
+        onCheckIn={onCheckIn}
+        isCheckingIn={isCheckingIn}
       />
 
       {/* ── Feed tab toggle ──────────────────────────────────────────────────── */}

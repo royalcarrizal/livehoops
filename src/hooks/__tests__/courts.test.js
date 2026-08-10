@@ -78,6 +78,26 @@ describe('normalizeCourt', () => {
     expect(near.distance).toBe('< 0.1 mi');
   });
 
+  it('carries a raw distanceMi alongside the display string', () => {
+    // The string is for showing; distanceMi is for comparing. checkInOffer
+    // relies on this being null (not 0, not NaN) when GPS is unavailable —
+    // otherwise "unknown distance" would read as "standing right here".
+    expect(normalizeCourt(row).distanceMi).toBeNull();
+
+    const near = normalizeCourt(row, { lat: 29.76, lng: -95.36 });
+    expect(near.distanceMi).toBeCloseTo(0, 5);
+
+    const dallas = normalizeCourt(row, { lat: 32.7767, lng: -96.7970 });
+    expect(dallas.distanceMi).toBeGreaterThan(215);
+    expect(dallas.distanceMi).toBeLessThan(235);
+  });
+
+  it('returns a null distance for a court with no coordinates', () => {
+    const noCoords = normalizeCourt({ ...row, lat: null, lng: null }, { lat: 29.76, lng: -95.36 });
+    expect(noCoords.distanceMi).toBeNull();
+    expect(noCoords.distance).toBe('—');
+  });
+
   it('defaults missing counts safely', () => {
     const sparse = normalizeCourt({ ...row, player_count: null, courts: null });
     expect(sparse.players).toBe(0);

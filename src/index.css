@@ -3510,6 +3510,71 @@ body {
   opacity: 1;
 }
 
+/* ── Check-in offer (shown under a tagged court) ── */
+/* Used by both compose surfaces: PostComposer and MapPostModal. */
+.composer-checkin-offer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--separator);
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.composer-checkin-offer.is-on {
+  background: var(--orange-dim);
+  border-color: var(--orange-border);
+  color: var(--orange);
+}
+
+/* The "already checked in here" variant — informational, nothing to tap */
+.composer-checkin-offer.is-static {
+  cursor: default;
+  background: var(--orange-dim);
+  border-color: var(--orange-border);
+  color: var(--orange);
+}
+
+.composer-checkin-box {
+  flex: 0 0 auto;
+  width: 17px;
+  height: 17px;
+  border-radius: 5px;
+  border: 1.5px solid var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Always white: the tick only ever sits on the filled orange box below. */
+  color: #fff;
+}
+
+.composer-checkin-box.is-on {
+  background: var(--orange);
+  border-color: var(--orange);
+}
+
+/* "You're here" — why the box arrived already ticked */
+.composer-checkin-hint {
+  margin-left: auto;
+  flex: 0 0 auto;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--orange);
+  opacity: 0.85;
+}
+
 /* ── Court picker sheet ── */
 .court-picker-overlay {
   position: fixed;
