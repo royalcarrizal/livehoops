@@ -201,14 +201,14 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
     ));
   };
 
-  const handleLikePost = async (postId) => {
-    const next = await likePost(postId, user.id);
+  const handleLikePost = async (postId, prevLikes) => {
+    const next = await likePost(postId, user.id, prevLikes);
     patchNearbyPostLike(postId, next);
     return next;
   };
 
-  const handleUnlikePost = async (postId) => {
-    const next = await unlikePost(postId, user.id);
+  const handleUnlikePost = async (postId, prevLikes) => {
+    const next = await unlikePost(postId, user.id, prevLikes);
     patchNearbyPostLike(postId, next);
     return next;
   };
