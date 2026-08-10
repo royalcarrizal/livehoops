@@ -41,8 +41,10 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
       },
 
-      // These files from /public will be included in the precache list
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'icon-512.png'],
+      // No includeAssets: globPatterns above already matches every png/svg in
+      // the build output, so listing them again only duplicated their entries
+      // in the generated precache manifest. (It also referenced a favicon.ico
+      // that doesn't exist in /public — only favicon.svg does.)
 
       // ── Web App Manifest ────────────────────────────────────────────────
       // The manifest is a JSON file that tells the phone's OS about your app.
@@ -72,21 +74,22 @@ export default defineConfig({
         background_color: '#000000',
 
         // Icons are what appear on the home screen and in the app switcher.
-        // You need multiple sizes because different devices use different sizes.
         // The 'src' paths are relative to your /public folder.
+        //
+        // Two real files, declared at their true sizes. This list used to name
+        // ONE 1254x1254 image (1.4 MB) eight times over, claiming it was the
+        // 72px icon, the 96px icon and so on — so every install downloaded
+        // 1.4 MB to draw something thumbnail-sized. Browsers pick the closest
+        // declared size and scale it themselves, so two honest entries serve
+        // every device better than eight dishonest ones.
         icons: [
-          { src: '/icon-512.png', sizes: '72x72',   type: 'image/png' },
-          { src: '/icon-512.png', sizes: '96x96',   type: 'image/png' },
-          { src: '/icon-512.png', sizes: '128x128', type: 'image/png' },
-          { src: '/icon-512.png', sizes: '144x144', type: 'image/png' },
-          { src: '/icon-512.png', sizes: '152x152', type: 'image/png' },
-          { src: '/icon-512.png', sizes: '192x192', type: 'image/png' },
-          { src: '/icon-512.png', sizes: '384x384', type: 'image/png' },
+          { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },
           {
-            // 'maskable' icons are used on Android devices that apply a shaped
-            // mask (circle, rounded square, etc.) to your icon. The icon needs
-            // extra padding around the edges so nothing gets clipped.
+            // 'maskable' icons are cropped to a device-chosen shape (circle,
+            // rounded square…). Same artwork as before — pointing this at a
+            // dedicated icon with a padded safe zone is a design task, not a
+            // code one, so behaviour here is deliberately unchanged.
             src: '/icon-512.png',
             sizes: '512x512',
             type: 'image/png',

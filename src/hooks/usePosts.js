@@ -211,6 +211,26 @@ async function fetchLikedIds(userId, postIds) {
   return new Set((data ?? []).map(row => row.post_id));
 }
 
+// ── Derive a post's like state without asking the server ───────────────────
+// After a like/unlike write succeeds, the resulting count is just the count we
+// were already showing, plus or minus one — the write succeeding IS the
+// confirmation. posts.like_count is maintained by a DB trigger, so the
+// authoritative value stays correct for the next fetch either way.
+//
+// Returns null when we must NOT guess and the caller has to read the real
+// state instead:
+//   - drifted: the write told us our local view was wrong (a duplicate like,
+//     or an unlike that removed nothing), so prevLikes can't be trusted
+//   - prevLikes isn't a usable number: the caller didn't tell us what it was
+//     showing. Number.isFinite (not typeof) so NaN falls back to a read rather
+//     than rendering "NaN likes".
+export function deriveLikeState(isLiking, prevLikes, drifted) {
+  if (drifted || !Number.isFinite(prevLikes)) return null;
+  return isLiking
+    ? { likes: prevLikes + 1,               isLiked: true  }
+    : { likes: Math.max(0, prevLikes - 1),  isLiked: false };
+}
+
 async function fetchPostLikeState(postId, userId) {
   const { data: postRow, error: postError } = await supabase
     .from('posts')
@@ -282,9 +302,15 @@ export function usePosts() {
     followingQueryRef.current = { userId, allIds, rawCount: (data ?? []).length };
     setFeedHasMore((data ?? []).length === PAGE_SIZE);
 
-    let rows = await attachOriginalPosts(data ?? []);
-    rows = await attachProfiles(rows);
-    const likedIds = await fetchLikedIds(userId, rows.map(r => r.id));
+    // fetchLikedIds only needs the post IDs, and we already have those from the
+    // query above — it never depended on the repost/profile hydration. Running
+    // the two branches together instead of end-to-end drops a round trip from
+    // every feed load. (Neither attach* adds or removes rows, so the IDs are
+    // the same either way.)
+    const [rows, likedIds] = await Promise.all([
+      attachOriginalPosts(data ?? []).then(attachProfiles),
+      fetchLikedIds(userId, (data ?? []).map(r => r.id)),
+    ]);
     setFeed(rows.map(row => normPost(row, likedIds)));
     setLoading(false);
   }, []);
@@ -313,9 +339,10 @@ export function usePosts() {
     followingQueryRef.current.rawCount += (data ?? []).length;
     setFeedHasMore((data ?? []).length === PAGE_SIZE);
 
-    let rows = await attachOriginalPosts(data ?? []);
-    rows = await attachProfiles(rows);
-    const likedIds = await fetchLikedIds(userId, rows.map(r => r.id));
+    const [rows, likedIds] = await Promise.all([
+      attachOriginalPosts(data ?? []).then(attachProfiles),
+      fetchLikedIds(userId, (data ?? []).map(r => r.id)),
+    ]);
     const newPosts = rows.map(row => normPost(row, likedIds));
 
     // Dedupe: a post created optimistically (or arriving between pages)
@@ -356,18 +383,22 @@ export function usePosts() {
 
     // Attach author profiles first — the privacy filter below needs to read
     // each author's profile_visibility, which comes from the profiles table.
-    let rows = await attachOriginalPosts(data ?? []);
-    rows = await attachProfiles(rows);
+    // The liked-IDs lookup runs alongside rather than after: it's keyed on the
+    // unfiltered page, so it covers a few posts the privacy filter then drops.
+    // Harmless — likedIds is only ever consulted per surviving row.
+    const [hydrated, likedIds] = await Promise.all([
+      attachOriginalPosts(data ?? []).then(attachProfiles),
+      fetchLikedIds(userId, (data ?? []).map(r => r.id)),
+    ]);
 
     // Drop posts from non-public authors the viewer isn't friends with
     const friendSet = new Set(friendIds ?? []);
-    rows = rows.filter(row => {
+    const rows = hydrated.filter(row => {
       const visibility = row.profiles?.profile_visibility ?? 'public';
       if (visibility === 'public') return true;
       return row.user_id === userId || friendSet.has(row.user_id);
     });
 
-    const likedIds = await fetchLikedIds(userId, rows.map(r => r.id));
     return { posts: rows.map(row => normPost(row, likedIds)), rawCount, hasMore };
   }, []);
 
@@ -389,9 +420,10 @@ export function usePosts() {
       return [];
     }
 
-    let rows = await attachOriginalPosts(data ?? []);
-    rows = await attachProfiles(rows);
-    const likedIds = await fetchLikedIds(viewerUserId, rows.map(r => r.id));
+    const [rows, likedIds] = await Promise.all([
+      attachOriginalPosts(data ?? []).then(attachProfiles),
+      fetchLikedIds(viewerUserId, (data ?? []).map(r => r.id)),
+    ]);
     return rows.map(row => normPost(row, likedIds));
   }, []);
 
@@ -412,9 +444,10 @@ export function usePosts() {
       return null;
     }
 
-    let rows = await attachOriginalPosts([data]);
-    rows = await attachProfiles(rows);
-    const likedIds = await fetchLikedIds(viewerUserId, [data.id]);
+    const [rows, likedIds] = await Promise.all([
+      attachOriginalPosts([data]).then(attachProfiles),
+      fetchLikedIds(viewerUserId, [data.id]),
+    ]);
     return normPost(rows[0], likedIds);
   }, []);
 
@@ -519,7 +552,14 @@ export function usePosts() {
 
   // ── Like a post ─────────────────────────────────────────────────────────
   // Inserts a per-user like row. A DB trigger updates posts.like_count.
-  const likePost = useCallback(async (postId, userId) => {
+  //
+  // prevLikes is the count the caller was displaying before the tap. When it's
+  // supplied we derive the new state arithmetically instead of asking the
+  // server what it already told us — the insert succeeding IS the confirmation
+  // that the count went up by one, and the trigger keeps the authoritative
+  // value in sync for the next fetch. Only genuine state drift (the rare 23505
+  // below) needs a real read.
+  const likePost = useCallback(async (postId, userId, prevLikes) => {
     if (!postId || !userId) return null;
 
     const { error } = await supabase
@@ -532,7 +572,11 @@ export function usePosts() {
     // Only notify on a genuinely new like, not a repeat/already-liked call
     if (!error) notifyPostLike(postId, userId);
 
-    const next = await fetchPostLikeState(postId, userId);
+    // A 23505 means our local "not liked" disagreed with the database, so the
+    // count we're holding can't be trusted — deriveLikeState returns null and
+    // we fall back to a real read.
+    const next = deriveLikeState(true, prevLikes, !!error)
+      ?? await fetchPostLikeState(postId, userId);
 
     setFeed(prev => prev.map(p =>
       p.id === postId ? { ...p, likes: next.likes, isLiked: next.isLiked } : p
@@ -543,18 +587,24 @@ export function usePosts() {
 
   // ── Unlike a post ───────────────────────────────────────────────────────
   // Deletes the per-user like row. A DB trigger updates posts.like_count.
-  const unlikePost = useCallback(async (postId, userId) => {
+  // Mirrors likePost: the delete reporting a removed row is confirmation
+  // enough that the count dropped by one. `.select()` rides along on the same
+  // request (no extra round trip) and tells us whether a row was actually
+  // there — if it wasn't, our count was already wrong, so we resync.
+  const unlikePost = useCallback(async (postId, userId, prevLikes) => {
     if (!postId || !userId) return null;
 
-    const { error } = await supabase
+    const { data: removed, error } = await supabase
       .from('post_likes')
       .delete()
       .eq('post_id', postId)
-      .eq('user_id', userId);
+      .eq('user_id', userId)
+      .select('post_id');
 
     if (error) throw error;
 
-    const next = await fetchPostLikeState(postId, userId);
+    const next = deriveLikeState(false, prevLikes, !removed?.length)
+      ?? await fetchPostLikeState(postId, userId);
 
     setFeed(prev => prev.map(p =>
       p.id === postId ? { ...p, likes: next.likes, isLiked: next.isLiked } : p

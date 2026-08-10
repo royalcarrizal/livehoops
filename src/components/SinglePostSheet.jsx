@@ -75,8 +75,8 @@ export default function SinglePostSheet({ postId, showComments = false, currentU
             onToast={showToast}
             currentUser={currentUser}
             onViewProfile={(uid) => { onClose(); onViewProfile?.(uid); }}
-            onLike={async (id) => { const next = await likePost(id, currentUser?.id); patchLike(next); return next; }}
-            onUnlike={async (id) => { const next = await unlikePost(id, currentUser?.id); patchLike(next); return next; }}
+            onLike={async (id, prevLikes) => { const next = await likePost(id, currentUser?.id, prevLikes); patchLike(next); return next; }}
+            onUnlike={async (id, prevLikes) => { const next = await unlikePost(id, currentUser?.id, prevLikes); patchLike(next); return next; }}
             onRepost={(id) => createRepost(id, currentUser?.id)}
             onDelete={async (id) => { await deletePost(id); onClose(); }}
             onReport={async (id) => {

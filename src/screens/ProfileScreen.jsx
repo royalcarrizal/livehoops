@@ -247,14 +247,14 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
     ));
   };
 
-  const handleLikePost = async (postId) => {
-    const next = await likePost(postId, user.id);
+  const handleLikePost = async (postId, prevLikes) => {
+    const next = await likePost(postId, user.id, prevLikes);
     patchUserPostLike(postId, next);
     return next;
   };
 
-  const handleUnlikePost = async (postId) => {
-    const next = await unlikePost(postId, user.id);
+  const handleUnlikePost = async (postId, prevLikes) => {
+    const next = await unlikePost(postId, user.id, prevLikes);
     patchUserPostLike(postId, next);
     return next;
   };

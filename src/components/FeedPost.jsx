@@ -115,9 +115,11 @@ export default function FeedPost({
     setLikeCount(c => optimisticLiked ? c + 1 : Math.max(0, c - 1));
 
     try {
+      // previousCount lets the hook derive the new total arithmetically
+      // instead of re-reading it from the server (see usePosts.likePost).
       const next = optimisticLiked
-        ? await onLike?.(post.id)
-        : await onUnlike?.(post.id);
+        ? await onLike?.(post.id, previousCount)
+        : await onUnlike?.(post.id, previousCount);
 
       if (next) {
         setLiked(next.isLiked);

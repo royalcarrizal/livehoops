@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { useTheme } from './hooks/useTheme';
 import { useAuth } from './hooks/useAuth';
 import { useProfile } from './hooks/useProfile';
@@ -374,10 +374,20 @@ export default function App() {
   // Hydrate each court with its scheduled runs so the map marker and court
   // sheets can read them off the same `parks` object (mirrors how `checkins`
   // is attached in useCourts). nextMeetup = the soonest run at that court.
-  const parksWithMeetups = courts.map(c => {
-    const list = meetupsByCourt[c.id] ?? [];
-    return { ...c, meetups: list, nextMeetup: list[0] ?? null };
-  });
+  //
+  // Memoized because this array is the `parks` prop every screen receives, and
+  // MapScreen's marker effect keys off it. Rebuilt unconditionally, it produced
+  // a brand-new array on EVERY App render (an unread-DM tick, the city label
+  // arriving, a check-in flag flipping) — identical contents, new identity — so
+  // the marker effect tore down and recreated every Mapbox marker each time.
+  // Now it only rebuilds when the courts or their meetups actually change.
+  const parksWithMeetups = useMemo(
+    () => courts.map(c => {
+      const list = meetupsByCourt[c.id] ?? [];
+      return { ...c, meetups: list, nextMeetup: list[0] ?? null };
+    }),
+    [courts, meetupsByCourt],
+  );
 
   const screenProps = {
     parks:           parksWithMeetups,
