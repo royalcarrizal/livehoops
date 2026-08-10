@@ -302,12 +302,18 @@ export default function App() {
   //
   // The geocoding call is wrapped in its own try/catch so a network failure
   // never prevents the check-in itself from completing.
+  // Returns the RPC result (or null when the check-in didn't happen) so callers
+  // can tell success from failure. The post composer needs this: it checks in
+  // as a follow-on to posting, and has to know whether to say "you're on the
+  // court" or "posted, but check-in didn't go through".
   const handleCheckIn = async (courtId) => {
-    if (isCheckingIn || !user?.id || !courtId) return;
+    if (isCheckingIn || !user?.id || !courtId) return null;
     setIsCheckingIn(true);
     try {
-      // Step 1 — save check-in via existing RPC
+      // Step 1 — save check-in via existing RPC. Returns null on failure —
+      // useCheckIn logs the error rather than throwing.
       const result = await checkIn(courtId, user.id);
+      if (!result) return null;
 
       // Re-fetch counts + checked-in player lists so the user's own avatar
       // shows up on the map/court sheets right away (fire-and-forget)
@@ -351,6 +357,8 @@ export default function App() {
           // Geocoding failed — check-in already saved successfully, continue normally
         }
       }
+
+      return result;
     } finally {
       setIsCheckingIn(false);
     }

@@ -11,14 +11,24 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Image, Send } from 'lucide-react';
+import { X, Image, Send, Check } from 'lucide-react';
 import { MapPin } from 'lucide-react';
 import Avatar from './Avatar';
 import Toast from './Toast';
 import { useStorage } from '../hooks/useStorage';
 import { useToast } from '../hooks/useToast';
+import { checkInOffer, checkInOfferLabel } from '../utils/checkInOffer';
 
-export default function MapPostModal({ court, currentUser, onPost, onClose }) {
+export default function MapPostModal({
+  court,
+  currentUser,
+  onPost,
+  onClose,
+  onToast       = null,
+  activeCheckIn = null,
+  onCheckIn     = null,
+  isCheckingIn  = false,
+}) {
   const [text,       setText]       = useState('');
   const [isPosting,  setIsPosting]  = useState(false);
   const [previewUrl, setPreviewUrl] = useState(null);
@@ -30,7 +40,16 @@ export default function MapPostModal({ court, currentUser, onPost, onClose }) {
   const textareaRef   = useRef(null);
 
   const { uploadPostImage } = useStorage();
+  // Local toast for FAILURES only — it lives inside the portal, so it dies with
+  // the modal. Success messages go to onToast (the Map screen's toast), which
+  // outlives the close.
   const { toast, showToast } = useToast();
+
+  // The court can't change while this sheet is open, so the initial arming is a
+  // one-time snapshot. `offer` itself is recomputed each render so the label
+  // stays accurate if the check-in state shifts underneath.
+  const offer = onCheckIn ? checkInOffer(court, activeCheckIn) : null;
+  const [checkInToo, setCheckInToo] = useState(() => offer?.defaultOn ?? false);
 
   // Focus textarea on open
   useEffect(() => {
@@ -98,6 +117,29 @@ export default function MapPostModal({ court, currentUser, onPost, onClose }) {
         court_name: court.name,
       });
 
+      // Optional check-in, after the post and isolated from it — see the same
+      // reasoning in PostComposer. A check-in failure must not surface as a
+      // failed post, because the post is already saved by this point.
+      const wantsCheckIn = checkInToo && offer && offer.kind !== 'already';
+      let checkInResult = null;
+      if (wantsCheckIn) {
+        try {
+          checkInResult = await onCheckIn(court.id);
+        } catch {
+          checkInResult = null;
+        }
+      }
+
+      if (!wantsCheckIn) {
+        onToast?.('✅ Posted!');
+      } else if (checkInResult) {
+        onToast?.(offer.kind === 'switch'
+          ? `✅ Posted — switched to ${court.name} 🏀`
+          : `✅ Posted — you're on the court at ${court.name} 🏀`);
+      } else {
+        onToast?.("✅ Posted — but the check-in didn't go through");
+      }
+
       onClose();
     } catch (err) {
       // onPost or uploadPostImage failed — stay open so the user can retry.
@@ -110,7 +152,7 @@ export default function MapPostModal({ court, currentUser, onPost, onClose }) {
     }
   };
 
-  const canPost = (!!text.trim() || !!file) && !isPosting;
+  const canPost = (!!text.trim() || !!file) && !isPosting && !isCheckingIn;
 
   return createPortal(
     <div className="map-post-overlay" onClick={onClose}>
@@ -132,6 +174,33 @@ export default function MapPostModal({ court, currentUser, onPost, onClose }) {
           <MapPin size={13} strokeWidth={2.5} />
           <span>{court.name}</span>
         </div>
+
+        {/* Check-in offer — same rule as the Home composer */}
+        {offer && (
+          offer.kind === 'already' ? (
+            <div className="composer-checkin-offer is-static">
+              <span className="composer-checkin-box is-on">
+                <Check size={11} strokeWidth={3} />
+              </span>
+              <span>{checkInOfferLabel(offer, court.name)}</span>
+            </div>
+          ) : (
+            <button
+              type="button"
+              className={`composer-checkin-offer${checkInToo ? ' is-on' : ''}`}
+              onClick={() => setCheckInToo(v => !v)}
+              aria-pressed={checkInToo}
+            >
+              <span className={`composer-checkin-box${checkInToo ? ' is-on' : ''}`}>
+                {checkInToo && <Check size={11} strokeWidth={3} />}
+              </span>
+              <span>{checkInOfferLabel(offer, court.name)}</span>
+              {offer.nearby && (
+                <span className="composer-checkin-hint">You're here</span>
+              )}
+            </button>
+          )
+        )}
 
         {/* Compose row */}
         <div className="map-post-compose-row">
