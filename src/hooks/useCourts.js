@@ -43,16 +43,24 @@ export function normalizeLighting(value) {
   return false;
 }
 
+// ── Raw distance in miles, or null when it can't be known ────────────────────
+// The companion to the `distance` display string below. Callers that need to
+// COMPARE a distance (is this court close enough to offer a check-in? is this
+// post nearby?) must use this, not the string — "< 0.1 mi" and "—" don't
+// parse, and re-deriving a number from formatted text is how subtle bugs get in.
+export function milesFrom(userPos, row) {
+  if (!userPos || row?.lat == null || row?.lng == null) return null;
+  return haversine(userPos.lat, userPos.lng, row.lat, row.lng);
+}
+
 // ── Transform a raw Supabase row into the "park" shape ───────────────────────
 // Every component in the app expects courts to look like this object.
 // We convert the database column names (snake_case) to the shape the
 // UI components were built with.
 // userPos is optional — if provided, distance is calculated; otherwise "—".
 export function normalizeCourt(row, userPos = null) {
-  const distance =
-    userPos && row.lat && row.lng
-      ? formatMiles(haversine(userPos.lat, userPos.lng, row.lat, row.lng))
-      : '—';
+  const distanceMi = milesFrom(userPos, row);
+  const distance = distanceMi == null ? '—' : formatMiles(distanceMi);
 
   return {
     id:           row.id,
@@ -67,7 +75,8 @@ export function normalizeCourt(row, userPos = null) {
     lighting:     normalizeLighting(row.lighting),
     lat:          row.lat,
     lng:          row.lng,
-    distance,
+    distance,     // display string, e.g. "0.3 mi" / "< 0.1 mi" / "—"
+    distanceMi,   // raw number for comparisons, or null when GPS is unavailable
     // Denormalized rating data kept in sync by the sync_court_rating DB trigger
     avgRating:   row.avg_rating   ?? null,  // null = no reviews yet
     reviewCount: row.review_count ?? 0,
@@ -130,13 +139,14 @@ export function useCourts() {
   // the distance field on each court object without re-fetching from Supabase.
   useEffect(() => {
     if (!userPos) return;
-    setCourts(prev => prev.map(court => ({
-      ...court,
-      distance:
-        court.lat && court.lng
-          ? formatMiles(haversine(userPos.lat, userPos.lng, court.lat, court.lng))
-          : '—',
-    })));
+    setCourts(prev => prev.map(court => {
+      const distanceMi = milesFrom(userPos, court);
+      return {
+        ...court,
+        distance: distanceMi == null ? '—' : formatMiles(distanceMi),
+        distanceMi,
+      };
+    }));
   }, [userPos]);
 
   // ── Fetch who's checked in at every court ─────────────────────────────────
