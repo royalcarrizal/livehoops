@@ -239,7 +239,7 @@ export default function MapPostModal({
             onClick={() => fileInputRef.current?.click()}
             aria-label="Add photo"
           >
-            <Image size={20} strokeWidth={2} color={file ? 'var(--orange)' : 'var(--text-secondary)'} />
+            <Image size={20} strokeWidth={2} color={file ? 'var(--accent)' : 'var(--text-secondary)'} />
           </button>
 
           <button

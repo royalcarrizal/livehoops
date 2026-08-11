@@ -296,8 +296,8 @@ export default function FeedPost({
             <Heart
               size={13}
               strokeWidth={2}
-              fill={c.isLiked ? 'var(--orange)' : 'none'}
-              color={c.isLiked ? 'var(--orange)' : 'var(--text-secondary)'}
+              fill={c.isLiked ? 'var(--accent)' : 'none'}
+              color={c.isLiked ? 'var(--accent)' : 'var(--text-secondary)'}
             />
             {c.likeCount > 0 && <span>{c.likeCount}</span>}
           </button>
@@ -407,7 +407,7 @@ export default function FeedPost({
           onClick={() => onCourtTap?.(post.courtId)}
           aria-label={`View ${post.courtName} details`}
         >
-          <MapPin size={12} color="var(--orange)" strokeWidth={2.5} />
+          <MapPin size={12} color="var(--accent)" strokeWidth={2.5} />
           <span>{post.courtName}</span>
           <span className="feed-court-pill-hint">→</span>
         </button>
@@ -464,7 +464,7 @@ export default function FeedPost({
               onClick={() => onCourtTap?.(original.courtId)}
               aria-label={`View ${original.courtName} details`}
             >
-              <MapPin size={12} color="var(--orange)" strokeWidth={2.5} />
+              <MapPin size={12} color="var(--accent)" strokeWidth={2.5} />
               <span>{original.courtName}</span>
               <span className="feed-court-pill-hint">→</span>
             </button>
@@ -497,9 +497,9 @@ export default function FeedPost({
           <MessageCircle
             size={20}
             strokeWidth={2}
-            color={showComments ? 'var(--orange)' : 'var(--text-secondary)'}
+            color={showComments ? 'var(--accent)' : 'var(--text-secondary)'}
           />
-          <span style={{ color: showComments ? 'var(--orange)' : undefined }}>
+          <span style={{ color: showComments ? 'var(--accent)' : undefined }}>
             {commentCount}
           </span>
         </button>
@@ -573,7 +573,7 @@ export default function FeedPost({
             <div className="feed-comments-empty">
               Failed to load comments —{' '}
               <button
-                style={{ background: 'none', border: 'none', color: 'var(--orange)', cursor: 'pointer', padding: 0, font: 'inherit' }}
+                style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', padding: 0, font: 'inherit' }}
                 onClick={() => fetchComments(post.id)}
               >
                 tap to retry

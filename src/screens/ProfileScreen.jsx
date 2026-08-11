@@ -780,7 +780,7 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
                 style={{
                   background: 'none',
                   border: 'none',
-                  color: avatarUploading ? 'var(--text-secondary)' : 'var(--orange)',
+                  color: avatarUploading ? 'var(--text-secondary)' : 'var(--accent)',
                   fontSize: 14,
                   fontWeight: 600,
                   cursor: avatarUploading ? 'default' : 'pointer',

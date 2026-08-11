@@ -277,7 +277,7 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
           </div>
         </div>
         <div className="location-row">
-          <MapPin size={13} color="var(--orange)" />
+          <MapPin size={13} color="var(--accent)" />
           <span>{cityLabel}</span>
         </div>
       </div>
