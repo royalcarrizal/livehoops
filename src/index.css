@@ -2148,16 +2148,22 @@ body {
 /* A row of eight swatches under the Accent Colour row. Each button carries its
    own colour as an inline --swatch custom property, set from the ACCENTS table
    for the CURRENT theme, so the swatches preview accurately in both modes. */
+/* Eight equal columns rather than fixed-width items in a wrapping flex row.
+   At 34px + 12px gaps the eight swatches needed 356px but only had 319px on a
+   375px screen, so grey wrapped onto a line of its own. A grid divides
+   whatever width is available, so the row stays on one line at any size and
+   the swatches scale with the screen instead of overflowing it. */
 .accent-swatch-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 8px;
   padding: 4px 14px 16px;
 }
 
 .accent-swatch {
-  width: 34px;
-  height: 34px;
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
   border-radius: 50%;
   background: var(--swatch);
   border: 2px solid transparent;
@@ -2169,6 +2175,22 @@ body {
   /* Keeps pale swatches (yellow, grey) from dissolving into the sheet */
   box-shadow: inset 0 0 0 1px rgb(128 128 128 / 0.25);
   transition: transform 0.12s ease, border-color 0.12s ease;
+}
+
+/* Extends the tappable area beyond the visible circle without changing how it
+   looks. Sizing swatches to the screen makes them ~26px on a 320px phone,
+   which is a small target for a thumb.
+   -6px, not -4px: an absolutely positioned box is offset from its parent's
+   PADDING box, so 2px of this is spent clearing the swatch's own 2px border
+   and only the remaining 4px extends past the visible edge. 4px each side
+   exactly consumes the 8px grid gap, so neighbouring hit areas meet but never
+   overlap — an ambiguous tap goes to the nearer swatch rather than to
+   whichever happens to be painted last. */
+.accent-swatch::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
 }
 
 .accent-swatch:active {
