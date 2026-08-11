@@ -86,6 +86,14 @@ the agent must create one before making any change.
    - `npm run lint`
    - `npm test`
    - `npm run build`
+
+   These same three commands also run automatically on GitHub for every pull
+   request and every push to `main`, defined in `.github/workflows/ci.yml`.
+   Running them locally first is still required — CI is the safety net, not
+   the first line of defence. A red X on a pull request must be fixed on the
+   same feature branch before requesting review or merge. Never ask for a
+   merge while CI is failing, and never disable, skip, or weaken a check to
+   make it pass.
 5. Review `git diff` and `git status`. Stage only the intended files, then make
    small, descriptive commits. Never silently include unrelated user changes.
 6. Push the feature branch to GitHub with upstream tracking. Never push feature
