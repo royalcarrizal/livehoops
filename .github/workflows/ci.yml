@@ -48,14 +48,14 @@ jobs:
     steps:
       # Copy the repository onto the fresh cloud machine.
       - name: Check out the code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # Install Node. Pinned to 24.x — a stable version that satisfies both
       # Vite (needs >= 22.12) and Vitest (needs >= 24). cache: 'npm' reuses
       # the downloaded packages between runs, turning a ~2 minute job into a
       # ~30 second one.
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '24.x'
           cache: 'npm'
