@@ -1,0 +1,84 @@
+# .github/workflows/ci.yml
+#
+# This file is LiveHoops' automatic checker. GitHub reads it and, every time
+# someone proposes a change, runs our three quality commands on a fresh
+# computer in the cloud:
+#
+#     npm run lint     — is the code style clean and free of obvious mistakes?
+#     npm test         — do all the tests still pass?
+#     npm run build    — does the app still compile into a shippable bundle?
+#
+# The result appears as a green tick or a red X on the pull request page, so
+# nobody has to remember to run them by hand. AGENTS.md has always required
+# these three commands; this file is what makes the requirement real.
+
+name: CI
+
+# ── When to run ────────────────────────────────────────────────────────────
+on:
+  # Every pull request that proposes changes into main. This is the important
+  # one: it checks the work BEFORE it becomes official.
+  pull_request:
+    branches: [main]
+
+  # Also after anything lands on main, so the official branch is verified too
+  # (a merge can combine two individually-fine branches into a broken one).
+  push:
+    branches: [main]
+
+# The job only reads the repository. Granting the minimum permission means a
+# malicious dependency can't use this workflow's token to alter the repo.
+permissions:
+  contents: read
+
+# If you push a fix while an older run for the same branch is still going,
+# cancel the stale one instead of paying for both. The newer commit is the
+# only answer anybody cares about.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # "checks" is the name that shows up on the pull request page, and the name
+  # you select later when making these checks required for merging.
+  checks:
+    name: Lint, test and build
+    runs-on: ubuntu-latest
+
+    steps:
+      # Copy the repository onto the fresh cloud machine.
+      - name: Check out the code
+        uses: actions/checkout@v7
+
+      # Install Node. Pinned to 24.x — a stable version that satisfies both
+      # Vite (needs >= 22.12) and Vitest (needs >= 24). cache: 'npm' reuses
+      # the downloaded packages between runs, turning a ~2 minute job into a
+      # ~30 second one.
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24.x'
+          cache: 'npm'
+
+      # "npm ci" installs exactly the versions pinned in package-lock.json.
+      # We use it instead of "npm install" because npm install is allowed to
+      # quietly upgrade things, which would mean CI tests different code than
+      # the code you actually run.
+      - name: Install dependencies
+        run: npm ci
+
+      # The three checks are deliberately kept as three separate steps rather
+      # than one combined command: GitHub then tells you WHICH one failed
+      # without you having to open and read the log.
+      #
+      # None of them need API keys. Every VITE_* value is read at runtime in
+      # the browser, and vitest.config.js supplies dummy values to the tests,
+      # so no secret is ever exposed to this workflow.
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
