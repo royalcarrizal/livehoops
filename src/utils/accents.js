@@ -16,45 +16,48 @@
 
 // The backgrounds each variant sits on — from the --bg custom property in
 // index.css. Used by the contrast tests.
-export const DARK_BG  = '#000000';
-export const LIGHT_BG = '#F2F2F7';
+export const DARK_BG  = '#0B0B0E';
+export const LIGHT_BG = '#F5F4F2';
 
 export const DEFAULT_ACCENT = 'orange';
 
 // darkOn / lightOn are the text colour for FILLED surfaces in that mode — a
-// solid button, the "on" toggle, a badge. Declared rather than computed,
-// because the rule isn't purely "maximum contrast": white reads as the
-// conventional choice for a coloured button, so we keep white wherever it
-// clears the bar and only fall back to black where it genuinely fails. The
-// index.css [data-accent] blocks mirror these exactly.
+// solid button, the "on" toggle, a badge. Declared rather than computed.
+//
+// Dark mode uses a deep tint of the accent itself rather than flat white or
+// black. That comes from the redesign, and it is measurably better: every dark
+// fill now clears 3:1, including orange, which sat at 2.86:1 on white and had
+// to be exempted. The tint also keeps a coloured button reading as one colour
+// rather than as a colour with white stamped on it.
+//
+// Light mode keeps white, and keeps the darker accent variants — both were
+// re-checked against the new #F5F4F2 background and still clear the bar.
+// The index.css [data-accent] blocks mirror these exactly.
 export const ACCENTS = [
-  // Orange is the app's original colour and stays the default, so nobody's app
-  // changes appearance unless they choose it. That's also why it keeps WHITE
-  // button text despite scoring 2.86:1 — flipping it to black would score
-  // better but would visibly change every existing user's buttons, which is
-  // the one thing keeping orange as default is meant to avoid.
-  { id: 'orange', label: 'Orange', dark: '#FF6B00', light: '#FF6B00',
-    darkBright: '#FF8040', lightBright: '#FF7A00', darkOn: '#FFFFFF', lightOn: '#FFFFFF' },
-  { id: 'blue',   label: 'Blue',   dark: '#0A84FF', light: '#0066CC',
-    darkBright: '#4FA6FF', lightBright: '#4791DA', darkOn: '#FFFFFF', lightOn: '#FFFFFF' },
+  // Orange is the app's brand colour and stays the default. The redesign
+  // modernises it from #FF6B00 to a slightly softer ember, and its dark fill
+  // now passes on its own merits rather than by exemption. Light-mode orange
+  // is still below the bar (2.60:1) and keeps its documented exemption.
+  { id: 'orange', label: 'Orange', dark: '#FF6A2C', light: '#FF6B00',
+    darkBright: '#FF8B57', lightBright: '#FF7A00', darkOn: '#150B05', lightOn: '#FFFFFF' },
+  { id: 'blue',   label: 'Blue',   dark: '#4C8DFF', light: '#0066CC',
+    darkBright: '#7EADFF', lightBright: '#4791DA', darkOn: '#04102B', lightOn: '#FFFFFF' },
   // Light yellow is a deep amber — a literal yellow is ~1.4:1 on near-white.
-  // Dark yellow is the one accent where white button text is unusable.
-  { id: 'yellow', label: 'Yellow', dark: '#FFD60A', light: '#A97C00',
-    darkBright: '#FFE14F', lightBright: '#C1A147', darkOn: '#000000', lightOn: '#FFFFFF' },
-  { id: 'red',    label: 'Red',    dark: '#FF453A', light: '#D70015',
-    darkBright: '#FF7971', lightBright: '#E24757', darkOn: '#FFFFFF', lightOn: '#FFFFFF' },
-  { id: 'purple', label: 'Purple', dark: '#BF5AF2', light: '#8944AB',
-    darkBright: '#D188F6', lightBright: '#AA78C3', darkOn: '#FFFFFF', lightOn: '#FFFFFF' },
-  { id: 'green',  label: 'Green',  dark: '#30D158', light: '#248A3D',
-    darkBright: '#6ADE87', lightBright: '#61AB73', darkOn: '#000000', lightOn: '#FFFFFF' },
-  // Light brown is deliberately darker and redder than it needs to be for
-  // contrast alone: at #7F5539 it sat only 11° of hue from light-mode yellow
-  // and the two were hard to tell apart in the picker. Pushing them apart
-  // matters more than either one's exact shade.
-  { id: 'brown',  label: 'Brown',  dark: '#AC8E68', light: '#6B4423',
-    darkBright: '#C3AE92', lightBright: '#947861', darkOn: '#FFFFFF', lightOn: '#FFFFFF' },
-  { id: 'grey',   label: 'Grey',   dark: '#98989D', light: '#6C6C70',
-    darkBright: '#B5B5B8', lightBright: '#959598', darkOn: '#000000', lightOn: '#FFFFFF' },
+  { id: 'yellow', label: 'Yellow', dark: '#F2C230', light: '#A97C00',
+    darkBright: '#F6D36A', lightBright: '#C1A147', darkOn: '#1F1804', lightOn: '#FFFFFF' },
+  { id: 'red',    label: 'Red',    dark: '#FF5A52', light: '#D70015',
+    darkBright: '#FF8882', lightBright: '#E24757', darkOn: '#2A0705', lightOn: '#FFFFFF' },
+  { id: 'purple', label: 'Purple', dark: '#A182F5', light: '#8944AB',
+    darkBright: '#BBA5F8', lightBright: '#AA78C3', darkOn: '#150A2E', lightOn: '#FFFFFF' },
+  { id: 'green',  label: 'Green',  dark: '#3ED27F', light: '#248A3D',
+    darkBright: '#74DFA3', lightBright: '#61AB73', darkOn: '#052014', lightOn: '#FFFFFF' },
+  // Light brown stays deliberately darker and redder than contrast alone needs:
+  // at #7F5539 it sat only 11° of hue from light-mode yellow and the two were
+  // hard to tell apart in the picker.
+  { id: 'brown',  label: 'Brown',  dark: '#C08457', light: '#6B4423',
+    darkBright: '#D2A686', lightBright: '#947861', darkOn: '#20120A', lightOn: '#FFFFFF' },
+  { id: 'grey',   label: 'Grey',   dark: '#A6A8B2', light: '#6C6C70',
+    darkBright: '#BFC0C8', lightBright: '#959598', darkOn: '#14151A', lightOn: '#FFFFFF' },
 ];
 
 /**
