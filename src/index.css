@@ -54,7 +54,7 @@ input, textarea, select, [contenteditable] {
   --bg-card: #15161A;
   --bg-elevated: #1D1F24;
   --bg-input: #15161A;
-  --bg-nav: rgba(13, 14, 18, 0.95);
+  --bg-nav: rgba(13, 14, 18, 0.92);
   /* Accent — orange by default, overridden per choice below. Declared as an
      RGB triple so the translucent variants derive from it: a [data-accent]
      rule only has to restate --accent-rgb, and --accent / -dim / -border all
@@ -308,7 +308,7 @@ body {
   gap: 10px;
   background: var(--bg-card);
   border: 1px solid var(--separator-strong);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 10px 14px;
 }
 
@@ -356,7 +356,7 @@ body {
 
 .park-card {
   background: var(--bg-card);
-  border-radius: 16px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--separator-strong);
   overflow: hidden;
   transition: opacity 0.15s ease;
@@ -403,7 +403,7 @@ body {
   gap: 5px;
   background: var(--accent-dim);
   border: 1px solid var(--accent-border);
-  border-radius: 20px;
+  border-radius: var(--radius-full);
   padding: 3px 8px;
   flex-shrink: 0;
 }
@@ -473,16 +473,17 @@ body {
   align-items: center;
   gap: 6px;
   background: var(--accent-dim);
-  border-radius: 10px;
+  border-radius: var(--radius-full);
   padding: 5px 10px;
   flex-shrink: 0;
 }
 
 .player-count-num {
   font-size: 18px;
-  font-weight: 800;
+  font-weight: 700;
   color: var(--accent);
   line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
 
 .player-count-label {
@@ -696,15 +697,21 @@ body {
      content above it scrolls. flex-shrink:0 keeps it at full height. */
   flex-shrink: 0;
   width: 100%;
+  /* The canvas measures 96px, but it measures inside an iOS mockup frame
+     where the home indicator is part of the artboard. On a real device the
+     safe-area inset is added on top, so a flat 96px would count it twice.
+     This keeps the inset as the variable it actually is. */
   height: var(--nav-height);
   background: var(--bg-nav);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-top: 1px solid var(--separator-strong);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  /* The quieter separator: the nav should sit under the content, not be
+     ruled off from it. */
+  border-top: 1px solid var(--separator);
   display: flex;
   align-items: flex-start;
   justify-content: space-around;
-  padding: 10px 8px var(--safe-bottom);
+  padding: 12px 8px var(--safe-bottom);
   z-index: 100;
 }
 
@@ -712,14 +719,14 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
+  gap: 5px;
   cursor: pointer;
-  padding: 4px 12px;
-  border-radius: 10px;
+  padding: 6px 0;
+  border-radius: var(--radius-sm);
   transition: opacity 0.15s ease;
   border: none;
   background: none;
-  color: var(--text-secondary);
+  color: var(--text-tertiary);
   flex: 1;
 }
 
@@ -732,8 +739,8 @@ body {
 }
 
 .nav-tab .nav-icon {
-  width: 24px;
-  height: 24px;
+  width: 23px;
+  height: 23px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -747,20 +754,24 @@ body {
   white-space: nowrap;
 }
 
-/* Check In center button */
+/* ── Centre Check tab ──
+   The only filled surface in the nav, and the only thing here that changes
+   colour with session state. */
 .nav-tab.checkin-tab {
   flex: none;
-  width: 56px;
+  width: 58px;
+  gap: 6px;
 }
 
 .nav-tab.checkin-tab .nav-icon {
-  width: 52px;
-  height: 36px;
+  width: 56px;
+  height: 40px;
   background: var(--accent);
-  border-radius: 14px;
-  box-shadow: 0 4px 16px rgb(var(--accent-rgb) / 0.4);
+  border-radius: var(--radius-md);
+  box-shadow: 0 6px 20px rgb(var(--accent-rgb) / 0.32);
   color: var(--accent-contrast);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition: transform 0.15s ease, box-shadow 0.15s ease,
+              background 0.2s ease;
 }
 
 .nav-tab.checkin-tab:active .nav-icon {
@@ -768,19 +779,34 @@ body {
   box-shadow: 0 2px 8px rgb(var(--accent-rgb) / 0.3);
 }
 
+/* Session running: green pill, green glow, and a check mark in place of the
+   plus. Green is reserved for live/active, so this reads the same whichever
+   accent the user has chosen. */
 .nav-tab.checkin-tab.has-checkin .nav-icon {
   background: var(--green);
-  box-shadow: 0 4px 16px rgba(48, 209, 88, 0.35);
+  color: var(--green-contrast);
+  box-shadow: 0 6px 20px rgb(var(--green-rgb) / 0.32);
 }
 
-/* Active dot indicator */
+.nav-tab.checkin-tab.has-checkin:active .nav-icon {
+  box-shadow: 0 2px 8px rgb(var(--green-rgb) / 0.3);
+}
+
+.nav-tab.checkin-tab.has-checkin .nav-label { color: var(--green); }
+.nav-tab.checkin-tab.active .nav-label { color: var(--text-primary); }
+.nav-tab.checkin-tab.has-checkin.active .nav-label { color: var(--green); }
+
+/* Active dot indicator. Always in the flow — transparent rather than absent
+   when inactive — so switching tabs can't change the row's height. */
 .nav-active-dot {
   width: 4px;
   height: 4px;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
+  background: transparent;
+}
+
+.nav-tab.active .nav-active-dot {
   background: var(--accent);
-  position: absolute;
-  bottom: -6px;
 }
 
 /* ── Map Screen ── */
@@ -828,7 +854,7 @@ body {
   background: rgba(28, 28, 30, 0.92);
   color: var(--text-primary);
   border: 1px solid var(--separator-strong);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 10px 14px;
   font-size: 14px;
   font-family: var(--font);
@@ -847,7 +873,7 @@ body {
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--separator-strong);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   overflow: hidden;
   max-height: 280px;
   overflow-y: auto;
@@ -1051,7 +1077,7 @@ body {
   background: rgba(48, 209, 88, 0.12);
   color: #30D158;
   border: 1px solid rgba(48, 209, 88, 0.25);
-  border-radius: 10px;
+  border-radius: var(--radius-full);
   padding: 6px 12px;
   font-size: 12px;
   font-weight: 600;
@@ -1065,7 +1091,7 @@ body {
   font-size: 12px;
   font-weight: 700;
   padding: 4px 10px;
-  border-radius: 20px;
+  border-radius: var(--radius-full);
 }
 
 /* Gray pill when the court is empty */
@@ -1075,7 +1101,7 @@ body {
   font-size: 12px;
   font-weight: 600;
   padding: 4px 10px;
-  border-radius: 20px;
+  border-radius: var(--radius-full);
 }
 
 /* Gray pills for court count, surface type, lighting */
@@ -1085,7 +1111,7 @@ body {
   font-size: 12px;
   font-weight: 600;
   padding: 4px 10px;
-  border-radius: 20px;
+  border-radius: var(--radius-full);
 }
 
 /* Check In and Get Directions buttons — side by side */
@@ -1155,7 +1181,7 @@ body {
   gap: 5px;
   background: rgb(var(--accent-rgb) / 0.12);
   border: 1px solid rgb(var(--accent-rgb) / 0.3);
-  border-radius: 20px;
+  border-radius: var(--radius-full);
   padding: 5px 12px;
   font-size: 13px;
   font-weight: 600;
@@ -1179,7 +1205,7 @@ body {
 
 .map-post-image-wrap {
   position: relative;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   overflow: hidden;
 }
 
@@ -1188,7 +1214,7 @@ body {
   max-height: 160px;
   object-fit: cover;
   display: block;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
 }
 
 .map-post-image-remove {
@@ -1211,7 +1237,7 @@ body {
   width: 100%;
   background: var(--bg-elevated);
   border: 1px solid var(--separator-strong);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 10px 12px;
   font-size: 14px;
   font-family: var(--font);
@@ -1248,7 +1274,7 @@ body {
   background: var(--accent);
   color: var(--accent-contrast);
   border: none;
-  border-radius: 20px;
+  border-radius: var(--radius-sm);
   padding: 8px 18px;
   font-size: 14px;
   font-weight: 700;
@@ -1489,7 +1515,7 @@ body {
   font-weight: 700;
   color: var(--text-secondary);
   background: var(--bg-elevated);
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   padding: 6px 10px;
   flex-shrink: 0;
 }
@@ -1524,7 +1550,7 @@ body {
   width: 100%;
   background: var(--bg-elevated);
   border: none;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 8px 12px;
   margin-bottom: 8px;
   cursor: pointer;
@@ -1616,7 +1642,7 @@ body {
 .map-court-chip {
   flex-shrink: 0;
   background: var(--bg-elevated);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 10px 14px;
   border: 1px solid var(--separator-strong);
   cursor: pointer;
@@ -1675,7 +1701,7 @@ body {
 .active-session-card {
   background: linear-gradient(135deg, rgb(var(--accent-rgb) / 0.15), rgb(var(--accent-rgb) / 0.05));
   border: 1px solid var(--accent-border);
-  border-radius: 20px;
+  border-radius: var(--radius-md);
   padding: 20px;
   margin-bottom: 24px;
 }
@@ -1685,7 +1711,7 @@ body {
   align-items: center;
   gap: 6px;
   background: var(--accent-dim);
-  border-radius: 20px;
+  border-radius: var(--radius-full);
   padding: 4px 10px;
   margin-bottom: 14px;
 }
@@ -1726,9 +1752,12 @@ body {
 
 .session-stat-value {
   font-size: 22px;
-  font-weight: 800;
+  font-weight: 700;
   color: var(--accent);
   line-height: 1;
+  /* Always tabular. This one counts up in real time — in proportional
+     figures the whole row twitches every time a digit changes width. */
+  font-variant-numeric: tabular-nums;
 }
 
 .session-stat-label {
@@ -1804,19 +1833,25 @@ body {
 }
 
 /* Row of 3 stat pills */
+/* width: 100% because .profile-header is a centred flex column, which makes
+   every child shrink-to-fit unless it opts out — the same trap the auth
+   toggle fell into. Without it this row sized to its own content (193px in a
+   390px screen), squeezing each pill to 59px and wrapping "Check-ins" at its
+   hyphen. The canvas sets width: 100% here for exactly this reason. */
 .profile-stats-row {
   display: flex;
-  gap: 8px;
+  width: 100%;
+  gap: 9px;
   justify-content: center;
-  margin: 16px 0;
+  margin: 18px 0 0;
 }
 
 /* Individual stat pill */
 .profile-stat-pill {
-  flex: 1;
-  max-width: 100px;
+  flex: 1 1 0%;
+  min-width: 0;
   background: var(--bg-card);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 10px 8px;
   text-align: center;
   border: 1px solid var(--separator-strong);
@@ -1824,17 +1859,18 @@ body {
 
 /* Stat number (orange) */
 .profile-stat-value {
-  font-size: 20px;
-  font-weight: 800;
+  font-size: 19px;
+  font-weight: 700;
   color: var(--accent);
   line-height: 1;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Stat label text */
 .profile-stat-label {
-  font-size: 11px;
-  color: var(--text-secondary);
+  font-size: 10.5px;
+  color: var(--text-tertiary);
   font-weight: 500;
 }
 
@@ -1885,7 +1921,7 @@ body {
 .mutual-block {
   background: var(--bg-card);
   border: 1px solid var(--separator-strong);
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   padding: 12px 14px;
   display: flex;
   flex-direction: column;
@@ -1929,7 +1965,7 @@ body {
 .mutual-court-chip {
   background: var(--bg-elevated);
   border: 1px solid var(--separator-strong);
-  border-radius: 20px;
+  border-radius: var(--radius-full);
   padding: 4px 10px;
   font-size: 12px;
   font-weight: 500;
@@ -2177,7 +2213,7 @@ body {
 /* Card containing the rows for one section */
 .settings-group {
   background: var(--bg-card);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   border: 0.5px solid var(--border);
   overflow: hidden;
 }
@@ -2206,7 +2242,7 @@ body {
 .settings-row-icon {
   width: 32px;
   height: 32px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2299,7 +2335,7 @@ body {
 .settings-toggle {
   width: 38px;
   height: 22px;
-  border-radius: 11px;
+  border-radius: var(--radius-full);
   background: #3a3a3a;
   position: relative;
   flex-shrink: 0;
@@ -2335,7 +2371,7 @@ body {
   padding: 8px 12px;
   background: var(--bg);
   border: 0.5px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   color: var(--text-primary);
   font-size: 14px;
   font-family: var(--font);
@@ -2347,7 +2383,7 @@ body {
   padding: 8px 14px;
   background: var(--accent);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   color: var(--accent-contrast);
   font-size: 14px;
   font-weight: 600;
@@ -2371,7 +2407,7 @@ body {
 /* The centered confirmation box */
 .settings-confirm-box {
   background: var(--bg-card);
-  border-radius: 16px;
+  border-radius: var(--radius-md);
   padding: 24px 20px;
   width: 100%;
   max-width: 320px;
@@ -2398,7 +2434,7 @@ body {
 .settings-confirm-cancel {
   flex: 1;
   padding: 12px;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   background: var(--bg);
   border: 0.5px solid var(--border);
   color: var(--text-primary);
@@ -2412,7 +2448,7 @@ body {
 .settings-confirm-danger {
   flex: 1;
   padding: 12px;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   background: #E24B4A;
   border: none;
   color: white;
@@ -2474,7 +2510,7 @@ body {
   min-width: 84px;
   background: var(--bg-card);
   border: 1px solid var(--separator-strong);
-  border-radius: 14px;
+  border-radius: var(--radius-full);
   padding: 10px 8px;
   display: flex;
   flex-direction: column;
@@ -2521,7 +2557,7 @@ body {
 .friend-card {
   background: var(--bg-card);
   border: 1px solid var(--separator-strong);
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   overflow: hidden;
   box-shadow: var(--card-shadow);
   display: flex;
@@ -2644,7 +2680,7 @@ body {
   gap: 12px;
   background: var(--bg-card);
   border: 1px solid var(--separator-strong);
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   padding: 12px 14px;
 }
 
@@ -2655,7 +2691,7 @@ body {
   gap: 12px;
   background: var(--bg-card);
   border: 1px solid var(--separator-strong);
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   padding: 12px 14px;
 }
 
@@ -2738,7 +2774,7 @@ body {
   width: 100%;
   background: var(--bg-elevated);
   border: 1px solid var(--separator-strong);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 12px 14px;
   font-size: 15px;
   font-family: var(--font);
@@ -2766,7 +2802,7 @@ body {
   right: -6px;
   min-width: 16px;
   height: 16px;
-  border-radius: 8px;
+  border-radius: var(--radius-full);
   background: var(--green);
   color: #fff;
   font-size: 10px;
@@ -2810,7 +2846,7 @@ body {
 }
 
 .badge-tile {
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 10px 6px 8px;
   display: flex;
   flex-direction: column;
@@ -2952,7 +2988,7 @@ body {
   width: 80px;
   flex-shrink: 0;
   background: var(--bg-card);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   border: 0.5px solid var(--separator);
   padding: 8px;
   display: flex;
@@ -3034,7 +3070,7 @@ body {
   width: 108px;
   flex-shrink: 0;
   background: var(--bg-card);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   border: 0.5px solid var(--separator);
   padding: 10px 8px;
   display: flex;
@@ -3106,7 +3142,7 @@ body {
   font-size: 12px;
   font-weight: 700;
   padding: 3px 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   white-space: nowrap;
 }
 
@@ -3130,7 +3166,7 @@ body {
 .meetup-row {
   background: var(--bg-elevated);
   border: 1px solid var(--separator-strong);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 12px;
   margin-bottom: 10px;
 }
@@ -3220,7 +3256,7 @@ body {
   padding: 12px 14px;
   background: var(--bg-card);
   border: 1px solid var(--separator-strong);
-  border-radius: 16px;
+  border-radius: var(--radius-md);
   box-shadow: var(--card-shadow);
 }
 
@@ -3313,7 +3349,7 @@ body {
   color: var(--accent-contrast);
   font-size: 13px;
   font-weight: 700;
-  border-radius: 20px;
+  border-radius: var(--radius-full);
   border: none;
   cursor: pointer;
   box-shadow: 0 2px 12px rgb(var(--accent-rgb) / 0.35);
@@ -3431,7 +3467,7 @@ body {
   cursor: pointer;
   display: flex;
   align-items: center;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
 }
 
 .feed-more-btn:active { background: var(--bg-elevated); }
@@ -3468,7 +3504,7 @@ body {
   overflow: hidden;
   position: relative;
   background: var(--bg-elevated);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   margin-top: 8px;
   cursor: pointer;
 }
@@ -3509,7 +3545,7 @@ body {
   margin: 8px 16px;
   background: var(--accent-dim);
   border: 1px solid var(--accent-border);
-  border-radius: 20px;
+  border-radius: var(--radius-full);
   padding: 5px 10px;
   font-size: 12px;
   font-weight: 600;
@@ -3532,7 +3568,7 @@ body {
 .feed-repost-preview {
   margin: 0 16px 10px;
   border: 1px solid var(--separator-strong);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: var(--bg-elevated);
   overflow: hidden;
 }
@@ -3600,7 +3636,7 @@ body {
   margin: 0 0 8px;
   background: var(--accent-dim);
   border: 1px solid var(--accent-border);
-  border-radius: 20px;
+  border-radius: var(--radius-full);
   padding: 4px 10px;
   font-size: 12px;
   font-weight: 600;
@@ -3633,7 +3669,7 @@ body {
   padding: 8px 10px;
   background: var(--bg-elevated);
   border: 1px solid var(--separator);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   font-family: inherit;
   font-size: 13px;
   font-weight: 600;
@@ -3661,7 +3697,7 @@ body {
   flex: 0 0 auto;
   width: 17px;
   height: 17px;
-  border-radius: 5px;
+  border-radius: var(--radius-sm);
   border: 1.5px solid var(--text-secondary);
   display: flex;
   align-items: center;
@@ -3747,7 +3783,7 @@ body {
   padding: 10px 14px;
   background: var(--bg-elevated);
   border: 1px solid var(--separator-strong);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   font-size: 14px;
   color: var(--text-primary);
   font-family: var(--font);
@@ -3868,7 +3904,7 @@ body {
   align-self: flex-start;
   max-width: 100%;
   background: var(--bg-elevated);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 7px 10px;
   display: flex;
   flex-direction: column;
@@ -3990,7 +4026,7 @@ body {
   padding: 2px;
   cursor: pointer;
   color: var(--text-secondary);
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
 }
 
 .feed-comment-replying-cancel:active { background: var(--bg-elevated); }
@@ -4013,7 +4049,7 @@ body {
   flex: 1;
   background: var(--bg-elevated);
   border: 1px solid var(--separator-strong);
-  border-radius: 20px;
+  border-radius: var(--radius-full);
   padding: 8px 38px 8px 14px;
   font-size: 13px;
   color: var(--text-primary);
@@ -4154,7 +4190,7 @@ body {
   width: 100%;
   max-height: 80svh;
   object-fit: contain;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
 }
 
 /* ── Toast ── */
@@ -4169,7 +4205,7 @@ body {
   font-weight: 600;
   font-family: var(--font);
   padding: 10px 20px;
-  border-radius: 24px;
+  border-radius: var(--radius-full);
   white-space: nowrap;
   box-shadow: 0 4px 20px rgba(0,0,0,0.4);
   z-index: 998;
@@ -4195,7 +4231,7 @@ body {
   font-size: 9px;
   font-weight: 800;
   font-family: var(--font);
-  border-radius: 8px;
+  border-radius: var(--radius-full);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -4213,7 +4249,7 @@ body {
   padding: 12px;
   background: var(--bg-card);
   border: 1px solid var(--separator-strong);
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   color: var(--accent);
   font-size: 14px;
   font-weight: 700;
@@ -4260,7 +4296,7 @@ body {
   cursor: pointer;
   padding: 6px;
   display: flex;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
 }
 
 .single-post-close:active { background: var(--bg-elevated); }
@@ -4275,7 +4311,7 @@ body {
 .admin-card {
   background: var(--bg-card);
   border: 1px solid var(--separator-strong);
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   padding: 14px;
   margin-bottom: 10px;
 }
@@ -4284,7 +4320,7 @@ body {
   width: 100%;
   max-height: 180px;
   object-fit: cover;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   margin-bottom: 10px;
 }
 
@@ -4302,7 +4338,7 @@ body {
   font-weight: 700;
   color: var(--accent);
   background: var(--accent-dim);
-  border-radius: 10px;
+  border-radius: var(--radius-full);
   padding: 2px 8px;
 }
 
@@ -4337,7 +4373,7 @@ body {
   color: var(--accent-contrast);
   font-size: 11px;
   font-weight: 800;
-  border-radius: 10px;
+  border-radius: var(--radius-full);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -4354,7 +4390,7 @@ body {
   padding: 12px 14px;
   background: var(--bg-card);
   border: 1px solid var(--accent-border);
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   box-shadow: var(--card-shadow);
   animation: slideDown 0.2s ease;
 }
@@ -4396,7 +4432,7 @@ body {
   background: var(--accent);
   color: var(--accent-contrast);
   border: none;
-  border-radius: 20px;
+  border-radius: var(--radius-sm);
   padding: 7px 16px;
   font-size: 13px;
   font-weight: 700;
@@ -4417,7 +4453,7 @@ body {
   padding: 4px;
   display: flex;
   align-items: center;
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
 }
 
 .notif-prompt-dismiss:active { background: var(--bg-elevated); }
@@ -4654,7 +4690,7 @@ body {
   text-align: center;
   padding: 8px 12px;
   background: var(--danger-dim);
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   line-height: 1.4;
 }
 
@@ -4665,7 +4701,7 @@ body {
   text-align: center;
   padding: 8px 12px;
   background: rgba(48, 209, 88, 0.1);
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   line-height: 1.4;
 }
 
@@ -4686,7 +4722,7 @@ body {
   text-align: center;
   padding: 8px 12px;
   background: rgba(100, 210, 255, 0.1);
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   line-height: 1.4;
 }
 
@@ -4803,7 +4839,7 @@ body {
   gap: 6px;
   background: var(--bg-card);
   border: 1px solid var(--separator-strong);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 12px 8px;
 }
 
@@ -4820,7 +4856,7 @@ body {
   width: 100%;
   background: var(--bg-card);
   border: 1px solid var(--separator-strong);
-  border-radius: 16px;
+  border-radius: var(--radius-md);
   display: flex;
   padding: 16px 0;
   margin-top: 8px;
@@ -4865,7 +4901,7 @@ body {
   gap: 12px;
   background: var(--bg-card);
   border: 1px solid var(--separator-strong);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 12px 14px;
   font-size: 14px;
   color: var(--text-primary);
@@ -5012,7 +5048,7 @@ body {
 
 .feed-skeleton-card {
   height: 100px;
-  border-radius: 16px;
+  border-radius: var(--radius-md);
   /* Gradient that creates the moving shimmer effect */
   background: linear-gradient(
     90deg,
@@ -5172,7 +5208,7 @@ body {
 .composer-image-preview {
   position: relative;
   margin: 8px 0;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   overflow: hidden;
 }
 
@@ -5273,7 +5309,7 @@ body {
 
 .add-court-progress-dot {
   height: 8px;
-  border-radius: 4px;
+  border-radius: var(--radius-full);
   background: var(--separator);
   transition: width 0.3s ease, background 0.3s ease;
   width: 8px;
@@ -5343,7 +5379,7 @@ body {
 .add-court-type-card {
   background: var(--bg-card);
   border: 0.5px solid var(--separator);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 20px 12px;
   display: flex;
   flex-direction: column;
@@ -5393,7 +5429,7 @@ body {
   width: 100%;
   background: var(--bg-elevated);
   border: 1px solid var(--separator-strong);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 12px 14px;
   font-size: 15px;
   font-family: var(--font);
@@ -5421,7 +5457,7 @@ body {
 
 .add-court-chip {
   padding: 8px 16px;
-  border-radius: 20px;
+  border-radius: var(--radius-full);
   border: 0.5px solid var(--separator);
   background: var(--bg-card);
   color: var(--text-secondary);
@@ -5449,7 +5485,7 @@ body {
 .add-court-count-btn {
   flex: 1;
   padding: 10px;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   border: 0.5px solid var(--separator);
   background: var(--bg-card);
   color: var(--text-secondary);
@@ -5472,7 +5508,7 @@ body {
 .add-court-location-btn {
   width: 100%;
   padding: 14px;
-  border-radius: 12px;
+  border-radius: var(--radius-sm);
   border: 0.5px solid var(--separator);
   background: var(--bg-card);
   color: var(--text-primary);
@@ -5516,7 +5552,7 @@ body {
   padding: 14px;
   background: var(--bg-elevated);
   border: 1px dashed var(--separator-strong);
-  border-radius: 12px;
+  border-radius: var(--radius-sm);
   color: var(--text-secondary);
   font-size: 14px;
   font-weight: 500;
@@ -5534,7 +5570,7 @@ body {
 .add-court-photo-preview {
   position: relative;
   margin-top: 4px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   overflow: hidden;
 }
 .add-court-photo-img {
@@ -5542,7 +5578,7 @@ body {
   height: 160px;
   object-fit: cover;
   display: block;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
 }
 .add-court-photo-remove {
   position: absolute;
@@ -5564,7 +5600,7 @@ body {
 /* ── Court Detail Sheet — photo hero ──────────────────────────────────────── */
 .court-detail-photo {
   width: 100%;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   overflow: hidden;
   margin-bottom: 12px;
 }
@@ -5769,7 +5805,7 @@ body {
   color: var(--accent-contrast);
   font-size: 11px;
   font-weight: 700;
-  border-radius: 10px;
+  border-radius: var(--radius-full);
   padding: 2px 8px;
   font-family: var(--font);
 }
@@ -5783,7 +5819,7 @@ body {
   color: var(--accent-contrast);
   font-size: 9px;
   font-weight: 700;
-  border-radius: 8px;
+  border-radius: var(--radius-full);
   min-width: 16px;
   height: 16px;
   display: flex;
@@ -5796,14 +5832,15 @@ body {
 /* Simple glowing orange dot on the Friends tab icon when there are unread DMs */
 .nav-unread-dot {
   position: absolute;
-  top: -3px;
-  right: -5px;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
+  top: -1px;
+  right: -3px;
+  width: 7px;
+  height: 7px;
+  border-radius: var(--radius-full);
   background: var(--accent);
-  box-shadow: 0 0 6px 2px rgb(var(--accent-rgb) / 0.6);
-  border: 1.5px solid var(--bg-nav);
+  /* Ring in the opaque ground rather than --bg-nav: --bg-nav is translucent,
+     so a ring cut from it would show the icon through its own outline. */
+  border: 1.5px solid var(--bg);
 }
 
 /* ── DM Thread overlay & sheet ──────────────────────────────────────────── */
@@ -5913,7 +5950,7 @@ body {
 
 .dm-bubble {
   max-width: 75%;
-  border-radius: 16px;
+  border-radius: var(--radius-md);
   padding: 10px 14px;
 }
 
@@ -5971,7 +6008,7 @@ body {
   flex: 1;
   background: var(--bg-elevated);
   border: 1px solid var(--separator-strong);
-  border-radius: 20px;
+  border-radius: var(--radius-full);
   padding: 10px 16px;
   font-size: 14px;
   color: var(--text-primary);
@@ -6047,7 +6084,7 @@ body {
   flex: 1;
   background: var(--bg-elevated);
   border: none;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 10px 14px;
   font-size: 15px;
   color: var(--text-primary);
@@ -6085,7 +6122,7 @@ body {
   gap: 12px;
   padding: 12px 14px;
   background: var(--bg-card);
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   cursor: pointer;
   transition: opacity 0.15s ease;
 }
@@ -6189,7 +6226,7 @@ body {
 /* ── Review composer ───────────────────────────────────────── */
 .review-composer {
   background: var(--bg-elevated);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 12px 14px;
   margin-bottom: 12px;
 }
@@ -6218,7 +6255,7 @@ body {
   width: 100%;
   background: var(--bg-card);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   padding: 10px 12px;
   font-size: 14px;
   color: var(--text-primary);
@@ -6373,7 +6410,7 @@ body {
   font-size: 11px;
   font-weight: 700;
   font-family: var(--font);
-  border-radius: 10px;
+  border-radius: var(--radius-full);
   padding: 1px 6px;
   min-width: 18px;
   text-align: center;

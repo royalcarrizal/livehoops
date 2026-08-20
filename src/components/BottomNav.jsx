@@ -1,4 +1,4 @@
-import { Home, Map, Plus, Users, User } from 'lucide-react';
+import { Home, Map, Plus, Check, Users, User } from 'lucide-react';
 
 export default function BottomNav({ activeTab, setActiveTab, checkedIn, unreadDMs = 0 }) {
   const tabs = [
@@ -14,16 +14,20 @@ export default function BottomNav({ activeTab, setActiveTab, checkedIn, unreadDM
       {tabs.map((tab) => {
         const isActive = activeTab === tab.id;
         if (tab.special) {
+          // The centre tab is the only filled surface in the nav, and the one
+          // thing that changes colour with session state: accent when idle,
+          // green with a check mark while a session is running.
+          const CentreIcon = checkedIn ? Check : tab.Icon;
           return (
             <button
               key={tab.id}
-              className={`nav-tab checkin-tab ${checkedIn ? 'has-checkin' : ''}`}
+              className={`nav-tab checkin-tab ${checkedIn ? 'has-checkin' : ''} ${isActive ? 'active' : ''}`}
               onClick={() => setActiveTab(tab.id)}
             >
               <div className="nav-icon">
-                <tab.Icon size={20} strokeWidth={2.5} />
+                <CentreIcon size={22} strokeWidth={checkedIn ? 3 : 2.8} />
               </div>
-              <span className="nav-label" style={{ color: checkedIn ? 'var(--green)' : 'var(--text-secondary)' }}>
+              <span className="nav-label">
                 {checkedIn ? 'Active' : tab.label}
               </span>
             </button>
@@ -36,13 +40,15 @@ export default function BottomNav({ activeTab, setActiveTab, checkedIn, unreadDM
             onClick={() => setActiveTab(tab.id)}
           >
             <div className="nav-icon">
-              <tab.Icon size={22} strokeWidth={isActive ? 2.5 : 2} />
-              {isActive && <span className="nav-active-dot" />}
+              <tab.Icon size={23} strokeWidth={isActive ? 2.5 : 2} />
               {tab.id === 'friends' && unreadDMs > 0 && (
                 <span className="nav-unread-dot" />
               )}
             </div>
             <span className="nav-label">{tab.label}</span>
+            {/* Always rendered, transparent when inactive, so switching tabs
+                can't shift the row's height. */}
+            <span className="nav-active-dot" />
           </button>
         );
       })}
