@@ -66,8 +66,23 @@ input, textarea, select, [contenteditable] {
   --accent: rgb(var(--accent-rgb));
   --accent-dim: rgb(var(--accent-rgb) / 0.15);
   --accent-border: rgb(var(--accent-rgb) / 0.3);
-  --green: #2FE08A;
-  --green-dim: rgba(47, 224, 138, 0.12);
+  /* Green means live/active and nothing else, in every accent — so the accent
+     can never be mistaken for "a game is running". Declared as an RGB triple
+     for the same reason --accent is: the dim fill, the border and the nav
+     glow all derive from it instead of being hand-mixed at each call site.
+     --green-contrast is the text colour for FILLED green surfaces. */
+  --green-rgb: 47 224 138;
+  --green: rgb(var(--green-rgb));
+  --green-dim: rgb(var(--green-rgb) / 0.12);
+  --green-border: rgb(var(--green-rgb) / 0.3);
+  --green-contrast: #052014;
+  /* Destructive red. Was three different literals (#FF453A, #FF3B30,
+     rgba(255,59,48,…)) sitting next to each other; this is the redesign's
+     red accent, which is the one the design actually specifies. */
+  --danger-rgb: 255 90 82;
+  --danger: rgb(var(--danger-rgb));
+  --danger-dim: rgb(var(--danger-rgb) / 0.12);
+  --danger-border: rgb(var(--danger-rgb) / 0.3);
   --blue: #4C8DFF;
   --text-primary: #F4F4F6;
   --text-secondary: #9A9BA4;
@@ -93,8 +108,18 @@ input, textarea, select, [contenteditable] {
   --accent: rgb(var(--accent-rgb));
   --accent-dim: rgb(var(--accent-rgb) / 0.12);
   --accent-border: rgb(var(--accent-rgb) / 0.25);
-  --green: #12A566;
-  --green-dim: rgba(18, 165, 102, 0.12);
+  /* Light-mode green and red are darker than their dark-mode counterparts for
+     the same reason the accents are: #2FE08A scores ~1.7:1 on #F5F4F2. Both
+     take white as their contrast colour, matching the light accent rule. */
+  --green-rgb: 18 165 102;
+  --green: rgb(var(--green-rgb));
+  --green-dim: rgb(var(--green-rgb) / 0.12);
+  --green-border: rgb(var(--green-rgb) / 0.28);
+  --green-contrast: #FFFFFF;
+  --danger-rgb: 215 0 21;
+  --danger: rgb(var(--danger-rgb));
+  --danger-dim: rgb(var(--danger-rgb) / 0.1);
+  --danger-border: rgb(var(--danger-rgb) / 0.25);
   --blue: #0066CC;
   --text-primary: #15161A;
   --text-secondary: #5F6068;
@@ -504,35 +529,144 @@ body {
   margin-left: 0;
 }
 
-/* ── Check In Button ── */
-.btn-checkin {
+/* ── Button primitive ───────────────────────────────────────────────────────
+   Every text-and-tap control in the app routes through .btn plus a variant
+   and, where it differs from the default, a size.
+
+   This exists because the app had grown 51 separate button selectors. One
+   conceptual button — "filled, accent, primary action" — shipped at radius
+   8, 10, 12, 14, 20 and 999, at five font sizes, in two weights, with four
+   different padding pairs. Nothing was wrong with any single one; the sprawl
+   was the problem, and it is what made the map sheet's three action buttons
+   come out 63px, 67px and 67px and wrap at phone width.
+
+   Composition rules:
+     .btn                 always
+     .btn--<variant>      exactly one — primary / secondary / soft / danger / live
+     .btn--sm | --lg      optional size override
+     .btn--pill           optional, swaps radius-md for radius-full
+     .btn--block          optional, full width
+
+   Sizes are deliberately few. If a new call site "needs" a sixth size, the
+   layout around it is usually what wants fixing. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 14px 18px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--text-primary);
+  font-family: var(--font);
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1;
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  /* Buttons don't get squeezed by a greedy sibling in a flex row. --grow
+     opts back in where several buttons are meant to share a row evenly. */
+  flex-shrink: 0;
+  transition: background 0.15s ease, border-color 0.15s ease,
+              color 0.15s ease, transform 0.1s ease;
+}
+
+/* The press state is on the base, so every button in the app confirms a tap
+   the same way. Transform rather than opacity: it reads on a filled and an
+   outlined button equally, where fading does not. */
+.btn:active { transform: scale(0.97); }
+
+.btn:disabled,
+.btn[aria-disabled='true'] {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.btn:disabled:active,
+.btn[aria-disabled='true']:active { transform: none; }
+
+/* ── Variants ── */
+
+/* Filled accent. The one primary action on a screen. */
+.btn--primary {
   background: var(--accent);
   color: var(--accent-contrast);
-  border: none;
-  border-radius: 10px;
-  padding: 9px 16px;
-  font-size: 14px;
-  font-weight: 700;
-  font-family: var(--font);
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: background 0.15s ease, transform 0.1s ease;
-  letter-spacing: -0.2px;
 }
+.btn--primary:active { background: var(--accent-bright); }
 
-.btn-checkin:active {
-  transform: scale(0.95);
-  background: var(--accent-bright);
+/* Outlined neutral. Pairs with --primary; never the only button on a screen. */
+.btn--secondary {
+  border-color: var(--separator-strong);
+  color: var(--text-primary);
 }
+.btn--secondary:active { background: var(--bg-elevated); }
 
-.btn-checkin.checked-in {
+/* Accent tint. A primary action that must not dominate — the one inside a
+   card, where a filled accent block would out-shout the card's own content. */
+.btn--soft {
+  background: var(--accent-dim);
+  border-color: var(--accent-border);
+  color: var(--accent);
+}
+.btn--soft:active { background: rgb(var(--accent-rgb) / 0.22); }
+
+/* Destructive. Tinted rather than filled: a solid red block reads as an alarm
+   already firing rather than as a button that would cause one. */
+.btn--danger {
+  background: var(--danger-dim);
+  border-color: var(--danger-border);
+  color: var(--danger);
+}
+.btn--danger:active { background: rgb(var(--danger-rgb) / 0.22); }
+
+/* Live/active state. Green is reserved for "a session is running", so this is
+   the checked-in form of a check-in button — never a decorative green. */
+.btn--live {
   background: var(--green-dim);
+  border-color: var(--green-border);
   color: var(--green);
-  border: 1px solid rgba(48, 209, 88, 0.3);
+}
+.btn--live:active { background: rgb(var(--green-rgb) / 0.22); }
+
+/* Filled green. Used where accepting IS the live-making action, e.g. accepting
+   a friend request. --green-contrast, not white: white on #2FE08A is 1.9:1. */
+.btn--live-filled {
+  background: var(--green);
+  color: var(--green-contrast);
+}
+.btn--live-filled:active { background: rgb(var(--green-rgb) / 0.85); }
+
+/* ── Sizes and shape modifiers ── */
+
+.btn--sm {
+  padding: 8px 13px;
+  font-size: 12.5px;
+  gap: 5px;
 }
 
-.btn-checkin.checked-in:active {
-  background: rgba(48, 209, 88, 0.2);
+.btn--lg {
+  padding: 15px 28px;
+  font-size: 15.5px;
+  font-weight: 700;
+}
+
+.btn--pill { border-radius: var(--radius-full); }
+
+.btn--block {
+  display: flex;
+  width: 100%;
+}
+
+/* Equal shares of a row. This is what fixes the map sheet: three buttons that
+   each sized to their own text came out 63/67/67px and wrapped at 390px.
+   Sharing the row by construction means they cannot disagree. */
+.btn--grow {
+  display: flex;
+  flex: 1 1 0%;
+  min-width: 0;
 }
 
 /* ── Notification button ── */
@@ -955,32 +1089,18 @@ body {
 }
 
 /* Check In and Get Directions buttons — side by side */
+/* Primary action on its own row, the two secondary actions sharing the row
+   below it. See the comment at the call site in MapScreen.jsx. */
 .map-sheet-buttons {
   display: flex;
+  flex-direction: column;
   gap: 10px;
 }
 
-/* Transparent "Get Directions" link button */
-.map-directions-btn {
-  flex: 1;
-  padding: 14px;
-  background: transparent;
-  color: var(--text-primary);
-  border: 1px solid var(--separator-strong);
-  border-radius: 12px;
-  font-size: 15px;
-  font-weight: 600;
-  font-family: var(--font);
-  cursor: pointer;
-  text-decoration: none;
-  text-align: center;
+.map-sheet-buttons-row {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: opacity 0.15s;
+  gap: 10px;
 }
-
-.map-directions-btn:active { opacity: 0.7; }
 
 /* ── Map post modal ────────────────────────────────────────────────────────── */
 .map-post-overlay {
@@ -1617,23 +1737,7 @@ body {
   font-weight: 500;
 }
 
-.btn-checkout {
-  width: 100%;
-  background: rgba(255,59,48,0.12);
-  color: #FF453A;
-  border: 1px solid rgba(255,59,48,0.25);
-  border-radius: 12px;
-  padding: 12px;
-  font-size: 15px;
-  font-weight: 700;
-  font-family: var(--font);
-  cursor: pointer;
-  transition: background 0.15s ease;
-}
 
-.btn-checkout:active {
-  background: rgba(255,59,48,0.2);
-}
 
 .no-checkin-state {
   text-align: center;
@@ -1660,23 +1764,7 @@ body {
   margin-bottom: 24px;
 }
 
-.btn-primary {
-  background: var(--accent);
-  color: var(--accent-contrast);
-  border: none;
-  border-radius: 14px;
-  padding: 14px 28px;
-  font-size: 16px;
-  font-weight: 700;
-  font-family: var(--font);
-  cursor: pointer;
-  transition: transform 0.1s ease;
-  box-shadow: 0 4px 16px rgb(var(--accent-rgb) / 0.35);
-}
 
-.btn-primary:active {
-  transform: scale(0.96);
-}
 
 /* ── Profile Screen (redesigned as public profile page) ── */
 
@@ -1760,31 +1848,10 @@ body {
 }
 
 /* Shared button base for profile action buttons */
-.profile-action-btn {
-  flex: 1;
-  padding: 10px;
-  border-radius: 12px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: var(--font);
-  transition: opacity 0.15s ease;
-}
-.profile-action-btn:active { opacity: 0.7; }
 
 /* Outlined variant — orange border + text (Achievements button) */
-.profile-action-btn.outlined {
-  background: transparent;
-  border: 1.5px solid var(--accent);
-  color: var(--accent);
-}
 
 /* Filled variant — dark card background (Edit Profile button) */
-.profile-action-btn.filled {
-  background: var(--bg-card);
-  border: 1px solid var(--separator-strong);
-  color: var(--text-primary);
-}
 
 /* Small, de-emphasized "Block" control below the main action row — visitor
    mode only. Muted red text so it reads as available-but-not-primary. */
@@ -1797,7 +1864,7 @@ body {
   padding: 4px 10px;
   background: none;
   border: none;
-  color: #FF453A;
+  color: var(--danger);
   opacity: 0.75;
   font-size: 12.5px;
   font-weight: 600;
@@ -2531,23 +2598,7 @@ body {
   font-weight: 400;
 }
 
-.btn-view {
-  flex-shrink: 0;
-  background: var(--bg-elevated);
-  border: 1px solid var(--separator-strong);
-  border-radius: 8px;
-  padding: 6px 12px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-primary);
-  cursor: pointer;
-  font-family: var(--font);
-  transition: background 0.15s ease;
-}
 
-.btn-view:active {
-  background: var(--separator-strong);
-}
 
 /* Expanded stats inside FriendCard */
 .friend-expanded {
@@ -2626,35 +2677,7 @@ body {
   flex-shrink: 0;
 }
 
-.btn-accept {
-  background: var(--green);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 6px 12px;
-  font-size: 12px;
-  font-weight: 700;
-  font-family: var(--font);
-  cursor: pointer;
-  min-width: 60px;
-  transition: opacity 0.15s;
-}
-.btn-accept:disabled { opacity: 0.5; cursor: default; }
 
-.btn-decline {
-  background: var(--bg-elevated);
-  color: var(--text-secondary);
-  border: 1px solid var(--separator-strong);
-  border-radius: 8px;
-  padding: 6px 12px;
-  font-size: 12px;
-  font-weight: 600;
-  font-family: var(--font);
-  cursor: pointer;
-  min-width: 60px;
-  transition: opacity 0.15s;
-}
-.btn-decline:disabled { opacity: 0.5; cursor: default; }
 
 /* Add Friend modal */
 .modal-overlay {
@@ -3160,34 +3183,9 @@ body {
 }
 .meetup-anon-check input { accent-color: var(--accent); }
 
-.meetup-btn-join,
-.meetup-btn-leave,
-.meetup-btn-cancel,
-.meetup-schedule-btn {
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: 700;
-  font-family: inherit;
-  cursor: pointer;
-  padding: 8px 16px;
-  border: none;
-}
-
-.meetup-btn-join     { background: var(--accent); color: var(--accent-contrast); margin-left: auto; }
-.meetup-btn-leave    { background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--separator-strong); margin-left: auto; }
-.meetup-btn-cancel   { background: none; color: #FF453A; padding: 8px 4px; }
-.meetup-btn-join:disabled,
-.meetup-btn-leave:disabled,
-.meetup-btn-cancel:disabled { opacity: 0.5; cursor: default; }
-
-/* Full-width "Schedule a Run" button under the list */
-.meetup-schedule-btn {
-  width: 100%;
-  background: rgb(var(--accent-rgb) / 0.12);
-  color: var(--accent);
-  padding: 12px;
-  margin-top: 4px;
-}
+/* Pushes the join/leave button to the right end of the meetup row, away from
+   the "Go as Baller" checkbox it shares that row with. */
+.meetup-action-end { margin-left: auto; }
 
 /* ── ScheduleMeetupSheet form bits (sheet frame reuses .add-court-sheet) ────── */
 .meetup-form-court {
@@ -3206,23 +3204,6 @@ body {
 
 .meetup-visibility-row { display: flex; gap: 10px; }
 
-.meetup-visibility-btn {
-  flex: 1;
-  padding: 12px;
-  border-radius: 12px;
-  background: var(--bg-card);
-  border: 1px solid var(--separator-strong);
-  color: var(--text-primary);
-  font-size: 14px;
-  font-weight: 600;
-  font-family: inherit;
-  cursor: pointer;
-}
-.meetup-visibility-btn.selected {
-  border-color: var(--accent);
-  background: rgb(var(--accent-rgb) / 0.12);
-  color: var(--accent);
-}
 
 .meetup-visibility-hint {
   font-size: 12px;
@@ -3289,36 +3270,38 @@ body {
 
 .composer-media-btn:active { opacity: 0.5; }
 
-.composer-post-btn {
-  background: var(--accent);
-  color: var(--accent-contrast);
-  border: none;
-  border-radius: 20px;
-  padding: 6px 16px;
-  font-size: 13px;
-  font-weight: 700;
-  font-family: var(--font);
-  cursor: pointer;
-  transition: opacity 0.15s;
-}
 
-.composer-post-btn:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
 
-.composer-post-btn:not(:disabled):active {
-  opacity: 0.8;
-}
 
-/* ── Feed Tab Toggle ── */
-.feed-tab-row {
+/* ── Segmented control ──────────────────────────────────────────────────────
+   Two or more mutually exclusive options sharing one track: the feed's
+   Following/Nearby, Friends' Friends/Messages, admin's Courts/Reports, and
+   the auth screen's Sign Up/Log In.
+
+   Named for what it is. It used to be called .feed-tab-row because the feed
+   had it first, and the auth screen borrowed it — which is how the auth
+   toggle acquired its collapse bug. .auth-screen is a centred flex column
+   (align-items: center), so every child of it is shrink-to-fit unless it
+   says otherwise. .auth-form escapes that with an explicit width: 100%; the
+   toggle row never did, so the track sized to its own min-content and its
+   two flex-basis: 0 segments each landed at 44px instead of half a row.
+   That is what --flush below is for, and it is why this is now a control in
+   its own right rather than another component's styles borrowed sideways. */
+.segmented {
   display: flex;
   gap: 0;
   margin: 16px 20px 4px;
   background: var(--bg-elevated);
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   padding: 3px;
+}
+
+/* For a control inside already-padded content: no horizontal margin of its
+   own, and an explicit width so a centring parent cannot shrink it. The two
+   go together — width: 100% with a side margin would overflow instead. */
+.segmented--flush {
+  width: 100%;
+  margin: 0 0 20px;
 }
 
 /* New posts pill — appears when Realtime detects a friend's post */
@@ -3342,12 +3325,16 @@ body {
   opacity: 0.85;
 }
 
-.feed-tab-btn {
-  flex: 1;
+.segmented__option {
+  /* min-width: 0 lets a segment go narrower than its own text so the segments
+     stay equal to each other; without it the longest label sets the width and
+     the control comes out lopsided. */
+  flex: 1 1 0%;
+  min-width: 0;
   background: none;
   border: none;
-  border-radius: 8px;
-  padding: 7px 0;
+  border-radius: calc(var(--radius-sm) - 3px);
+  padding: 7px 4px;
   font-size: 13px;
   font-weight: 600;
   font-family: var(--font);
@@ -3356,10 +3343,10 @@ body {
   transition: background 0.15s, color 0.15s;
 }
 
-.feed-tab-btn.active {
+.segmented__option.is-selected {
   background: var(--bg-card);
   color: var(--text-primary);
-  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
 }
 
 /* ── Feed List ── */
@@ -3725,9 +3712,13 @@ body {
   animation: slideUp 0.22s ease;
 }
 
+/* Title centred with the close button absolute over it, the same way
+   .map-sheet-top-row does it — so the title's centring can't be disturbed by
+   the button's width. The drag handle is its own row above this one. */
 .court-picker-header {
   display: flex;
   align-items: center;
+  justify-content: center;
   padding: 0 16px 12px;
   position: relative;
 }
@@ -4122,7 +4113,7 @@ body {
   text-align: left;
 }
 .feed-options-btn:last-child { border-bottom: none; }
-.feed-options-btn.destructive { color: #FF3B30; }
+.feed-options-btn.destructive { color: var(--danger); }
 .feed-options-btn.cancel { color: var(--text-secondary); font-weight: 400; }
 .feed-options-btn:active { opacity: 0.6; }
 
@@ -4334,34 +4325,9 @@ body {
   margin-top: 12px;
 }
 
-.admin-btn {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 10px;
-  border: none;
-  border-radius: 10px;
-  font-size: 13px;
-  font-weight: 700;
-  font-family: var(--font);
-  cursor: pointer;
-  transition: opacity 0.15s;
-}
 
-.admin-btn:disabled { opacity: 0.5; cursor: default; }
-.admin-btn:active { opacity: 0.8; }
 
-.admin-btn.approve {
-  background: var(--green-dim);
-  color: var(--green);
-}
 
-.admin-btn.reject {
-  background: rgba(255, 69, 58, 0.12);
-  color: #FF453A;
-}
 
 /* Badge showing pending moderation count on the Settings admin row */
 .settings-admin-badge {
@@ -4684,10 +4650,10 @@ body {
 /* Red error message shown below the inputs when something goes wrong */
 .auth-error {
   font-size: 13px;
-  color: #FF453A;
+  color: var(--danger);
   text-align: center;
   padding: 8px 12px;
-  background: rgba(255, 69, 58, 0.1);
+  background: var(--danger-dim);
   border-radius: 10px;
   line-height: 1.4;
 }
@@ -4725,23 +4691,7 @@ body {
 }
 
 /* The big orange "Create Account" or "Log In" button */
-.auth-submit-btn {
-  width: 100%;
-  padding: 14px;
-  background: var(--accent);
-  color: var(--accent-contrast);
-  border: none;
-  border-radius: 12px;
-  font-size: 16px;
-  font-weight: 700;
-  font-family: var(--font);
-  cursor: pointer;
-  transition: opacity 0.15s;
-  margin-top: 4px;
-}
 
-.auth-submit-btn:active { opacity: 0.85; }
-.auth-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* "Forgot password?" link below the login form */
 .auth-link {
@@ -4971,21 +4921,7 @@ body {
 }
 
 /* Transparent secondary button (e.g. "Go to Home Feed") */
-.onboarding-secondary-btn {
-  width: 100%;
-  padding: 14px;
-  background: transparent;
-  color: var(--text-primary);
-  border: 1px solid var(--separator-strong);
-  border-radius: 12px;
-  font-size: 15px;
-  font-weight: 600;
-  font-family: var(--font);
-  cursor: pointer;
-  transition: opacity 0.15s;
-}
 
-.onboarding-secondary-btn:active { opacity: 0.7; }
 
 /* ── Feature tour ("How LiveHoops Works") ────────────────────────────────── */
 /* Slide content inside onboarding reuses .onboarding-* classes directly.    */
@@ -5200,28 +5136,9 @@ body {
 }
 
 /* The "Add", "Pending", or "Friends" button on each search result */
-.search-add-btn {
-  background: var(--accent);
-  color: var(--accent-contrast);
-  border: none;
-  border-radius: 20px;
-  padding: 6px 14px;
-  font-size: 13px;
-  font-weight: 700;
-  font-family: var(--font);
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: opacity 0.15s;
-}
 
-.search-add-btn:active { opacity: 0.8; }
 
 /* Gray "Pending" or "Friends" state — not tappable */
-.search-add-btn.muted {
-  background: var(--bg-elevated);
-  color: var(--text-secondary);
-  cursor: default;
-}
 
 /* Small spinner inside the modal while search results load */
 .modal-search-loading {
@@ -5666,59 +5583,14 @@ body {
 }
 
 /* Back button — transparent with a subtle border */
-.add-court-back-btn {
-  padding: 14px 20px;
-  border-radius: 12px;
-  border: 0.5px solid var(--separator);
-  background: transparent;
-  color: var(--text-secondary);
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: var(--font);
-}
 
 /* Next / Submit button — orange, fills remaining space */
-.add-court-next-btn {
-  flex: 1;
-  padding: 14px;
-  border-radius: 12px;
-  border: none;
-  background: var(--accent);
-  color: var(--accent-contrast);
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: opacity 0.15s;
-  font-family: var(--font);
-}
 
 /* Disabled state — faded out, no pointer */
-.add-court-next-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
 
 /* ── CheckInScreen: "Add a Court" secondary button ────────────────────────── */
 /* Transparent background with an orange border — sits below "Find a Court". */
-.btn-add-court {
-  width: 100%;
-  margin-top: 12px;
-  padding: 14px;
-  border-radius: 12px;
-  border: 1.5px solid var(--accent);
-  background: transparent;
-  color: var(--accent);
-  font-size: 16px;
-  font-weight: 700;
-  font-family: var(--font);
-  cursor: pointer;
-  transition: background 0.15s;
-}
 
-.btn-add-court:active {
-  background: var(--accent-dim);
-}
 
 /* ── CheckInScreen: "Know a court?" text link ─────────────────────────────── */
 /* Small orange text centered below the checkout button in the active card.  */
@@ -5771,22 +5643,6 @@ body {
 }
 
 /* "Map" button — jumps to this court on the Map tab */
-.checkin-history-map-btn {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 7px 12px;
-  border-radius: 999px;
-  background: var(--bg-elevated);
-  border: 1px solid var(--separator-strong);
-  color: var(--accent);
-  font-size: 13px;
-  font-weight: 600;
-  font-family: inherit;
-  cursor: pointer;
-}
-.checkin-history-map-btn:active { transform: scale(0.96); }
 
 /* ── Legal Sheet (Privacy Policy / Terms of Service) ──────────────────────── */
 /* Slides up over the Settings sheet — sits at z-index 400 (above settings 300) */
@@ -5904,23 +5760,7 @@ body {
 }
 
 /* Message button on FriendCard */
-.btn-message {
-  flex-shrink: 0;
-  background: var(--accent);
-  border: none;
-  border-radius: 8px;
-  padding: 6px 12px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--accent-contrast);
-  cursor: pointer;
-  font-family: var(--font);
-  transition: opacity 0.15s ease;
-}
 
-.btn-message:active {
-  opacity: 0.8;
-}
 
 /* Unread DM count shown in the Friends screen header */
 .crew-unread-badge {
@@ -6034,7 +5874,7 @@ body {
   align-items: center;
   flex-shrink: 0;
 }
-.dm-block-btn:active { color: #FF453A; }
+.dm-block-btn:active { color: var(--danger); }
 
 /* ── DM Message list ───────────────────────────────────────────────────── */
 .dm-message-list {
@@ -6272,29 +6112,8 @@ body {
   margin-top: 2px;
 }
 
-.search-add-btn {
-  background: var(--accent);
-  color: var(--accent-contrast);
-  border: none;
-  border-radius: 20px;
-  padding: 6px 14px;
-  font-size: 13px;
-  font-weight: 600;
-  font-family: var(--font);
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: opacity 0.15s ease;
-}
 
-.search-add-btn:active {
-  opacity: 0.75;
-}
 
-.search-add-btn.muted {
-  background: var(--bg-elevated);
-  color: var(--text-secondary);
-  cursor: default;
-}
 
 /* ── Court Ratings & Reviews ────────────────────────────────────────────────── */
 
@@ -6413,28 +6232,8 @@ body {
   color: var(--text-secondary);
 }
 
-.review-submit-btn {
-  margin-top: 10px;
-  background: var(--accent);
-  color: var(--accent-contrast);
-  border: none;
-  border-radius: 20px;
-  padding: 8px 22px;
-  font-size: 14px;
-  font-weight: 600;
-  font-family: var(--font);
-  cursor: pointer;
-  transition: opacity 0.15s ease;
-}
 
-.review-submit-btn:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
 
-.review-submit-btn:not(:disabled):active {
-  opacity: 0.75;
-}
 
 /* ── Individual review items ───────────────────────────────── */
 .review-item {

@@ -52,7 +52,7 @@ export default function BlockedAccountsSheet({ blockedUsers = [], onUnblock, onC
                 <div className="search-result-username">{u.username}</div>
               </div>
               <button
-                className="search-add-btn"
+                className="btn btn--primary btn--sm btn--pill"
                 onClick={() => handleUnblock(u.userId)}
                 disabled={busyId === u.userId}
                 style={busyId === u.userId ? { opacity: 0.6, cursor: 'default' } : undefined}

@@ -310,15 +310,15 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
       />
 
       {/* ── Feed tab toggle ──────────────────────────────────────────────────── */}
-      <div className="feed-tab-row">
+      <div className="segmented">
         <button
-          className={`feed-tab-btn${feedTab === 'following' ? ' active' : ''}`}
+          className={`segmented__option${feedTab === 'following' ? ' is-selected' : ''}`}
           onClick={() => setFeedTab('following')}
         >
           Following
         </button>
         <button
-          className={`feed-tab-btn${feedTab === 'nearby' ? ' active' : ''}`}
+          className={`segmented__option${feedTab === 'nearby' ? ' is-selected' : ''}`}
           onClick={() => setFeedTab('nearby')}
         >
           Nearby
@@ -377,8 +377,8 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
               </div>
             </div>
             <button
-              className="auth-submit-btn"
-              style={{ marginTop: 20, maxWidth: 220 }}
+              className="btn btn--primary"
+              style={{ marginTop: 20 }}
               onClick={() => setActiveTab('friends')}
             >
               Find Players

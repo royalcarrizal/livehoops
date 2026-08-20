@@ -190,15 +190,15 @@ export default function FriendsScreen({ user, profile, onViewProfile, onUnreadDM
       </div>
 
       {/* ── Friends | Messages tab toggle ──────────────────────────────────── */}
-      <div className="feed-tab-row">
+      <div className="segmented">
         <button
-          className={`feed-tab-btn${activeView === 'friends' ? ' active' : ''}`}
+          className={`segmented__option${activeView === 'friends' ? ' is-selected' : ''}`}
           onClick={() => setActiveView('friends')}
         >
           Friends
         </button>
         <button
-          className={`feed-tab-btn${activeView === 'messages' ? ' active' : ''}`}
+          className={`segmented__option${activeView === 'messages' ? ' is-selected' : ''}`}
           onClick={() => setActiveView('messages')}
         >
           Messages
@@ -237,14 +237,14 @@ export default function FriendsScreen({ user, profile, onViewProfile, onUnreadDM
                     </div>
                     <div className="friend-request-actions">
                       <button
-                        className="btn-accept"
+                        className="btn btn--live-filled btn--sm"
                         onClick={() => handleAccept(req.friendshipId)}
                         disabled={pendingActions.has(req.friendshipId)}
                       >
                         {pendingActions.has(req.friendshipId) ? '...' : 'Accept'}
                       </button>
                       <button
-                        className="btn-decline"
+                        className="btn btn--secondary btn--sm"
                         onClick={() => handleDecline(req.friendshipId)}
                         disabled={pendingActions.has(req.friendshipId)}
                       >
@@ -279,8 +279,8 @@ export default function FriendsScreen({ user, profile, onViewProfile, onUnreadDM
                     No friends yet — search for players to connect with
                   </div>
                   <button
-                    className="auth-submit-btn"
-                    style={{ marginTop: 16, fontSize: 14 }}
+                    className="btn btn--primary"
+                    style={{ marginTop: 16 }}
                     onClick={() => setShowModal(true)}
                   >
                     Find Players
@@ -343,8 +343,8 @@ export default function FriendsScreen({ user, profile, onViewProfile, onUnreadDM
                 Message a friend to get started
               </div>
               <button
-                className="auth-submit-btn"
-                style={{ marginTop: 16, fontSize: 14 }}
+                className="btn btn--primary"
+                style={{ marginTop: 16 }}
                 onClick={() => setActiveView('friends')}
               >
                 Go to Friends
@@ -485,10 +485,10 @@ function SearchModal({ userId, onClose, getStatus, onSend }) {
                   <div className="search-result-info">
                     <div className="search-result-username">{result.username}</div>
                   </div>
-                  {status === 'accepted' && <button className="search-add-btn muted" disabled>Friends</button>}
-                  {status === 'pending'  && <button className="search-add-btn muted" disabled>Pending</button>}
+                  {status === 'accepted' && <button className="btn btn--secondary btn--sm btn--pill" disabled>Friends</button>}
+                  {status === 'pending'  && <button className="btn btn--secondary btn--sm btn--pill" disabled>Pending</button>}
                   {status === 'none'     && (
-                    <button className="search-add-btn" onClick={() => onSend(result.id)}>Add</button>
+                    <button className="btn btn--primary btn--sm btn--pill" onClick={() => onSend(result.id)}>Add</button>
                   )}
                 </div>
               );

@@ -277,7 +277,7 @@ export default function Onboarding({ profile, onComplete }) {
 
           {/* ── Welcome buttons ──────────────────────────────────────────── */}
           {current === 'welcome' && (
-            <button className="auth-submit-btn" onClick={goNext}>
+            <button className="btn btn--primary btn--lg btn--block" onClick={goNext}>
               Let's Go
             </button>
           )}
@@ -285,7 +285,7 @@ export default function Onboarding({ profile, onComplete }) {
           {/* ── Feature tour buttons ─────────────────────────────────────── */}
           {isTourSlide && (
             <>
-              <button className="auth-submit-btn" onClick={goNext}>
+              <button className="btn btn--primary btn--lg btn--block" onClick={goNext}>
                 Next
               </button>
               <button className="onboarding-skip-link" onClick={skipTour}>
@@ -298,7 +298,7 @@ export default function Onboarding({ profile, onComplete }) {
           {current === 'location' && (
             <>
               <button
-                className="auth-submit-btn"
+                className="btn btn--primary btn--lg btn--block"
                 onClick={handleAllowLocation}
                 disabled={locationLoading}
               >
@@ -312,7 +312,7 @@ export default function Onboarding({ profile, onComplete }) {
 
           {/* ── Add to Home Screen buttons ───────────────────────────────── */}
           {current === 'install' && (
-            <button className="auth-submit-btn" onClick={goNext}>
+            <button className="btn btn--primary btn--lg btn--block" onClick={goNext}>
               Continue
             </button>
           )}
@@ -320,11 +320,11 @@ export default function Onboarding({ profile, onComplete }) {
           {/* ── Ready buttons ────────────────────────────────────────────── */}
           {current === 'ready' && (
             <>
-              <button className="auth-submit-btn" onClick={() => complete('map')}>
+              <button className="btn btn--primary btn--lg btn--block" onClick={() => complete('map')}>
                 Find a Court
               </button>
               <button
-                className="onboarding-secondary-btn"
+                className="btn btn--secondary btn--lg btn--block"
                 onClick={() => complete('home')}
               >
                 Go to Home Feed

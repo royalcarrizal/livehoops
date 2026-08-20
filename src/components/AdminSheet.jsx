@@ -92,15 +92,15 @@ export default function AdminSheet({ onClose }) {
       </div>
 
       {/* Tab toggle — reuses the feed tab styling */}
-      <div className="feed-tab-row" style={{ margin: '12px 20px' }}>
+      <div className="segmented" style={{ margin: '12px 20px' }}>
         <button
-          className={`feed-tab-btn${tab === 'courts' ? ' active' : ''}`}
+          className={`segmented__option${tab === 'courts' ? ' is-selected' : ''}`}
           onClick={() => setTab('courts')}
         >
           Courts{courtsList.length > 0 ? ` (${courtsList.length})` : ''}
         </button>
         <button
-          className={`feed-tab-btn${tab === 'reports' ? ' active' : ''}`}
+          className={`segmented__option${tab === 'reports' ? ' is-selected' : ''}`}
           onClick={() => setTab('reports')}
         >
           Reports{reports.length > 0 ? ` (${reports.length})` : ''}
@@ -140,14 +140,14 @@ export default function AdminSheet({ onClose }) {
                 </div>
                 <div className="admin-card-actions">
                   <button
-                    className="admin-btn approve"
+                    className="btn btn--live btn--sm btn--grow"
                     disabled={busy.has(court.id)}
                     onClick={() => reviewCourt(court.id, true)}
                   >
                     <Check size={15} strokeWidth={2.5} /> Approve
                   </button>
                   <button
-                    className="admin-btn reject"
+                    className="btn btn--danger btn--sm btn--grow"
                     disabled={busy.has(court.id)}
                     onClick={() => reviewCourt(court.id, false)}
                   >
@@ -184,14 +184,14 @@ export default function AdminSheet({ onClose }) {
                 )}
                 <div className="admin-card-actions">
                   <button
-                    className="admin-btn approve"
+                    className="btn btn--live btn--sm btn--grow"
                     disabled={busy.has(report.post_id)}
                     onClick={() => resolveReport(report.post_id, false)}
                   >
                     <ShieldOff size={15} strokeWidth={2} /> Dismiss
                   </button>
                   <button
-                    className="admin-btn reject"
+                    className="btn btn--danger btn--sm btn--grow"
                     disabled={busy.has(report.post_id)}
                     onClick={() => resolveReport(report.post_id, true)}
                   >

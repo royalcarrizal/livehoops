@@ -41,13 +41,13 @@ export default function FriendCard({ friend, onViewProfile, onMessage }) {
       {/* Action buttons — rendered outside the tappable area so they don't nest */}
       <div className="friend-card-actions">
         <button
-          className="btn-message"
+          className="btn btn--soft btn--sm btn--pill"
           onClick={() => onMessage?.(friend)}
         >
           Message
         </button>
         <button
-          className="btn-view"
+          className="btn btn--secondary btn--sm btn--pill"
           onClick={() => onViewProfile?.(friend.userId)}
         >
           Profile

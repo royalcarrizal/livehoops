@@ -111,7 +111,7 @@ export default function FeatureTour({ onClose }) {
           </div>
 
           <button
-            className="auth-submit-btn"
+            className="btn btn--primary btn--lg btn--block"
             onClick={() => (isLast ? onClose() : goNext())}
           >
             {isLast ? 'Done' : 'Next'}

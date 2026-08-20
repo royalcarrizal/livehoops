@@ -87,7 +87,7 @@ export default function ResetPasswordScreen({ onUpdatePassword, onDone }) {
           </div>
           <button
             type="button"
-            className="auth-submit-btn"
+            className="btn btn--primary btn--lg btn--block"
             onClick={onDone}
           >
             Start Hooping
@@ -119,7 +119,7 @@ export default function ResetPasswordScreen({ onUpdatePassword, onDone }) {
 
           <button
             type="submit"
-            className="auth-submit-btn"
+            className="btn btn--primary btn--lg btn--block"
             disabled={submitting}
           >
             {submitting ? 'Saving…' : 'Save New Password'}

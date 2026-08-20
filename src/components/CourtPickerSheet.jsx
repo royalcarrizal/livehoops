@@ -21,9 +21,15 @@ export default function CourtPickerSheet({ courts, selected, onSelect, onClose }
       <div className="court-picker-overlay" onClick={onClose} />
 
       <div className="court-picker-sheet">
+        {/* The drag handle gets its own centred row above the title, matching
+            every other sheet. It used to sit inside .court-picker-header —
+            a flex row — where `margin: 0 auto` made the auto margins eat the
+            row's free space and shove the title sideways instead of centring
+            the handle. */}
+        <div className="sheet-handle" />
+
         {/* Header */}
         <div className="court-picker-header">
-          <div className="map-sheet-drag-handle" style={{ margin: '0 auto 12px' }} />
           <span className="court-picker-title">Tag a Court</span>
           <button className="court-picker-close" onClick={onClose} aria-label="Close">
             <X size={18} strokeWidth={2} />
