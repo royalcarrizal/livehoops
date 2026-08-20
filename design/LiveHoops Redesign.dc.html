@@ -1,0 +1,1499 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics><meta name="design_doc_mode" content="canvas">
+<script src="./image-slot.js"></script>
+<style>
+body{margin:0;background:#101116;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-serif}
+a{color:#FF6A2C;text-decoration:none}a:hover{color:#FF8B57}
+.dv-turn{padding:44px 48px 36px;border-bottom:1px solid rgba(255,255,255,.07)}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 22px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#FF6A2C;color:#141014;border-radius:4px;text-decoration:none}
+.dv-tname{font:500 13px/1.2 system-ui,sans-serif;color:#F4F4F6}
+.dv-opts{display:flex;flex-wrap:wrap;gap:40px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:10px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(255,255,255,.09);color:#F4F4F6;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11.5px/1.3 system-ui,sans-serif;color:rgba(244,244,246,.5)}
+.dv-opt:target .dv-oid{background:#FF6A2C;color:#141014}
+.dv-next{margin:26px 0 0;font:12px/1.6 system-ui,sans-serif;color:rgba(244,244,246,.45)}
+@keyframes lh-pulse{0%{box-shadow:0 0 0 0 rgba(47,224,138,.5)}70%{box-shadow:0 0 0 9px rgba(47,224,138,0)}100%{box-shadow:0 0 0 0 rgba(47,224,138,0)}}
+@keyframes lh-up{from{transform:translateY(102%)}to{transform:translateY(0)}}
+@keyframes lh-fade{from{opacity:0}to{opacity:1}}
+@keyframes lh-toast{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+</style></helmet>
+
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">LiveHoops redesign — textured dark, court geometry as layout, modernized ember orange</span></div>
+<div class="dv-opts">
+
+<div class="dv-opt" id="1a">
+<div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>Tappable prototype — 390&thinsp;×&thinsp;844. Tabs, court sheet, check-in flow all live.</div>
+<div style="border-radius:52px">
+<x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="{{ true }}" width="{{ 390 }}" height="{{ 844 }}" hint-size="390px,844px">
+
+<div style="position:absolute;inset:0;background:#0B0B0E;overflow:hidden;color:#F4F4F6">
+
+<sc-if value="{{ showGrain }}" hint-placeholder-val="{{ true }}">
+<div style="position:absolute;inset:0;z-index:70;pointer-events:none;opacity:.05;mix-blend-mode:overlay;background-image:url(data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter%20id=%27n%27%3E%3CfeTurbulence%20type=%27fractalNoise%27%20baseFrequency=%270.9%27%20numOctaves=%273%27/%3E%3C/filter%3E%3Crect%20width=%27100%25%27%20height=%27100%25%27%20filter=%27url(%23n)%27/%3E%3C/svg%3E)"></div>
+</sc-if>
+
+<!-- ── HOME ── -->
+<sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+<div style="position:absolute;inset:0;display:flex;flex-direction:column">
+  <div style="position:relative;padding:56px 20px 0;flex:none;overflow:hidden">
+    <sc-if value="{{ showCourtLines }}" hint-placeholder-val="{{ true }}">
+    <svg viewBox="0 0 390 200" style="position:absolute;top:28px;right:-90px;width:340px;height:200px;opacity:.5" fill="none" stroke="#FF6A2C" stroke-width="1">
+      <path d="M300 -20 A 118 118 0 0 1 300 220" stroke-opacity=".22"></path>
+      <path d="M300 20 A 78 78 0 0 1 300 180" stroke-opacity=".12"></path>
+      <path d="M240 0 V 200" stroke-opacity=".1"></path>
+    </svg>
+    </sc-if>
+    <div style="display:flex;align-items:center;justify-content:space-between;position:relative">
+      <div style="font:700 25px/1 -apple-system,system-ui;letter-spacing:-.9px">Live<span style="color:#FF6A2C">Hoops</span></div>
+      <button style="position:relative;width:38px;height:38px;border-radius:999px;border:1px solid #262931;background:#15161A;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="background:#1D1F24">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#9A9BA4" stroke-width="2" stroke-linecap="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>
+        <span style="position:absolute;top:7px;right:8px;width:8px;height:8px;border-radius:999px;background:#FF6A2C;border:2px solid #0B0B0E"></span>
+      </button>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;margin-top:9px;position:relative">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#FF6A2C" stroke-width="2.2" stroke-linecap="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0"></path><circle cx="12" cy="10" r="3"></circle></svg>
+      <span style="font:500 12.5px/1 system-ui;color:#9A9BA4">Brooklyn, NY</span>
+      <span style="width:3px;height:3px;border-radius:9px;background:#3B3E47"></span>
+      <span style="font:600 12.5px/1 system-ui;color:#2FE08A;white-space:nowrap">4 courts running</span>
+    </div>
+    <div style="display:flex;gap:10px;overflow:auto;margin:18px -20px 4px;padding:0 20px 2px">
+      <sc-for list="{{ activeCourts }}" as="c" hint-placeholder-count="4">
+        <button onClick="{{ c.on }}" style="flex:none;width:128px;text-align:left;padding:11px 12px;border-radius:14px;border:1px solid {{ c.border }};background:#15161A;cursor:pointer" style-hover="border-color:rgba(255,106,44,.5)">
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="width:6px;height:6px;border-radius:9px;background:#2FE08A;animation:lh-pulse 1.9s infinite"></span>
+            <span style="font:700 9.5px/1 system-ui;letter-spacing:.7px;color:#2FE08A">{{ c.players }} RUNNING</span>
+          </div>
+          <div style="font:600 12.5px/1.25 system-ui;color:#F4F4F6;margin-top:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ c.name }}</div>
+          <div style="font:400 10.5px/1 system-ui;color:#5A5C66;margin-top:5px">{{ c.dist }} mi away</div>
+        </button>
+      </sc-for>
+    </div>
+    <div style="display:flex;gap:22px;margin-top:12px;border-bottom:1px solid #1B1D23">
+      <sc-for list="{{ feedTabs }}" as="t" hint-placeholder-count="3">
+        <button onClick="{{ t.on }}" style="background:none;border:0;padding:0 0 10px;cursor:pointer;font:600 13.5px/1 system-ui;position:relative;color: {{ t.col }}">
+          {{ t.label }}
+          <span style="position:absolute;left:0;right:0;bottom:-1px;height:2px;border-radius:2px;background: {{ t.bar }}"></span>
+        </button>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="flex:1;overflow:auto;padding:16px 20px 120px">
+    <div style="border:1px solid #262931;border-radius:16px;overflow:hidden;background:#15161A;margin-bottom:18px">
+      <div style="position:relative;height:132px;background:#1D1F24">
+        <image-slot id="lh-park-1" shape="rect" placeholder="Court photo"></image-slot>
+        <div style="position:absolute;top:10px;left:10px;display:flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;background:rgba(11,11,14,.72);backdrop-filter:blur(8px);pointer-events:none">
+          <span style="width:7px;height:7px;border-radius:9px;background:#2FE08A;animation:lh-pulse 1.9s infinite"></span>
+          <span style="font:700 10px/1 system-ui;letter-spacing:.7px;color:#2FE08A">LIVE</span>
+        </div>
+        <div style="position:absolute;top:10px;right:10px;padding:5px 9px;border-radius:999px;background:rgba(11,11,14,.72);backdrop-filter:blur(8px);font:600 11px/1 system-ui;color:#F4F4F6;pointer-events:none;white-space:nowrap">8 running</div>
+      </div>
+      <div style="padding:13px 14px 14px">
+        <div style="font:600 16px/1.2 -apple-system,system-ui;letter-spacing:-.3px">Cadman Plaza Courts</div>
+        <div style="font:400 12.5px/1.3 system-ui;color:#9A9BA4;margin-top:4px">Cadman Plaza W · 0.3 mi away</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:11px">
+          <span style="font:600 11px/1 system-ui;color:#C9CAD2;padding:6px 9px;border-radius:6px;background:#1D1F24">4 hoops</span>
+          <span style="font:600 11px/1 system-ui;color:#C9CAD2;padding:6px 9px;border-radius:6px;background:#1D1F24">Lights</span>
+          <span style="font:600 11px/1 system-ui;color:#C9CAD2;padding:6px 9px;border-radius:6px;background:#1D1F24">★ 4.6</span>
+          <button onClick="{{ openCourt }}" style="margin-left:auto;font:600 12.5px/1 system-ui;color:#FF6A2C;background:rgba(255,106,44,.12);border:1px solid rgba(255,106,44,.32);padding:8px 13px;border-radius:999px;cursor:pointer" style-hover="background:rgba(255,106,44,.2)">Check in</button>
+        </div>
+      </div>
+    </div>
+
+    <sc-if value="{{ hasRuns }}" hint-placeholder-val="{{ true }}">
+    <div style="margin-bottom:20px">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:11px">
+        <span style="font:600 11px/1 system-ui;letter-spacing:.9px;color:#7C7E88">SCHEDULED RUNS</span>
+        <span style="font:500 11.5px/1 system-ui;color:#5A5C66">Next 7 days</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <sc-for list="{{ scheduledRuns }}" as="r" hint-placeholder-count="2">
+          <button onClick="{{ r.on }}" style="width:100%;display:flex;align-items:center;gap:13px;padding:13px 14px;border-radius:14px;border:1px solid #262931;background:#15161A;cursor:pointer;text-align:left" style-hover="border-color:rgba(255,106,44,.45)">
+            <div style="width:42px;flex:none;text-align:center;border-right:1px solid #1B1D23;padding-right:12px">
+              <div style="font:600 9.5px/1 system-ui;letter-spacing:.6px;color:#FF6A2C">{{ r.dow }}</div>
+              <div style="font:700 18px/1 -apple-system,system-ui;font-variant-numeric:tabular-nums;margin-top:6px">{{ r.day }}</div>
+            </div>
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;align-items:center;gap:7px">
+                <span style="font:600 13.5px/1.2 system-ui;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.court }}</span>
+                <span style="font:700 8.5px/1 system-ui;letter-spacing:.7px;padding:4px 6px;border-radius:5px;flex:none;color: {{ r.badgeCol }};background: {{ r.badgeBg }}">{{ r.badge }}</span>
+              </div>
+              <div style="font:400 11.5px/1.2 system-ui;color:#9A9BA4;margin-top:5px">{{ r.time }} · {{ r.dur }}</div>
+              <div style="display:flex;align-items:center;gap:8px;margin-top:9px">
+                <div style="display:flex">
+                  <sc-for list="{{ r.avatars }}" as="a" hint-placeholder-count="3">
+                    <div style="width:22px;height:22px;border-radius:999px;background:#1D1F24;border:2px solid #15161A;margin-left:-6px;display:flex;align-items:center;justify-content:center;font:600 8.5px system-ui;color:#C9CAD2">{{ a.initials }}</div>
+                  </sc-for>
+                </div>
+                <span style="font:500 11px/1 system-ui;color:#5A5C66">{{ r.goingLabel }}</span>
+              </div>
+            </div>
+            <svg width="7" height="12" viewBox="0 0 8 14" fill="none" stroke="#3B3E47" stroke-width="2" stroke-linecap="round" style="flex:none"><path d="M1 1l6 6-6 6"></path></svg>
+          </button>
+        </sc-for>
+      </div>
+    </div>
+    </sc-if>
+
+    <sc-for list="{{ posts }}" as="p" hint-placeholder-count="2">
+      <div style="border-top:1px solid #1B1D23;padding:18px 0 4px">
+        <div style="display:flex;align-items:flex-start;gap:11px">
+          <div style="width:38px;height:38px;border-radius:999px;background:#1D1F24;display:flex;align-items:center;justify-content:center;font:600 14px system-ui;color:#C9CAD2;flex:none">{{ p.initials }}</div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:baseline;gap:6px">
+              <span style="font:600 14px/1.2 system-ui">{{ p.name }}</span>
+              <span style="font:700 13px/1.2 system-ui;color:#FF6A2C">{{ p.jersey }}</span>
+              <span style="font:400 11.5px/1.2 system-ui;color:#5A5C66;margin-left:auto">{{ p.time }}</span>
+            </div>
+            <div style="font:400 11.5px/1.2 system-ui;color:#5A5C66;margin-top:3px">{{ p.at }}</div>
+          </div>
+        </div>
+        <div style="font:400 14.5px/1.45 system-ui;color:#E4E4EA;margin:11px 0 0;text-wrap:pretty">{{ p.text }}</div>
+        <sc-if value="{{ p.media }}" hint-placeholder-val="{{ false }}">
+          <div style="position:relative;height:190px;border-radius:14px;overflow:hidden;margin-top:11px;background:#1D1F24">
+            <image-slot id="lh-post-1" shape="rect" placeholder="Run photo"></image-slot>
+          </div>
+        </sc-if>
+        <div style="display:flex;align-items:center;gap:18px;margin-top:12px">
+          <button style="display:flex;align-items:center;gap:7px;background:none;border:0;padding:0;cursor:pointer;color:#9A9BA4;font:500 12.5px system-ui" style-hover="color:#FF6A2C">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20.5C5.5 16 3 12.8 3 9.4A4.4 4.4 0 0 1 12 7a4.4 4.4 0 0 1 9 2.4c0 3.4-2.5 6.6-9 11.1z"></path></svg>{{ p.likes }}
+          </button>
+          <button style="display:flex;align-items:center;gap:7px;background:none;border:0;padding:0;cursor:pointer;color:#9A9BA4;font:500 12.5px system-ui" style-hover="color:#FF6A2C">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"></path></svg>{{ p.comments }}
+          </button>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</sc-if>
+
+<!-- ── MAP ── -->
+<sc-if value="{{ isMap }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0">
+  <div style="position:absolute;inset:0;background:#0F1116">
+    <svg viewBox="0 0 390 844" style="position:absolute;inset:0;width:100%;height:100%">
+      <rect x="0" y="0" width="390" height="844" fill="#0F1116"></rect>
+      <rect x="18" y="200" width="150" height="190" fill="#131A16"></rect>
+      <rect x="215" y="470" width="160" height="150" fill="#131A16"></rect>
+      <g stroke="#1B1E25" stroke-width="9">
+        <path d="M-10 150 H400"></path><path d="M-10 420 H400"></path><path d="M-10 660 H400"></path>
+        <path d="M90 -10 V860"></path><path d="M255 -10 V860"></path>
+      </g>
+      <g stroke="#171A20" stroke-width="4">
+        <path d="M-10 285 H400"></path><path d="M-10 545 H400"></path><path d="M175 -10 V860"></path><path d="M330 -10 V860"></path>
+      </g>
+      <g stroke="#FF6A2C" stroke-width="1" fill="none" stroke-opacity=".2">
+        <path d="M60 250 h66 v90 H60 z"></path><path d="M93 250 a 30 30 0 0 1 0 90"></path>
+      </g>
+    </svg>
+    <div style="position:absolute;left:172px;top:410px;width:18px;height:18px;border-radius:999px;background:#3A8BFF;border:3px solid #0F1116;animation:lh-pulse 2.4s infinite"></div>
+    <sc-for list="{{ markers }}" as="m" hint-placeholder-count="3">
+      <button onClick="{{ m.on }}" style="position:absolute;left: {{ m.x }};top: {{ m.y }};transform:translate(-50%,-100%);background:none;border:0;padding:0;cursor:pointer;display:flex;flex-direction:column;align-items:center">
+        <div style="display:flex;align-items:center;gap:5px;padding:6px 10px;border-radius:999px;background:{{ m.bg }};box-shadow:0 6px 18px rgba(0,0,0,.5)">
+          <span style="width:6px;height:6px;border-radius:9px;background:{{ m.dot }}"></span>
+          <span style="font:700 12px/1 system-ui;color:{{ m.fg }}">{{ m.count }}</span>
+        </div>
+        <div style="width:2px;height:10px;background:{{ m.bg }}"></div>
+      </button>
+    </sc-for>
+  </div>
+
+  <div style="position:absolute;top:52px;left:16px;right:16px;display:flex;gap:10px">
+    <div style="flex:1;display:flex;align-items:center;gap:9px;padding:12px 14px;border-radius:14px;background:rgba(13,14,18,.82);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.09);box-shadow:0 10px 30px rgba(0,0,0,.45)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9A9BA4" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.3-4.3"></path></svg>
+      <span style="font:400 14px/1 system-ui;color:#7C7E88">Search courts near you</span>
+    </div>
+    <button style="width:46px;height:46px;flex:none;border-radius:14px;background:rgba(13,14,18,.82);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.09);display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="border-color:rgba(255,106,44,.5)">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FF6A2C" stroke-width="2.2" stroke-linecap="round"><path d="M12 2v3M12 19v3M2 12h3M19 12h3"></path><circle cx="12" cy="12" r="5"></circle></svg>
+    </button>
+  </div>
+
+  <div style="position:absolute;left:0;right:0;bottom:98px;background:rgba(11,11,14,.9);backdrop-filter:blur(20px);border-top:1px solid #262931;padding:12px 0 10px">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;padding:0 20px 10px">
+      <span style="font:600 13px/1 system-ui;color:#F4F4F6">4 courts nearby</span>
+      <span style="font:500 12px/1 system-ui;color:#5A5C66">Sorted by distance</span>
+    </div>
+    <div style="max-height:150px;overflow:auto">
+      <sc-for list="{{ courts }}" as="c" hint-placeholder-count="4">
+        <button onClick="{{ c.on }}" style="width:100%;display:flex;align-items:center;gap:12px;padding:11px 20px;background:none;border:0;border-top:1px solid #1B1D23;cursor:pointer;text-align:left" style-hover="background:#15161A">
+          <div style="width:38px;height:38px;border-radius:10px;background:#1D1F24;flex:none;display:flex;align-items:center;justify-content:center">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5A5C66" stroke-width="1.6"><circle cx="12" cy="12" r="9"></circle><path d="M12 3v18M3 12h18M5 5.5c4 3.5 4 9.5 0 13M19 5.5c-4 3.5-4 9.5 0 13"></path></svg>
+          </div>
+          <div style="flex:1;min-width:0">
+            <div style="font:600 13.5px/1.2 system-ui;color:#F4F4F6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ c.name }}</div>
+            <div style="font:400 11.5px/1.2 system-ui;color:#5A5C66;margin-top:3px">{{ c.meta }}</div>
+          </div>
+          <span style="font:700 11px/1 system-ui;padding:6px 9px;border-radius:999px;color: {{ c.fg }};background: {{ c.bg }}">{{ c.badge }}</span>
+        </button>
+      </sc-for>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<!-- ── CHECK ── -->
+<sc-if value="{{ isCheck }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;display:flex;flex-direction:column">
+  <div style="padding:56px 20px 0;flex:none">
+    <div style="font:700 25px/1 -apple-system,system-ui;letter-spacing:-.9px">Live<span style="color:#FF6A2C">Hoops</span></div>
+  </div>
+  <div style="flex:1;overflow:auto;padding:26px 20px 120px">
+
+    <sc-if value="{{ checkedIn }}" hint-placeholder-val="{{ false }}">
+      <div style="position:relative;border-radius:22px;overflow:hidden;background:linear-gradient(160deg,#16221B 0%,#12161A 62%);border:1px solid rgba(47,224,138,.28);padding:20px">
+        <svg viewBox="0 0 300 220" style="position:absolute;right:-70px;bottom:-40px;width:280px;height:220px;opacity:.35" fill="none" stroke="#2FE08A" stroke-width="1">
+          <path d="M170 -10 A 130 130 0 0 1 170 230" stroke-opacity=".3"></path>
+          <path d="M170 40 A 80 80 0 0 1 170 180" stroke-opacity=".18"></path>
+        </svg>
+        <div style="position:relative;display:flex;align-items:center;gap:8px">
+          <span style="width:9px;height:9px;border-radius:9px;background:#2FE08A;animation:lh-pulse 1.9s infinite"></span>
+          <span style="font:700 10.5px/1 system-ui;letter-spacing:1.1px;color:#2FE08A">CHECKED IN</span>
+        </div>
+        <div style="font:700 24px/1.15 -apple-system,system-ui;letter-spacing:-.6px;margin-top:14px;position:relative">{{ activeCourt }}</div>
+        <div style="font:400 13px/1.3 system-ui;color:#9A9BA4;margin-top:5px;position:relative">{{ activeAddress }}</div>
+        <div style="display:flex;margin-top:20px;border-top:1px solid rgba(255,255,255,.08);padding-top:16px;position:relative">
+          <div style="flex:1">
+            <div style="font:700 22px/1 -apple-system,system-ui;font-variant-numeric:tabular-nums;color:#F4F4F6">{{ activePlayers }}</div>
+            <div style="font:500 10.5px/1 system-ui;color:#7C7E88;margin-top:6px">Players here</div>
+          </div>
+          <div style="width:1px;background:rgba(255,255,255,.08)"></div>
+          <div style="flex:1;padding-left:16px">
+            <div style="font:700 22px/1 -apple-system,system-ui;font-variant-numeric:tabular-nums;color:#F4F4F6">{{ elapsedLabel }}</div>
+            <div style="font:500 10.5px/1 system-ui;color:#7C7E88;margin-top:6px">Checked in</div>
+          </div>
+          <div style="width:1px;background:rgba(255,255,255,.08)"></div>
+          <div style="flex:1;padding-left:16px">
+            <div style="font:700 22px/1 -apple-system,system-ui;font-variant-numeric:tabular-nums;color:#2FE08A">{{ remainingLabel }}</div>
+            <div style="font:500 10.5px/1 system-ui;color:#7C7E88;margin-top:6px">Remaining</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:20px;position:relative">
+          <button onClick="{{ checkOut }}" style="flex:1;padding:14px;border-radius:14px;background:transparent;border:1px solid #343842;color:#F4F4F6;font:600 14px system-ui;cursor:pointer" style-hover="border-color:#FF6A2C;color:#FF6A2C">Check out</button>
+          <button style="flex:1;padding:14px;border-radius:14px;background:#FF6A2C;border:0;color:#150B05;font:600 14px system-ui;cursor:pointer" style-hover="background:#FF8B57">Post to feed</button>
+        </div>
+      </div>
+      <div style="font:600 13px/1 system-ui;color:#7C7E88;letter-spacing:.4px;margin:28px 0 12px">WHO'S HERE</div>
+      <div style="display:flex;flex-wrap:wrap;gap:12px">
+        <sc-for list="{{ crew }}" as="p" hint-placeholder-count="5">
+          <div style="width:44px;height:44px;border-radius:999px;background:#1D1F24;display:flex;align-items:center;justify-content:center;font:600 14px system-ui;color:#C9CAD2">{{ p.initials }}</div>
+        </sc-for>
+        <div style="width:44px;height:44px;border-radius:999px;border:1px dashed #343842;display:flex;align-items:center;justify-content:center;font:600 12px system-ui;color:#5A5C66">+3</div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ notCheckedIn }}" hint-placeholder-val="{{ true }}">
+      <div style="position:relative;text-align:center;padding:34px 0 4px">
+        <svg viewBox="0 0 390 300" style="position:absolute;left:50%;top:0;transform:translateX(-50%);width:390px;height:300px;opacity:.5" fill="none" stroke="#FF6A2C" stroke-width="1">
+          <path d="M195 12 m -104 0 a 104 104 0 1 0 208 0 a 104 104 0 1 0 -208 0" stroke-opacity=".1"></path>
+          <path d="M120 150 h150" stroke-opacity=".12"></path>
+        </svg>
+        <div style="position:relative;width:74px;height:74px;margin:0 auto">
+          <svg viewBox="0 0 74 74" fill="none" stroke="#FF6A2C" stroke-width="2">
+            <circle cx="37" cy="37" r="32" stroke-opacity=".85"></circle>
+            <path d="M37 5v64M5 37h64" stroke-opacity=".55"></path>
+            <path d="M14 13c11 12 11 36 0 48M60 13c-11 12-11 36 0 48" stroke-opacity=".55"></path>
+          </svg>
+        </div>
+        <div style="font:700 22px/1.2 -apple-system,system-ui;letter-spacing:-.5px;margin-top:22px;position:relative">Not checked in</div>
+        <div style="font:400 14px/1.45 system-ui;color:#9A9BA4;margin:9px auto 0;max-width:250px;position:relative;text-wrap:pretty">Find a court near you and let others know you're running.</div>
+        <div style="display:flex;flex-direction:column;gap:11px;margin-top:26px;position:relative">
+          <button onClick="{{ openPicker }}" style="padding:16px;border-radius:16px;background:#FF6A2C;border:0;color:#150B05;font:600 15.5px system-ui;cursor:pointer;box-shadow:0 10px 26px rgba(255,106,44,.22);display:flex;align-items:center;justify-content:center;gap:8px" style-hover="background:#FF8B57">Check in
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#150B05" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg>
+          </button>
+          <button style="padding:16px;border-radius:16px;background:transparent;border:1px solid #343842;color:#F4F4F6;font:600 15.5px system-ui;cursor:pointer" style-hover="border-color:#FF6A2C;color:#FF6A2C">Add a court</button>
+        </div>
+      </div>
+      <div style="font:600 13px/1 system-ui;color:#7C7E88;letter-spacing:.4px;margin:34px 0 4px">RUNNING RIGHT NOW</div>
+      <sc-for list="{{ liveCourts }}" as="c" hint-placeholder-count="3">
+        <button onClick="{{ c.on }}" style="width:100%;display:flex;align-items:center;gap:12px;padding:15px 0;background:none;border:0;border-bottom:1px solid #1B1D23;cursor:pointer;text-align:left" style-hover="opacity:.75">
+          <div style="width:8px;height:8px;border-radius:9px;background:#2FE08A;flex:none;animation:lh-pulse 1.9s infinite"></div>
+          <div style="flex:1;min-width:0">
+            <div style="font:600 14px/1.2 system-ui;color:#F4F4F6">{{ c.name }}</div>
+            <div style="font:400 11.5px/1.2 system-ui;color:#5A5C66;margin-top:4px">{{ c.meta }}</div>
+          </div>
+          <span style="font:700 12px/1 system-ui;color:#F4F4F6;font-variant-numeric:tabular-nums">{{ c.players }}</span>
+          <svg width="7" height="12" viewBox="0 0 8 14" fill="none" stroke="#3B3E47" stroke-width="2" stroke-linecap="round"><path d="M1 1l6 6-6 6"></path></svg>
+        </button>
+      </sc-for>
+    </sc-if>
+  </div>
+</div>
+</sc-if>
+
+<!-- ── FRIENDS ── -->
+<sc-if value="{{ isFriends }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;display:flex;flex-direction:column">
+  <div style="padding:56px 20px 0;flex:none">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div style="font:700 25px/1 -apple-system,system-ui;letter-spacing:-.9px">Live<span style="color:#FF6A2C">Hoops</span></div>
+      <button style="width:38px;height:38px;border-radius:999px;border:1px solid #262931;background:#15161A;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="border-color:rgba(255,106,44,.5)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FF6A2C" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="4"></circle><path d="M2 21v-1a7 7 0 0 1 12-4.9M18 11v6M15 14h6"></path></svg>
+      </button>
+    </div>
+    <div style="display:flex;align-items:center;gap:7px;margin-top:9px">
+      <span style="width:7px;height:7px;border-radius:9px;background:#2FE08A;animation:lh-pulse 1.9s infinite"></span>
+      <span style="font:500 12.5px/1 system-ui;color:#9A9BA4">3 of 12 in your crew are out</span>
+    </div>
+    <div style="display:flex;gap:22px;margin-top:18px;border-bottom:1px solid #1B1D23">
+      <sc-for list="{{ frTabs }}" as="t" hint-placeholder-count="2">
+        <button onClick="{{ t.on }}" style="background:none;border:0;padding:0 0 10px;cursor:pointer;font:600 13.5px/1 system-ui;position:relative;display:flex;align-items:center;gap:6px;color: {{ t.col }}">
+          {{ t.label }}
+          <sc-if value="{{ t.badge }}" hint-placeholder-val="{{ false }}"><span style="font:700 10px/1 system-ui;color:#150B05;background:#FF6A2C;padding:3px 5px;border-radius:999px">2</span></sc-if>
+          <span style="position:absolute;left:0;right:0;bottom:-1px;height:2px;border-radius:2px;background: {{ t.bar }}"></span>
+        </button>
+      </sc-for>
+    </div>
+  </div>
+  <div style="flex:1;overflow:auto;padding:18px 20px 120px">
+    <sc-if value="{{ frFriends }}" hint-placeholder-val="{{ true }}">
+      <div style="border:1px solid rgba(255,106,44,.28);background:rgba(255,106,44,.07);border-radius:16px;padding:14px">
+        <div style="font:600 11px/1 system-ui;letter-spacing:.8px;color:#FF6A2C">REQUEST</div>
+        <div style="display:flex;align-items:center;gap:12px;margin-top:12px">
+          <div style="width:42px;height:42px;border-radius:999px;background:#1D1F24;display:flex;align-items:center;justify-content:center;font:600 15px system-ui;color:#C9CAD2">DK</div>
+          <div style="flex:1;min-width:0">
+            <div style="font:600 14px/1.2 system-ui">Dre <span style="color:#FF6A2C">#23</span></div>
+            <div style="font:400 11.5px/1.2 system-ui;color:#5A5C66;margin-top:3px">2 mutual courts · Cadman Plaza</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:9px;margin-top:13px">
+          <button style="flex:1;padding:11px;border-radius:12px;background:#FF6A2C;border:0;color:#150B05;font:600 13px system-ui;cursor:pointer" style-hover="background:#FF8B57">Accept</button>
+          <button style="flex:1;padding:11px;border-radius:12px;background:transparent;border:1px solid #343842;color:#9A9BA4;font:600 13px system-ui;cursor:pointer" style-hover="color:#F4F4F6">Decline</button>
+        </div>
+      </div>
+      <div style="font:600 13px/1 system-ui;color:#7C7E88;letter-spacing:.4px;margin:26px 0 4px">YOUR CREW</div>
+      <sc-for list="{{ friends }}" as="f" hint-placeholder-count="4">
+        <div style="display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid #1B1D23">
+          <div style="width:44px;height:44px;border-radius:999px;padding:2px;background:{{ f.ring }};flex:none">
+            <div style="width:100%;height:100%;border-radius:999px;background:#1D1F24;display:flex;align-items:center;justify-content:center;font:600 14px system-ui;color:#C9CAD2">{{ f.initials }}</div>
+          </div>
+          <div style="flex:1;min-width:0">
+            <div style="font:600 14px/1.2 system-ui">{{ f.name }} <span style="color:#FF6A2C">{{ f.jersey }}</span></div>
+            <div style="font:400 11.5px/1.2 system-ui;margin-top:4px;color: {{ f.statusCol }}">{{ f.status }}</div>
+          </div>
+          <button style="width:36px;height:36px;border-radius:999px;border:1px solid #262931;background:#15161A;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="border-color:rgba(255,106,44,.5)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9A9BA4" stroke-width="2" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"></path></svg>
+          </button>
+        </div>
+      </sc-for>
+    </sc-if>
+    <sc-if value="{{ frMessages }}" hint-placeholder-val="{{ false }}">
+      <sc-for list="{{ dms }}" as="d" hint-placeholder-count="4">
+        <div style="display:flex;align-items:center;gap:12px;padding:15px 0;border-bottom:1px solid #1B1D23">
+          <div style="width:44px;height:44px;border-radius:999px;background:#1D1F24;display:flex;align-items:center;justify-content:center;font:600 14px system-ui;color:#C9CAD2;flex:none">{{ d.initials }}</div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:baseline;gap:8px">
+              <span style="font:600 14px/1.2 system-ui">{{ d.name }}</span>
+              <span style="font:400 11px/1.2 system-ui;color:#5A5C66;margin-left:auto">{{ d.time }}</span>
+            </div>
+            <div style="font:400 12.5px/1.3 system-ui;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color: {{ d.col }}">{{ d.preview }}</div>
+          </div>
+          <sc-if value="{{ d.unread }}" hint-placeholder-val="{{ false }}">
+            <span style="font:700 11px/1 system-ui;color:#150B05;background:#FF6A2C;min-width:20px;height:20px;border-radius:999px;display:flex;align-items:center;justify-content:center">{{ d.count }}</span>
+          </sc-if>
+        </div>
+      </sc-for>
+    </sc-if>
+  </div>
+</div>
+</sc-if>
+
+<!-- ── PROFILE ── -->
+<sc-if value="{{ isProfile }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;display:flex;flex-direction:column">
+  <div style="position:relative;padding:52px 20px 0;flex:none;overflow:hidden">
+    <svg viewBox="0 0 390 260" style="position:absolute;left:50%;top:34px;transform:translateX(-50%);width:390px;height:260px;opacity:.45" fill="none" stroke="#FF6A2C" stroke-width="1">
+      <path d="M75 -20 h240 v150 H75 z" stroke-opacity=".1"></path>
+      <path d="M195 130 a 60 60 0 0 0 0 -0.1" stroke-opacity="0"></path>
+      <path d="M135 130 a 60 60 0 0 0 120 0" stroke-opacity=".14"></path>
+    </svg>
+    <div style="display:flex;align-items:center;justify-content:space-between;position:relative">
+      <button onClick="{{ goHome }}" style="width:36px;height:36px;border-radius:999px;border:1px solid #262931;background:#15161A;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="border-color:#343842">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9A9BA4" stroke-width="2.4" stroke-linecap="round"><path d="M15 18l-6-6 6-6"></path></svg>
+      </button>
+      <button onClick="{{ openSettings }}" style="width:36px;height:36px;border-radius:999px;border:1px solid #262931;background:#15161A;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="border-color:#343842">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9A9BA4" stroke-width="2" stroke-linecap="round"><path d="M20 7h-9M14 17H5"></path><circle cx="17" cy="17" r="3"></circle><circle cx="7" cy="7" r="3"></circle></svg>
+      </button>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;margin-top:6px;position:relative">
+      <div style="width:92px;height:92px;border-radius:999px;padding:3px;background:linear-gradient(140deg,#FF6A2C,#2FE08A)">
+        <div style="width:100%;height:100%;border-radius:999px;overflow:hidden;background:#1D1F24">
+          <image-slot id="lh-avatar" shape="circle" placeholder="Avatar"></image-slot>
+        </div>
+      </div>
+      <div style="font:700 24px/1.1 -apple-system,system-ui;letter-spacing:-.6px;margin-top:14px">Royxl <span style="color:#FF6A2C">#7</span></div>
+      <div style="font:400 12.5px/1 system-ui;color:#5A5C66;margin-top:6px">Brooklyn · joined Mar 2024</div>
+      <div style="display:flex;gap:9px;margin-top:18px;width:100%">
+        <sc-for list="{{ stats }}" as="s" hint-placeholder-count="3">
+          <div style="flex:1;border:1px solid #262931;border-radius:14px;background:#15161A;padding:12px 0;text-align:center">
+            <div style="font:700 19px/1 -apple-system,system-ui;color:#FF6A2C;font-variant-numeric:tabular-nums">{{ s.v }}</div>
+            <div style="font:500 10.5px/1 system-ui;color:#7C7E88;margin-top:6px">{{ s.k }}</div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:12px;width:100%">
+        <button onClick="{{ openAchievements }}" style="flex:1;padding:13px;border-radius:14px;background:#FF6A2C;border:0;color:#150B05;font:600 13.5px system-ui;cursor:pointer" style-hover="background:#FF8B57">Achievements</button>
+        <button onClick="{{ openEdit }}" style="flex:1;padding:13px;border-radius:14px;background:transparent;border:1px solid #343842;color:#F4F4F6;font:600 13.5px system-ui;cursor:pointer" style-hover="border-color:#FF6A2C;color:#FF6A2C">Edit profile</button>
+      </div>
+    </div>
+    <div style="display:flex;gap:22px;margin-top:20px;border-bottom:1px solid #1B1D23;position:relative">
+      <sc-for list="{{ profTabs }}" as="t" hint-placeholder-count="2">
+        <button onClick="{{ t.on }}" style="background:none;border:0;padding:0 0 10px;cursor:pointer;font:600 13.5px/1 system-ui;position:relative;color: {{ t.col }}">
+          {{ t.label }}
+          <span style="position:absolute;left:0;right:0;bottom:-1px;height:2px;border-radius:2px;background: {{ t.bar }}"></span>
+        </button>
+      </sc-for>
+    </div>
+  </div>
+  <div style="flex:1;overflow:auto;padding:16px 20px 120px">
+    <sc-if value="{{ profPosts }}" hint-placeholder-val="{{ true }}">
+      <div style="border:1px solid #262931;border-radius:16px;overflow:hidden;background:#15161A">
+        <div style="padding:13px 14px">
+          <div style="font:600 13.5px/1.2 system-ui">2–1 for the day</div>
+          <div style="font:400 11.5px/1.2 system-ui;color:#5A5C66;margin-top:4px">Cadman Plaza · 1d ago</div>
+        </div>
+        <div style="height:170px;background:#1D1F24"><image-slot id="lh-prof-1" shape="rect" placeholder="Run photo"></image-slot></div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ profCheckins }}" hint-placeholder-val="{{ false }}">
+      <sc-for list="{{ history }}" as="h" hint-placeholder-count="4">
+        <div style="display:flex;align-items:center;gap:13px;padding:15px 0;border-bottom:1px solid #1B1D23">
+          <div style="width:40px;text-align:center;flex:none">
+            <div style="font:700 15px/1 -apple-system,system-ui;font-variant-numeric:tabular-nums">{{ h.day }}</div>
+            <div style="font:500 10px/1 system-ui;color:#5A5C66;margin-top:4px">{{ h.mon }}</div>
+          </div>
+          <div style="width:1px;height:30px;background:#1B1D23"></div>
+          <div style="flex:1;min-width:0">
+            <div style="font:600 13.5px/1.2 system-ui">{{ h.court }}</div>
+            <div style="font:400 11.5px/1.2 system-ui;color:#5A5C66;margin-top:4px">{{ h.dur }} · {{ h.players }} players</div>
+          </div>
+          <button onClick="{{ h.showOnMap }}" style="flex:none;display:flex;align-items:center;gap:6px;padding:8px 11px;border-radius:999px;background:rgba(255,106,44,.12);border:1px solid rgba(255,106,44,.32);color:#FF6A2C;font:600 11.5px system-ui;cursor:pointer;white-space:nowrap" style-hover="background:rgba(255,106,44,.2)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0"></path><circle cx="12" cy="10" r="3"></circle></svg>
+            Map
+          </button>
+        </div>
+      </sc-for>
+    </sc-if>
+  </div>
+</div>
+</sc-if>
+
+<!-- ── SCHEDULE A RUN ── -->
+<sc-if value="{{ scheduleOpen }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;z-index:88">
+  <div onClick="{{ closeSchedule }}" style="position:absolute;inset:0;background:rgba(0,0,0,.66);animation:lh-fade .2s ease-out"></div>
+  <div style="position:absolute;left:0;right:0;bottom:0;background:#15161A;border-top:1px solid #262931;border-radius:26px 26px 0 0;animation:lh-up .28s cubic-bezier(.2,.8,.2,1);overflow:hidden;padding-bottom:34px">
+    <div style="display:flex;justify-content:center;padding:9px 0 5px"><div style="width:36px;height:4px;border-radius:2px;background:#343842"></div></div>
+    <div style="padding:0 20px 12px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #1B1D23">
+      <button onClick="{{ schedBack }}" style="background:none;border:0;padding:0;cursor:pointer;font:500 12.5px system-ui;color:#9A9BA4;flex:none" style-hover="color:#F4F4F6">{{ schedBackLabel }}</button>
+      <div style="flex:1;text-align:center">
+        <div style="font:600 15px/1 system-ui">Schedule a run</div>
+        <div style="font:400 11px/1 system-ui;color:#5A5C66;margin-top:6px">{{ schedStepLabel }}</div>
+      </div>
+      <span style="font:600 11px/1 ui-monospace,Menlo,monospace;color:#5A5C66;flex:none">{{ schedStepCount }}</span>
+    </div>
+
+    <sc-if value="{{ schedStepWhen }}" hint-placeholder-val="{{ true }}">
+    <div style="padding:16px 20px 0;max-height:430px;overflow:auto">
+      <div style="display:flex;align-items:center;gap:9px;padding:12px 14px;border-radius:14px;background:#1D1F24">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FF6A2C" stroke-width="2.2" stroke-linecap="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0"></path><circle cx="12" cy="10" r="3"></circle></svg>
+        <span style="flex:1;font:600 13.5px/1 system-ui;color:#F4F4F6">{{ sheetCourt }}</span>
+        <span style="font:400 11.5px/1 system-ui;color:#5A5C66">{{ sheetSub }}</span>
+      </div>
+
+      <div style="font:600 11px/1 system-ui;letter-spacing:.9px;color:#7C7E88;margin:22px 0 10px">DATE</div>
+      <div style="display:flex;gap:8px;overflow:auto;margin:0 -20px;padding:0 20px 4px">
+        <sc-for list="{{ schedDates }}" as="d" hint-placeholder-count="7">
+          <button onClick="{{ d.on }}" style="flex:none;width:54px;padding:11px 0;border-radius:13px;cursor:pointer;text-align:center;background: {{ d.bg }};border:1px solid {{ d.border }}">
+            <div style="font:600 9.5px/1 system-ui;letter-spacing:.6px;color: {{ d.dowCol }}">{{ d.dow }}</div>
+            <div style="font:700 17px/1 -apple-system,system-ui;font-variant-numeric:tabular-nums;margin-top:7px;color: {{ d.col }}">{{ d.day }}</div>
+          </button>
+        </sc-for>
+      </div>
+
+      <div style="font:600 11px/1 system-ui;letter-spacing:.9px;color:#7C7E88;margin:22px 0 10px">TIP-OFF</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+        <sc-for list="{{ schedTimes }}" as="t" hint-placeholder-count="8">
+          <button onClick="{{ t.on }}" style="padding:11px 0;border-radius:11px;cursor:pointer;font:600 12.5px system-ui;font-variant-numeric:tabular-nums;background: {{ t.bg }};border:1px solid {{ t.border }};color: {{ t.col }}">{{ t.label }}</button>
+        </sc-for>
+      </div>
+
+      <div style="font:600 11px/1 system-ui;letter-spacing:.9px;color:#7C7E88;margin:22px 0 10px">HOW LONG</div>
+      <div style="display:flex;gap:8px">
+        <sc-for list="{{ schedDurations }}" as="d" hint-placeholder-count="4">
+          <button onClick="{{ d.on }}" style="flex:1;padding:11px 0;border-radius:11px;cursor:pointer;font:600 12.5px system-ui;background: {{ d.bg }};border:1px solid {{ d.border }};color: {{ d.col }}">{{ d.label }}</button>
+        </sc-for>
+      </div>
+
+      <button onClick="{{ schedNext }}" style="width:100%;margin-top:22px;padding:16px;border-radius:16px;background:#FF6A2C;border:0;color:#150B05;font:600 15px system-ui;cursor:pointer;box-shadow:0 10px 26px rgba(255,106,44,.22)" style-hover="background:#FF8B57">Invite players</button>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ schedStepWho }}" hint-placeholder-val="{{ false }}">
+    <div style="padding:16px 20px 0;max-height:430px;overflow:auto">
+      <div style="display:flex;align-items:center;gap:10px;padding:13px 14px;border-radius:14px;background:linear-gradient(150deg,rgba(255,106,44,.14),#1D1F24)">
+        <div style="flex:1;min-width:0">
+          <div style="font:600 13.5px/1.2 system-ui;color:#F4F4F6">{{ sheetCourt }}</div>
+          <div style="font:400 11.5px/1.2 system-ui;color:#9A9BA4;margin-top:5px">{{ schedSummary }}</div>
+        </div>
+        <button onClick="{{ schedBack }}" style="font:600 11.5px system-ui;color:#FF6A2C;background:none;border:0;padding:0;cursor:pointer;flex:none" style-hover="color:#FF8B57">Change</button>
+      </div>
+
+      <div style="display:flex;align-items:baseline;justify-content:space-between;margin:22px 0 10px">
+        <span style="font:600 11px/1 system-ui;letter-spacing:.9px;color:#7C7E88">INVITE YOUR CREW</span>
+        <span style="font:600 11px/1 system-ui;color:#FF6A2C">{{ inviteCount }} selected</span>
+      </div>
+      <sc-for list="{{ inviteList }}" as="f" hint-placeholder-count="4">
+        <button onClick="{{ f.on }}" style="width:100%;display:flex;align-items:center;gap:12px;padding:12px 0;background:none;border:0;border-bottom:1px solid #1B1D23;cursor:pointer;text-align:left" style-hover="opacity:.8">
+          <div style="width:42px;height:42px;border-radius:999px;background:#1D1F24;display:flex;align-items:center;justify-content:center;font:600 14px system-ui;color:#C9CAD2;flex:none">{{ f.initials }}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font:600 13.5px/1.2 system-ui;color:#F4F4F6">{{ f.name }} <span style="color:#FF6A2C">{{ f.jersey }}</span></div>
+            <div style="font:400 11px/1.2 system-ui;margin-top:4px;color: {{ f.statusCol }}">{{ f.status }}</div>
+          </div>
+          <span style="width:24px;height:24px;border-radius:999px;flex:none;display:flex;align-items:center;justify-content:center;background: {{ f.boxBg }};border:1.5px solid {{ f.boxBorder }}">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="{{ f.tick }}" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5l5 5 10-10"></path></svg>
+          </span>
+        </button>
+      </sc-for>
+
+      <button onClick="{{ toggleOpenRun }}" style="width:100%;display:flex;align-items:center;gap:12px;padding:14px 0;background:none;border:0;cursor:pointer;text-align:left">
+        <div style="width:42px;height:42px;border-radius:999px;border:1px dashed #343842;display:flex;align-items:center;justify-content:center;flex:none">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#9A9BA4" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M3.5 12h17M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"></path></svg>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font:600 13.5px/1.2 system-ui;color:#F4F4F6">Open to anyone nearby</div>
+          <div style="font:400 11px/1.3 system-ui;color:#5A5C66;margin-top:4px">Shows in the feed for players within 2 miles</div>
+        </div>
+        <span style="width:44px;height:26px;border-radius:999px;flex:none;padding:3px;display:flex;background: {{ openRunTrack }};justify-content: {{ openRunJustify }}">
+          <span style="width:20px;height:20px;border-radius:999px;background:#F4F4F6"></span>
+        </span>
+      </button>
+
+      <button onClick="{{ sendInvites }}" style="width:100%;margin-top:14px;padding:16px;border-radius:16px;background:#FF6A2C;border:0;color:#150B05;font:600 15px system-ui;cursor:pointer;box-shadow:0 10px 26px rgba(255,106,44,.22)" style-hover="background:#FF8B57">{{ sendLabel }}</button>
+    </div>
+    </sc-if>
+  </div>
+</div>
+</sc-if>
+
+<!-- ── SETTINGS ── -->
+<sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;left:0;right:0;top:0;bottom:96px;background:#0B0B0E;z-index:74;display:flex;flex-direction:column;animation:lh-fade .18s ease-out">
+  <div style="padding:52px 20px 14px;flex:none;display:flex;align-items:center;gap:12px;border-bottom:1px solid #1B1D23">
+    <button onClick="{{ closeSettings }}" style="width:36px;height:36px;border-radius:999px;border:1px solid #262931;background:#15161A;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none" style-hover="border-color:#343842">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9A9BA4" stroke-width="2.4" stroke-linecap="round"><path d="M15 18l-6-6 6-6"></path></svg>
+    </button>
+    <div style="font:700 20px/1 -apple-system,system-ui;letter-spacing:-.6px">Settings</div>
+  </div>
+
+  <div style="flex:1;overflow:auto;padding:20px 20px 30px">
+    <div style="display:flex;align-items:center;gap:12px;padding:14px;border:1px solid #262931;border-radius:16px;background:#15161A">
+      <div style="width:44px;height:44px;border-radius:999px;overflow:hidden;background:#1D1F24;flex:none">
+        <image-slot id="lh-settings-avatar" shape="circle" placeholder="Avatar"></image-slot>
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font:600 14.5px/1.2 system-ui">{{ editName }} <span style="color:#FF6A2C">#{{ editJersey }}</span></div>
+        <div style="font:400 11.5px/1.2 system-ui;color:#5A5C66;margin-top:4px">royxl@email.com</div>
+      </div>
+      <button onClick="{{ openEdit }}" style="font:600 12px system-ui;color:#FF6A2C;background:rgba(255,106,44,.12);border:1px solid rgba(255,106,44,.32);padding:8px 12px;border-radius:999px;cursor:pointer;flex:none" style-hover="background:rgba(255,106,44,.2)">Edit</button>
+    </div>
+
+    <div style="font:600 11px/1 system-ui;letter-spacing:.9px;color:#7C7E88;margin:24px 0 10px">SESSION</div>
+    <div style="border:1px solid #262931;border-radius:16px;background:#15161A;overflow:hidden">
+      <div style="padding:14px 15px;border-bottom:1px solid #1B1D23">
+        <div style="display:flex;align-items:baseline;justify-content:space-between">
+          <div style="font:500 13.5px/1.2 system-ui">Auto check-out after</div>
+          <div style="font:700 13px/1 system-ui;color:#FF6A2C;font-variant-numeric:tabular-nums">{{ autoOutLabel }}</div>
+        </div>
+        <div style="display:flex;gap:7px;margin-top:12px">
+          <sc-for list="{{ autoOutOptions }}" as="o" hint-placeholder-count="4">
+            <button onClick="{{ o.on }}" style="flex:1;padding:10px 0;border-radius:10px;cursor:pointer;font:600 12px system-ui;background: {{ o.bg }};border:1px solid {{ o.border }};color: {{ o.col }}">{{ o.label }}</button>
+          </sc-for>
+        </div>
+      </div>
+      <sc-for list="{{ sessionToggles }}" as="t" hint-placeholder-count="2">
+        <button onClick="{{ t.on }}" style="width:100%;display:flex;align-items:center;gap:12px;padding:14px 15px;background:none;border:0;border-bottom:1px solid #1B1D23;cursor:pointer;text-align:left" style-hover="background:#1D1F24">
+          <div style="flex:1;min-width:0">
+            <div style="font:500 13.5px/1.2 system-ui;color:#F4F4F6">{{ t.label }}</div>
+            <div style="font:400 11px/1.3 system-ui;color:#5A5C66;margin-top:4px">{{ t.hint }}</div>
+          </div>
+          <span style="width:44px;height:26px;border-radius:999px;flex:none;padding:3px;display:flex;background: {{ t.track }};justify-content: {{ t.justify }}">
+            <span style="width:20px;height:20px;border-radius:999px;background:#F4F4F6"></span>
+          </span>
+        </button>
+      </sc-for>
+    </div>
+
+    <div style="font:600 11px/1 system-ui;letter-spacing:.9px;color:#7C7E88;margin:24px 0 10px">NOTIFICATIONS</div>
+    <div style="border:1px solid #262931;border-radius:16px;background:#15161A;overflow:hidden">
+      <sc-for list="{{ notifToggles }}" as="t" hint-placeholder-count="4">
+        <button onClick="{{ t.on }}" style="width:100%;display:flex;align-items:center;gap:12px;padding:14px 15px;background:none;border:0;border-bottom:1px solid #1B1D23;cursor:pointer;text-align:left" style-hover="background:#1D1F24">
+          <div style="flex:1;min-width:0">
+            <div style="font:500 13.5px/1.2 system-ui;color:#F4F4F6">{{ t.label }}</div>
+            <div style="font:400 11px/1.3 system-ui;color:#5A5C66;margin-top:4px">{{ t.hint }}</div>
+          </div>
+          <span style="width:44px;height:26px;border-radius:999px;flex:none;padding:3px;display:flex;background: {{ t.track }};justify-content: {{ t.justify }}">
+            <span style="width:20px;height:20px;border-radius:999px;background:#F4F4F6"></span>
+          </span>
+        </button>
+      </sc-for>
+    </div>
+
+    <div style="font:600 11px/1 system-ui;letter-spacing:.9px;color:#7C7E88;margin:24px 0 10px">APPEARANCE</div>
+    <div style="border:1px solid #262931;border-radius:16px;background:#15161A;padding:14px 15px">
+      <div style="font:500 13.5px/1.2 system-ui">Theme</div>
+      <div style="display:flex;gap:7px;margin-top:12px">
+        <sc-for list="{{ themeOptions }}" as="o" hint-placeholder-count="3">
+          <button onClick="{{ o.on }}" style="flex:1;padding:10px 0;border-radius:10px;cursor:pointer;font:600 12px system-ui;background: {{ o.bg }};border:1px solid {{ o.border }};color: {{ o.col }}">{{ o.label }}</button>
+        </sc-for>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:18px;padding-top:14px;border-top:1px solid #1B1D23">
+        <div style="font:500 13.5px/1.2 system-ui">Accent</div>
+        <div style="display:flex;gap:7px">
+          <sc-for list="{{ accentSwatches }}" as="a" hint-placeholder-count="8">
+            <button onClick="{{ a.on }}" style="width:22px;height:22px;border-radius:999px;cursor:pointer;background: {{ a.hex }};border:2px solid {{ a.ring }}"></button>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <div style="font:600 11px/1 system-ui;letter-spacing:.9px;color:#7C7E88;margin:24px 0 10px">ABOUT</div>
+    <div style="border:1px solid #262931;border-radius:16px;background:#15161A;overflow:hidden">
+      <sc-for list="{{ aboutRows }}" as="r" hint-placeholder-count="4">
+        <button style="width:100%;display:flex;align-items:center;gap:12px;padding:15px;background:none;border:0;border-bottom:1px solid #1B1D23;cursor:pointer;text-align:left" style-hover="background:#1D1F24">
+          <span style="flex:1;font:500 13.5px/1 system-ui;color:#F4F4F6">{{ r.label }}</span>
+          <span style="font:400 12px/1 system-ui;color:#5A5C66">{{ r.value }}</span>
+          <svg width="7" height="12" viewBox="0 0 8 14" fill="none" stroke="#3B3E47" stroke-width="2" stroke-linecap="round"><path d="M1 1l6 6-6 6"></path></svg>
+        </button>
+      </sc-for>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:9px;margin-top:20px">
+      <button style="padding:14px;border-radius:14px;background:transparent;border:1px solid #343842;color:#F4F4F6;font:600 13.5px system-ui;cursor:pointer" style-hover="border-color:#FF6A2C;color:#FF6A2C">Log out</button>
+      <button style="padding:14px;border-radius:14px;background:transparent;border:1px solid rgba(255,90,82,.35);color:#FF5A52;font:600 13.5px system-ui;cursor:pointer" style-hover="background:rgba(255,90,82,.1)">Delete account</button>
+    </div>
+    <div style="text-align:center;font:400 10.5px/1 ui-monospace,Menlo,monospace;color:#3B3E47;margin-top:18px">LiveHoops 2.4.0 (318)</div>
+  </div>
+</div>
+</sc-if>
+
+<!-- ── HOME COURT PICKER ── -->
+<sc-if value="{{ homePickerOpen }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;z-index:86">
+  <div onClick="{{ closeHomePicker }}" style="position:absolute;inset:0;background:rgba(0,0,0,.62);animation:lh-fade .2s ease-out"></div>
+  <div style="position:absolute;left:0;right:0;bottom:0;background:#15161A;border-top:1px solid #262931;border-radius:26px 26px 0 0;animation:lh-up .28s cubic-bezier(.2,.8,.2,1);overflow:hidden;padding-bottom:34px">
+    <div style="display:flex;justify-content:center;padding:9px 0 5px"><div style="width:36px;height:4px;border-radius:2px;background:#343842"></div></div>
+    <div style="padding:0 20px 12px;display:flex;align-items:baseline;justify-content:space-between;border-bottom:1px solid #1B1D23">
+      <div>
+        <div style="font:600 15px/1 system-ui">Home court</div>
+        <div style="font:400 11.5px/1 system-ui;color:#5A5C66;margin-top:6px">Nearest to you first</div>
+      </div>
+      <button onClick="{{ closeHomePicker }}" style="background:none;border:0;padding:0;cursor:pointer;font:500 12.5px system-ui;color:#FF6A2C">Cancel</button>
+    </div>
+    <div style="max-height:320px;overflow:auto">
+      <sc-for list="{{ homeOptions }}" as="c" hint-placeholder-count="4">
+        <button onClick="{{ c.pick }}" style="width:100%;display:flex;align-items:center;gap:12px;padding:14px 20px;background:none;border:0;border-bottom:1px solid #1B1D23;cursor:pointer;text-align:left" style-hover="background:#1D1F24">
+          <div style="width:44px;flex:none;text-align:center">
+            <div style="font:700 14px/1 -apple-system,system-ui;font-variant-numeric:tabular-nums;color:#F4F4F6">{{ c.dist }}</div>
+            <div style="font:500 9.5px/1 system-ui;color:#5A5C66;margin-top:4px">MILES</div>
+          </div>
+          <div style="width:1px;height:32px;background:#1B1D23"></div>
+          <div style="flex:1;min-width:0">
+            <div style="font:600 14px/1.2 system-ui;color:#F4F4F6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ c.name }}</div>
+            <div style="font:400 11.5px/1.2 system-ui;color:#5A5C66;margin-top:4px">{{ c.addr }}</div>
+          </div>
+        </button>
+      </sc-for>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<!-- ── EDIT PROFILE ── -->
+<sc-if value="{{ isEdit }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;left:0;right:0;top:0;bottom:96px;background:#0B0B0E;z-index:74;display:flex;flex-direction:column;animation:lh-fade .18s ease-out">
+  <div style="padding:52px 20px 14px;flex:none;display:flex;align-items:center;gap:12px;border-bottom:1px solid #1B1D23">
+    <button onClick="{{ closeEdit }}" style="background:none;border:0;padding:0;cursor:pointer;font:500 13.5px system-ui;color:#9A9BA4;flex:none" style-hover="color:#F4F4F6">Cancel</button>
+    <div style="flex:1;text-align:center;font:600 15.5px/1 system-ui">Edit profile</div>
+    <button onClick="{{ saveEdit }}" style="background:none;border:0;padding:0;cursor:pointer;font:700 13.5px system-ui;color:#FF6A2C;flex:none" style-hover="color:#FF8B57">Save</button>
+  </div>
+
+  <div style="flex:1;overflow:auto;padding:22px 20px 30px">
+    <div style="display:flex;flex-direction:column;align-items:center">
+      <div style="position:relative;width:92px;height:92px">
+        <div style="width:92px;height:92px;border-radius:999px;padding:3px;background:linear-gradient(140deg,#FF6A2C,#2FE08A)">
+          <div style="width:100%;height:100%;border-radius:999px;overflow:hidden;background:#1D1F24">
+            <image-slot id="lh-edit-avatar" shape="circle" placeholder="Avatar"></image-slot>
+          </div>
+        </div>
+        <button style="position:absolute;right:-2px;bottom:-2px;width:30px;height:30px;border-radius:999px;background:#FF6A2C;border:3px solid #0B0B0E;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="background:#FF8B57">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#150B05" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l1.5-2.2h7L17 8h3v11H4z"></path><circle cx="12" cy="13.2" r="3.4"></circle></svg>
+        </button>
+      </div>
+      <button style="background:none;border:0;margin-top:12px;cursor:pointer;font:600 12.5px system-ui;color:#FF6A2C" style-hover="color:#FF8B57">Change photo</button>
+    </div>
+
+    <div style="font:600 11px/1 system-ui;letter-spacing:.9px;color:#7C7E88;margin:26px 0 10px">IDENTITY</div>
+    <div style="border:1px solid #262931;border-radius:16px;background:#15161A;overflow:hidden">
+      <div style="padding:13px 15px;border-bottom:1px solid #1B1D23">
+        <div style="font:500 10.5px/1 system-ui;color:#7C7E88">Display name</div>
+        <input value="{{ editName }}" onChange="{{ setName }}" style="width:100%;margin-top:8px;background:none;border:0;outline:none;color:#F4F4F6;font:600 15px system-ui;padding:0">
+      </div>
+      <div style="padding:13px 15px;border-bottom:1px solid #1B1D23">
+        <div style="font:500 10.5px/1 system-ui;color:#7C7E88">Jersey number</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
+          <span style="font:700 15px/1 system-ui;color:#FF6A2C">#</span>
+          <input value="{{ editJersey }}" onChange="{{ setJersey }}" style="width:60px;background:none;border:0;outline:none;color:#F4F4F6;font:700 15px system-ui;font-variant-numeric:tabular-nums;padding:0">
+        </div>
+      </div>
+      <div style="padding:13px 15px">
+        <div style="font:500 10.5px/1 system-ui;color:#7C7E88">Home court</div>
+        <button onClick="{{ openHomePicker }}" style="width:100%;display:flex;align-items:center;gap:8px;margin-top:8px;background:none;border:0;padding:0;cursor:pointer;text-align:left" style-hover="opacity:.75">
+          <span style="flex:1;font:500 15px/1 system-ui;color:#F4F4F6">{{ homeCourt }}</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#5A5C66" stroke-width="2.4" stroke-linecap="round"><path d="M6 9l6 6 6-6"></path></svg>
+        </button>
+      </div>
+    </div>
+
+    <div style="font:600 11px/1 system-ui;letter-spacing:.9px;color:#7C7E88;margin:24px 0 10px">BIO</div>
+    <div style="border:1px solid #262931;border-radius:16px;background:#15161A;padding:13px 15px">
+      <textarea value="{{ editBio }}" onChange="{{ setBio }}" rows="3" style="width:100%;background:none;border:0;outline:none;resize:none;color:#E4E4EA;font:400 14px/1.5 system-ui;padding:0"></textarea>
+      <div style="display:flex;justify-content:flex-end;font:500 10.5px/1 ui-monospace,Menlo,monospace;color:#5A5C66;margin-top:6px">{{ bioCount }}/120</div>
+    </div>
+
+    <div style="font:600 11px/1 system-ui;letter-spacing:.9px;color:#7C7E88;margin:24px 0 10px">POSITIONS</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px">
+      <sc-for list="{{ positions }}" as="p" hint-placeholder-count="5">
+        <button onClick="{{ p.on }}" style="padding:10px 14px;border-radius:999px;cursor:pointer;font:600 12.5px system-ui;background: {{ p.bg }};border:1px solid {{ p.border }};color: {{ p.col }}">{{ p.label }}</button>
+      </sc-for>
+    </div>
+
+    <div style="font:600 11px/1 system-ui;letter-spacing:.9px;color:#7C7E88;margin:26px 0 10px">ACCENT COLOR</div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px">
+      <sc-for list="{{ accentSwatches }}" as="a" hint-placeholder-count="8">
+        <button onClick="{{ a.on }}" style="width:38px;height:38px;border-radius:999px;cursor:pointer;background: {{ a.hex }};border:2px solid {{ a.ring }};box-shadow: {{ a.glow }}"></button>
+      </sc-for>
+    </div>
+
+    <div style="font:600 11px/1 system-ui;letter-spacing:.9px;color:#7C7E88;margin:26px 0 10px">VISIBILITY</div>
+    <div style="border:1px solid #262931;border-radius:16px;background:#15161A;overflow:hidden">
+      <sc-for list="{{ toggles }}" as="t" hint-placeholder-count="3">
+        <button onClick="{{ t.on }}" style="width:100%;display:flex;align-items:center;gap:12px;padding:14px 15px;background:none;border:0;border-bottom:1px solid #1B1D23;cursor:pointer;text-align:left" style-hover="background:#1D1F24">
+          <div style="flex:1;min-width:0">
+            <div style="font:500 13.5px/1.2 system-ui;color:#F4F4F6">{{ t.label }}</div>
+            <div style="font:400 11px/1.3 system-ui;color:#5A5C66;margin-top:4px">{{ t.hint }}</div>
+          </div>
+          <span style="width:44px;height:26px;border-radius:999px;flex:none;padding:3px;display:flex;background: {{ t.track }};justify-content: {{ t.justify }}">
+            <span style="width:20px;height:20px;border-radius:999px;background:#F4F4F6"></span>
+          </span>
+        </button>
+      </sc-for>
+      <button style="width:100%;padding:15px;background:none;border:0;cursor:pointer;font:600 13.5px system-ui;color:#FF5A52;text-align:left;padding-left:15px" style-hover="background:#1D1F24">Log out</button>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<!-- ── ACHIEVEMENTS ── -->
+<sc-if value="{{ isAchievements }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;left:0;right:0;top:0;bottom:96px;background:#0B0B0E;z-index:74;display:flex;flex-direction:column;animation:lh-fade .18s ease-out">
+  <div style="position:relative;padding:52px 20px 0;flex:none;overflow:hidden">
+    <svg viewBox="0 0 390 220" style="position:absolute;top:20px;right:-110px;width:340px;height:220px;opacity:.5" fill="none" stroke="#FF6A2C" stroke-width="1">
+      <path d="M300 -20 A 118 118 0 0 1 300 220" stroke-opacity=".2"></path>
+      <path d="M300 24 A 74 74 0 0 1 300 176" stroke-opacity=".11"></path>
+    </svg>
+    <div style="display:flex;align-items:center;gap:12px;position:relative">
+      <button onClick="{{ closeAchievements }}" style="width:36px;height:36px;border-radius:999px;border:1px solid #262931;background:#15161A;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none" style-hover="border-color:#343842">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9A9BA4" stroke-width="2.4" stroke-linecap="round"><path d="M15 18l-6-6 6-6"></path></svg>
+      </button>
+      <div style="font:700 20px/1 -apple-system,system-ui;letter-spacing:-.6px">Achievements</div>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:16px;margin-top:22px;position:relative">
+      <div style="position:relative;width:82px;height:82px;flex:none">
+        <svg viewBox="0 0 82 82" style="width:82px;height:82px;transform:rotate(-90deg)">
+          <circle cx="41" cy="41" r="35" fill="none" stroke="#1D1F24" stroke-width="6"></circle>
+          <circle cx="41" cy="41" r="35" fill="none" stroke="#FF6A2C" stroke-width="6" stroke-linecap="round" stroke-dasharray="220" stroke-dashoffset="{{ badgeDashoffset }}"></circle>
+        </svg>
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+          <div style="font:700 20px/1 -apple-system,system-ui;font-variant-numeric:tabular-nums">{{ badgesEarned }}</div>
+          <div style="font:500 9.5px/1 system-ui;color:#5A5C66;margin-top:3px">of {{ badgesTotal }}</div>
+        </div>
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font:600 15px/1.25 system-ui">Season 2 · Brooklyn</div>
+        <div style="font:400 12.5px/1.45 system-ui;color:#9A9BA4;margin-top:6px;text-wrap:pretty">Badges unlock from check-ins, hours on court and the people you run with.</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:22px;margin-top:20px;border-bottom:1px solid #1B1D23;position:relative">
+      <sc-for list="{{ achTabs }}" as="t" hint-placeholder-count="2">
+        <button onClick="{{ t.on }}" style="background:none;border:0;padding:0 0 10px;cursor:pointer;font:600 13.5px/1 system-ui;position:relative;color: {{ t.col }}">
+          {{ t.label }}
+          <span style="position:absolute;left:0;right:0;bottom:-1px;height:2px;border-radius:2px;background: {{ t.bar }}"></span>
+        </button>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="flex:1;overflow:auto;padding:18px 20px 30px">
+    <sc-if value="{{ achEarned }}" hint-placeholder-val="{{ true }}">
+      <div style="border:1px solid rgba(255,106,44,.3);border-radius:18px;background:linear-gradient(155deg,rgba(255,106,44,.14) 0%,#15161A 62%);padding:18px;position:relative;overflow:hidden">
+        <svg viewBox="0 0 300 180" style="position:absolute;right:-60px;bottom:-50px;width:260px;height:180px;opacity:.4" fill="none" stroke="#FF6A2C" stroke-width="1">
+          <path d="M160 -10 A 120 120 0 0 1 160 190" stroke-opacity=".3"></path>
+        </svg>
+        <div style="font:600 10.5px/1 system-ui;letter-spacing:1px;color:#FF6A2C;position:relative">NEWEST</div>
+        <div style="display:flex;align-items:center;gap:14px;margin-top:14px;position:relative">
+          <div style="width:56px;height:56px;border-radius:16px;background:#FF6A2C;display:flex;align-items:center;justify-content:center;flex:none;box-shadow:0 8px 22px rgba(255,106,44,.28)">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#150B05" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10v5a5 5 0 0 1-10 0z"></path><path d="M17 5h2.5a2.5 2.5 0 0 1-2.5 4M7 5H4.5A2.5 2.5 0 0 0 7 9"></path><path d="M12 14v3M8.5 20h7"></path></svg>
+          </div>
+          <div style="flex:1;min-width:0">
+            <div style="font:700 16px/1.2 -apple-system,system-ui;letter-spacing:-.2px">Regular</div>
+            <div style="font:400 12px/1.4 system-ui;color:#9A9BA4;margin-top:5px">5 check-ins at the same court · earned 13 Aug</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="font:600 11px/1 system-ui;letter-spacing:.9px;color:#7C7E88;margin:26px 0 12px">EARNED · {{ badgesEarned }}</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+        <sc-for list="{{ earned }}" as="b" hint-placeholder-count="6">
+          <div style="border:1px solid #262931;border-radius:14px;background:#15161A;padding:13px 10px;text-align:center">
+            <div style="width:42px;height:42px;margin:0 auto;border-radius:12px;background:rgba(255,106,44,.14);border:1px solid rgba(255,106,44,.3);display:flex;align-items:center;justify-content:center">
+              <span style="font:700 15px/1 -apple-system,system-ui;color:#FF6A2C;font-variant-numeric:tabular-nums">{{ b.mark }}</span>
+            </div>
+            <div style="font:600 11.5px/1.2 system-ui;color:#F4F4F6;margin-top:10px">{{ b.name }}</div>
+            <div style="font:400 9.5px/1.3 system-ui;color:#5A5C66;margin-top:4px">{{ b.date }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ achLocked }}" hint-placeholder-val="{{ false }}">
+      <sc-for list="{{ locked }}" as="b" hint-placeholder-count="5">
+        <div style="display:flex;align-items:center;gap:13px;padding:15px 0;border-bottom:1px solid #1B1D23">
+          <div style="width:44px;height:44px;border-radius:13px;background:#15161A;border:1px dashed #343842;display:flex;align-items:center;justify-content:center;flex:none">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#5A5C66" stroke-width="2" stroke-linecap="round"><rect x="4" y="10.5" width="16" height="10.5" rx="2.5"></rect><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"></path></svg>
+          </div>
+          <div style="flex:1;min-width:0">
+            <div style="font:600 13.5px/1.2 system-ui;color:#C9CAD2">{{ b.name }}</div>
+            <div style="font:400 11.5px/1.2 system-ui;color:#5A5C66;margin-top:5px">{{ b.need }}</div>
+            <div style="height:4px;border-radius:3px;background:#1D1F24;margin-top:9px;overflow:hidden">
+              <div style="height:100%;border-radius:3px;background:#FF6A2C;width: {{ b.pct }}"></div>
+            </div>
+          </div>
+          <span style="font:600 11px/1 system-ui;color:#7C7E88;font-variant-numeric:tabular-nums;flex:none">{{ b.progress }}</span>
+        </div>
+      </sc-for>
+    </sc-if>
+  </div>
+</div>
+</sc-if>
+
+<!-- ── COURT PICKER (nearest first) ── -->
+<sc-if value="{{ pickerOpen }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;z-index:85">
+  <div onClick="{{ closePicker }}" style="position:absolute;inset:0;background:rgba(0,0,0,.62);animation:lh-fade .2s ease-out"></div>
+  <div style="position:absolute;left:0;right:0;bottom:0;background:#15161A;border-top:1px solid #262931;border-radius:26px 26px 0 0;animation:lh-up .28s cubic-bezier(.2,.8,.2,1);overflow:hidden;padding-bottom:34px">
+    <div style="display:flex;justify-content:center;padding:9px 0 5px"><div style="width:36px;height:4px;border-radius:2px;background:#343842"></div></div>
+    <div style="padding:0 20px 12px;display:flex;align-items:baseline;justify-content:space-between;border-bottom:1px solid #1B1D23">
+      <div>
+        <div style="font:600 15px/1 system-ui">Check in at</div>
+        <div style="font:400 11.5px/1 system-ui;color:#5A5C66;margin-top:6px">Nearest to you first</div>
+      </div>
+      <button onClick="{{ closePicker }}" style="background:none;border:0;padding:0;cursor:pointer;font:500 12.5px system-ui;color:#FF6A2C">Cancel</button>
+    </div>
+    <div style="max-height:340px;overflow:auto">
+      <sc-for list="{{ nearby }}" as="c" hint-placeholder-count="4">
+        <button onClick="{{ c.pick }}" style="width:100%;display:flex;align-items:center;gap:12px;padding:14px 20px;background:none;border:0;border-bottom:1px solid #1B1D23;cursor:pointer;text-align:left" style-hover="background:#1D1F24">
+          <div style="width:44px;flex:none;text-align:center">
+            <div style="font:700 14px/1 -apple-system,system-ui;font-variant-numeric:tabular-nums;color:#F4F4F6">{{ c.dist }}</div>
+            <div style="font:500 9.5px/1 system-ui;color:#5A5C66;margin-top:4px">MILES</div>
+          </div>
+          <div style="width:1px;height:32px;background:#1B1D23"></div>
+          <div style="flex:1;min-width:0">
+            <div style="font:600 14px/1.2 system-ui;color:#F4F4F6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ c.name }}</div>
+            <div style="font:400 11.5px/1.2 system-ui;color:#5A5C66;margin-top:4px">{{ c.meta }}</div>
+          </div>
+          <span style="font:700 11px/1 system-ui;padding:6px 9px;border-radius:999px;color: {{ c.fg }};background: {{ c.bg }}">{{ c.badge }}</span>
+        </button>
+      </sc-for>
+      <button onClick="{{ closePicker }}" style="width:100%;display:flex;align-items:center;gap:10px;padding:16px 20px;background:none;border:0;cursor:pointer;text-align:left;color:#9A9BA4" style-hover="color:#FF6A2C">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M12 5v14"></path></svg>
+        <span style="font:600 13.5px system-ui">Add a court that isn't listed</span>
+      </button>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<!-- ── COURT SHEET ── -->
+<sc-if value="{{ sheetOpen }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;z-index:80">
+  <div onClick="{{ closeSheet }}" style="position:absolute;inset:0;background:rgba(0,0,0,.62);animation:lh-fade .2s ease-out"></div>
+  <div style="position:absolute;left:0;right:0;bottom:0;background:#15161A;border-top:1px solid #262931;border-radius:26px 26px 0 0;animation:lh-up .3s cubic-bezier(.2,.8,.2,1);overflow:hidden;padding-bottom:34px">
+    <div style="display:flex;justify-content:center;padding:9px 0 4px"><div style="width:36px;height:4px;border-radius:2px;background:#343842"></div></div>
+    <div style="position:relative;height:160px;background:#1D1F24;margin:6px 14px 0;border-radius:16px;overflow:hidden">
+      <image-slot id="lh-sheet-1" shape="rect" placeholder="Court photo"></image-slot>
+      <div style="position:absolute;top:10px;left:10px;display:flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;background:rgba(11,11,14,.75);backdrop-filter:blur(8px);pointer-events:none">
+        <span style="width:7px;height:7px;border-radius:9px;background:#2FE08A;animation:lh-pulse 1.9s infinite"></span>
+        <span style="font:700 10px/1 system-ui;letter-spacing:.7px;color:#2FE08A">{{ sheetLive }}</span>
+      </div>
+    </div>
+    <div style="padding:16px 20px 0">
+      <div style="font:700 21px/1.2 -apple-system,system-ui;letter-spacing:-.5px">{{ sheetCourt }}</div>
+      <div style="font:400 13px/1.35 system-ui;color:#9A9BA4;margin-top:6px">{{ sheetSub }}</div>
+      <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+        <sc-for list="{{ sheetChips }}" as="chip" hint-placeholder-count="4">
+          <span style="font:600 11.5px/1 system-ui;color:#C9CAD2;padding:8px 10px;border-radius:8px;background:#1D1F24">{{ chip }}</span>
+        </sc-for>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:18px">
+        <div style="display:flex">
+          <sc-for list="{{ crew }}" as="p" hint-placeholder-count="4">
+            <div style="width:32px;height:32px;border-radius:999px;background:#1D1F24;border:2px solid #15161A;margin-left:-8px;display:flex;align-items:center;justify-content:center;font:600 11px system-ui;color:#C9CAD2">{{ p.initials }}</div>
+          </sc-for>
+        </div>
+        <span style="font:500 12.5px/1 system-ui;color:#9A9BA4">{{ sheetRoster }}</span>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:20px">
+        <button onClick="{{ checkInHere }}" style="flex:2;padding:16px;border-radius:16px;background:#FF6A2C;border:0;color:#150B05;font:600 15px system-ui;cursor:pointer;box-shadow:0 10px 26px rgba(255,106,44,.22)" style-hover="background:#FF8B57">Check in here</button>
+        <button style="flex:1;padding:16px;border-radius:16px;background:transparent;border:1px solid #343842;color:#F4F4F6;font:600 15px system-ui;cursor:pointer" style-hover="border-color:#FF6A2C;color:#FF6A2C">Directions</button>
+      </div>
+      <button onClick="{{ openSchedule }}" style="width:100%;margin-top:10px;padding:15px;border-radius:16px;background:transparent;border:1px dashed #343842;color:#9A9BA4;font:600 14px system-ui;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px" style-hover="border-color:rgba(255,106,44,.5);color:#FF6A2C">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3.5" y="5" width="17" height="16" rx="3"></rect><path d="M8 3v4M16 3v4M3.5 10h17"></path></svg>
+        Schedule a run here
+      </button>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<!-- ── TOAST ── -->
+<sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;left:0;right:0;bottom:112px;z-index:90;display:flex;justify-content:center;pointer-events:none">
+  <div style="padding:12px 18px;border-radius:999px;background:rgba(29,31,36,.95);backdrop-filter:blur(12px);border:1px solid #343842;font:600 13px system-ui;color:#F4F4F6;animation:lh-toast .25s ease-out">{{ toast }}</div>
+</div>
+</sc-if>
+
+<!-- ── BOTTOM NAV ── -->
+<div style="position:absolute;left:0;right:0;bottom:0;z-index:75;height:96px;background:rgba(13,14,18,.92);backdrop-filter:blur(22px);border-top:1px solid #1B1D23;display:flex;align-items:flex-start;padding:12px 8px 0">
+  <button onClick="{{ goHome }}" style="flex:1;background:none;border:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;padding:6px 0;color: {{ navHome }}">
+    <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="{{ swHome }}"><path d="M3 9.6 12 3l9 6.6V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"></path><path d="M9.5 21v-6.5h5V21"></path></svg>
+    <span style="font:600 10px/1 system-ui">Home</span>
+    <span style="width:4px;height:4px;border-radius:9px;background: {{ dotHome }}"></span>
+  </button>
+  <button onClick="{{ goMap }}" style="flex:1;background:none;border:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;padding:6px 0;color: {{ navMap }}">
+    <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="{{ swMap }}"><path d="M9.5 3.2 4 5.9v13l5.5-2.7 5 2.5 5.5-2.7v-13L14.5 5.7z"></path><path d="M9.5 3.2v13.1M14.5 5.7v13.1"></path></svg>
+    <span style="font:600 10px/1 system-ui">Map</span>
+    <span style="width:4px;height:4px;border-radius:9px;background: {{ dotMap }}"></span>
+  </button>
+  <button onClick="{{ goCheck }}" style="flex:1;background:none;border:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;padding:0">
+    <span style="width:58px;height:42px;border-radius:15px;display:flex;align-items:center;justify-content:center;background: {{ checkBg }};box-shadow: {{ checkGlow }}">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#150B05" stroke-width="2.8" stroke-linecap="round"><path d="M5 12h14M12 5v14"></path></svg>
+    </span>
+    <span style="font:700 10px/1 system-ui;letter-spacing:.3px;color: {{ checkLabelCol }}">{{ checkLabel }}</span>
+  </button>
+  <button onClick="{{ goFriends }}" style="flex:1;background:none;border:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;padding:6px 0;color: {{ navFriends }}">
+    <span style="position:relative;display:flex">
+      <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="{{ swFriends }}"><circle cx="9" cy="8" r="3.6"></circle><path d="M2.5 20.5v-1.2a6.5 6.5 0 0 1 13 0v1.2M16.5 4.6a3.6 3.6 0 0 1 0 6.9M21.5 20.5v-1.2a5 5 0 0 0-3.6-4.5"></path></svg>
+      <span style="position:absolute;top:-1px;right:-3px;width:7px;height:7px;border-radius:9px;background:#FF6A2C;border:1.5px solid #0D0E12"></span>
+    </span>
+    <span style="font:600 10px/1 system-ui">Friends</span>
+    <span style="width:4px;height:4px;border-radius:9px;background: {{ dotFriends }}"></span>
+  </button>
+  <button onClick="{{ goProfile }}" style="flex:1;background:none;border:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;padding:6px 0;color: {{ navProfile }}">
+    <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="{{ swProfile }}"><circle cx="12" cy="8" r="4"></circle><path d="M20 21a8 8 0 0 0-16 0"></path></svg>
+    <span style="font:600 10px/1 system-ui">Profile</span>
+    <span style="width:4px;height:4px;border-radius:9px;background: {{ dotProfile }}"></span>
+  </button>
+</div>
+
+</div>
+</x-import>
+</div>
+</div>
+
+<div class="dv-opt" id="1b">
+<div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>Foundations — palette (both themes), all 8 accents with their contrast color, radius, spacing, type</div>
+<div style="width:620px;background:#15161A;border:1px solid #262931;border-radius:18px;padding:26px 24px 28px;color:#F4F4F6">
+  <div style="font:700 17px/1 -apple-system,system-ui;letter-spacing:-.3px">Tokens</div>
+  <div style="font:400 12.5px/1.5 system-ui;color:#9A9BA4;margin-top:8px;max-width:520px;text-wrap:pretty">Neutrals move off pure black and pure white onto a slightly warm dark ramp, so photography and the accent both sit on it without vibrating. Every accent below is tested against that one ramp.</div>
+
+  <div style="font:600 11px/1 system-ui;letter-spacing:.9px;color:#7C7E88;margin:26px 0 12px">NEUTRALS — DARK / LIGHT</div>
+  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px 22px">
+    <sc-for list="{{ tokens }}" as="t" hint-placeholder-count="10">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="width:22px;height:22px;border-radius:6px;border:1px solid #343842;background:{{ t.d }}"></span>
+        <span style="width:22px;height:22px;border-radius:6px;border:1px solid #343842;background:{{ t.l }}"></span>
+        <span style="font:500 11.5px/1 ui-monospace,Menlo,monospace;color:#C9CAD2;flex:1">{{ t.name }}</span>
+        <span style="font:400 10.5px/1 ui-monospace,Menlo,monospace;color:#5A5C66">{{ t.d }}</span>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="font:600 11px/1 system-ui;letter-spacing:.9px;color:#7C7E88;margin:30px 0 12px">EIGHT ACCENTS × CONTRAST COLOR</div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+    <sc-for list="{{ accents }}" as="a" hint-placeholder-count="8">
+      <div style="border:1px solid #262931;border-radius:12px;overflow:hidden;background:#0F1014">
+        <div style="height:46px;display:flex;align-items:center;justify-content:center;background:{{ a.hex }}">
+          <span style="font:700 13px system-ui;color:{{ a.on }}">Check in</span>
+        </div>
+        <div style="padding:8px 9px 9px">
+          <div style="font:600 11px/1 system-ui;color:#F4F4F6">{{ a.name }}</div>
+          <div style="font:400 9.5px/1.4 ui-monospace,Menlo,monospace;color:#5A5C66;margin-top:4px">{{ a.hex }}<br>on {{ a.on }}</div>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="display:flex;gap:34px;margin-top:30px;flex-wrap:wrap">
+    <div>
+      <div style="font:600 11px/1 system-ui;letter-spacing:.9px;color:#7C7E88;margin-bottom:12px">RADIUS</div>
+      <div style="display:flex;align-items:flex-end;gap:10px">
+        <sc-for list="{{ radii }}" as="r" hint-placeholder-count="5">
+          <div style="text-align:center">
+            <div style="width:46px;height:46px;background:#1D1F24;border:1px solid #343842;border-radius:{{ r.v }}"></div>
+            <div style="font:500 10px/1 ui-monospace,Menlo,monospace;color:#7C7E88;margin-top:6px">{{ r.name }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <div>
+      <div style="font:600 11px/1 system-ui;letter-spacing:.9px;color:#7C7E88;margin-bottom:12px">SPACING · 4PT</div>
+      <div style="display:flex;align-items:flex-end;gap:8px">
+        <sc-for list="{{ spaces }}" as="s" hint-placeholder-count="6">
+          <div style="text-align:center">
+            <div style="width:{{ s.v }};height:{{ s.v }};background:rgba(255,106,44,.28);border:1px solid rgba(255,106,44,.5)"></div>
+            <div style="font:500 10px/1 ui-monospace,Menlo,monospace;color:#7C7E88;margin-top:6px">{{ s.v }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <div style="font:600 11px/1 system-ui;letter-spacing:.9px;color:#7C7E88;margin:30px 0 12px">TYPE — SYSTEM STACK, KEPT</div>
+  <div style="display:flex;flex-direction:column;gap:9px">
+    <div style="font:700 25px/1.1 -apple-system,system-ui;letter-spacing:-.9px">Display 25 / 700 &nbsp;<span style="font:400 11px system-ui;color:#5A5C66">wordmark, screen titles</span></div>
+    <div style="font:700 22px/1.1 -apple-system,system-ui;font-variant-numeric:tabular-nums">22 / 700 tabular &nbsp;<span style="font:400 11px system-ui;color:#5A5C66">stat numbers — always tabular</span></div>
+    <div style="font:600 16px/1.2 system-ui">Title 16 / 600 &nbsp;<span style="font:400 11px system-ui;color:#5A5C66">card names</span></div>
+    <div style="font:400 14.5px/1.45 system-ui;color:#E4E4EA">Body 14.5 / 400 — post text, sheet copy.</div>
+    <div style="font:400 12.5px/1.3 system-ui;color:#9A9BA4">Secondary 12.5 / 400 — addresses, meta.</div>
+    <div style="font:600 11px/1 system-ui;letter-spacing:.9px;color:#7C7E88">LABEL 11 / 600 · +0.9 TRACKING</div>
+  </div>
+</div>
+</div>
+
+<div class="dv-opt" id="1c">
+<div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>Surfaces — nav in both states, sheet anatomy, and the same card under a second accent</div>
+<div style="width:430px;background:#0B0B0E;border:1px solid #262931;border-radius:18px;padding:22px 20px 24px;color:#F4F4F6;display:flex;flex-direction:column;gap:26px">
+
+  <div>
+    <div style="font:600 11px/1 system-ui;letter-spacing:.9px;color:#7C7E88;margin-bottom:12px">BOTTOM NAV — IDLE / CHECKED IN</div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div style="height:78px;background:rgba(13,14,18,.92);border:1px solid #1B1D23;border-radius:14px;display:flex;align-items:flex-start;padding:11px 6px 0">
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;color:#FF6A2C">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.6 12 3l9 6.6V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"></path><path d="M9.5 21v-6.5h5V21"></path></svg>
+          <span style="font:600 10px/1 system-ui">Home</span><span style="width:4px;height:4px;border-radius:9px;background:#FF6A2C"></span>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;color:#5A5C66">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 3.2 4 5.9v13l5.5-2.7 5 2.5 5.5-2.7v-13L14.5 5.7z"></path><path d="M9.5 3.2v13.1M14.5 5.7v13.1"></path></svg>
+          <span style="font:600 10px/1 system-ui">Map</span>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px">
+          <span style="width:56px;height:40px;border-radius:15px;background:#FF6A2C;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(255,106,44,.3)">
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#150B05" stroke-width="2.8" stroke-linecap="round"><path d="M5 12h14M12 5v14"></path></svg>
+          </span>
+          <span style="font:700 10px/1 system-ui;color:#7C7E88">Check</span>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;color:#5A5C66">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.6"></circle><path d="M2.5 20.5v-1.2a6.5 6.5 0 0 1 13 0v1.2M16.5 4.6a3.6 3.6 0 0 1 0 6.9M21.5 20.5v-1.2a5 5 0 0 0-3.6-4.5"></path></svg>
+          <span style="font:600 10px/1 system-ui">Friends</span>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;color:#5A5C66">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M20 21a8 8 0 0 0-16 0"></path></svg>
+          <span style="font:600 10px/1 system-ui">Profile</span>
+        </div>
+      </div>
+      <div style="height:78px;background:rgba(13,14,18,.92);border:1px solid #1B1D23;border-radius:14px;display:flex;align-items:flex-start;justify-content:center;padding:11px 6px 0">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+          <span style="width:56px;height:40px;border-radius:15px;background:#2FE08A;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(47,224,138,.3)">
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#052014" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5l5 5 10-10"></path></svg>
+          </span>
+          <span style="font:700 10px/1 system-ui;color:#2FE08A">Active</span>
+        </div>
+      </div>
+    </div>
+    <div style="font:400 11.5px/1.5 system-ui;color:#5A5C66;margin-top:10px;text-wrap:pretty">Active tab: 2.5 stroke + accent + dot. Center tab is the only filled surface in the nav, and it is the one thing that changes color with session state.</div>
+  </div>
+
+  <div>
+    <div style="font:600 11px/1 system-ui;letter-spacing:.9px;color:#7C7E88;margin-bottom:12px">BOTTOM SHEET ANATOMY</div>
+    <div style="border:1px solid #262931;border-radius:18px;background:#15161A;overflow:hidden">
+      <div style="display:flex;justify-content:center;padding:9px 0 5px"><div style="width:36px;height:4px;border-radius:2px;background:#343842"></div></div>
+      <div style="padding:0 18px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #1B1D23">
+        <span style="font:600 15px/1 system-ui">Sheet title</span>
+        <span style="font:500 12.5px/1 system-ui;color:#FF6A2C">Done</span>
+      </div>
+      <div style="padding:14px 18px;font:400 12.5px/1.6 system-ui;color:#9A9BA4">Scroll body, max-height 88svh. Rounded 26px top corners, 1px top border, opaque card ground — no scrim blur, so text over it never fights the map.</div>
+      <div style="padding:0 18px 18px;display:flex;gap:9px">
+        <div style="flex:1;padding:14px;border-radius:14px;background:#FF6A2C;color:#150B05;font:600 13.5px system-ui;text-align:center">Primary</div>
+        <div style="flex:1;padding:14px;border-radius:14px;border:1px solid #343842;font:600 13.5px system-ui;text-align:center">Secondary</div>
+      </div>
+      <div style="height:34px;border-top:1px solid #1B1D23;display:flex;align-items:center;justify-content:center;font:500 10px/1 ui-monospace,Menlo,monospace;color:#3B3E47">safe-area inset</div>
+    </div>
+  </div>
+
+  <div>
+    <div style="font:600 11px/1 system-ui;letter-spacing:.9px;color:#7C7E88;margin-bottom:12px">PARK CARD — ORANGE / BLUE ACCENT</div>
+    <div style="display:flex;gap:12px">
+      <div style="flex:1;border:1px solid #262931;border-radius:14px;background:#15161A;padding:13px">
+        <div style="display:flex;align-items:center;gap:6px"><span style="width:7px;height:7px;border-radius:9px;background:#2FE08A"></span><span style="font:700 9.5px/1 system-ui;letter-spacing:.7px;color:#2FE08A">LIVE · 8</span></div>
+        <div style="font:600 14px/1.2 system-ui;margin-top:10px">Cadman Plaza</div>
+        <div style="font:400 11px/1.2 system-ui;color:#5A5C66;margin-top:4px">0.3 mi · 4 hoops</div>
+        <div style="margin-top:12px;padding:9px;border-radius:999px;text-align:center;font:600 12px system-ui;color:#FF6A2C;background:rgba(255,106,44,.12);border:1px solid rgba(255,106,44,.32)">Check in</div>
+      </div>
+      <div style="flex:1;border:1px solid #262931;border-radius:14px;background:#15161A;padding:13px">
+        <div style="display:flex;align-items:center;gap:6px"><span style="width:7px;height:7px;border-radius:9px;background:#2FE08A"></span><span style="font:700 9.5px/1 system-ui;letter-spacing:.7px;color:#2FE08A">LIVE · 8</span></div>
+        <div style="font:600 14px/1.2 system-ui;margin-top:10px">Cadman Plaza</div>
+        <div style="font:400 11px/1.2 system-ui;color:#5A5C66;margin-top:4px">0.3 mi · 4 hoops</div>
+        <div style="margin-top:12px;padding:9px;border-radius:999px;text-align:center;font:600 12px system-ui;color:#4C8DFF;background:rgba(76,141,255,.14);border:1px solid rgba(76,141,255,.34)">Check in</div>
+      </div>
+    </div>
+    <div style="font:400 11.5px/1.5 system-ui;color:#5A5C66;margin-top:10px;text-wrap:pretty">Green stays reserved for live/active in every accent — the accent never means "live", so the two never collide.</div>
+  </div>
+</div>
+</div>
+
+</div>
+<p class="dv-next">Try next: "push the court-geometry texture harder on Home" · "show <a class="dv-oid" href="#1a">1a</a> in the blue accent" · "design the settings and add-court sheets"</p>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;startCheckedIn&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Prototype&quot;},&quot;showGrain&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Texture&quot;},&quot;showCourtLines&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Texture&quot;}}">
+class Component extends DCLogic {
+  state = { tab: 'home', checkedIn: false, sheet: false, picker: false, feedTab: 'Nearby', frTab: 'Friends', profTab: 'Posts', elapsed: 4320, toast: null };
+
+  componentDidMount() {
+    if (this.props.startCheckedIn) this.setState({ checkedIn: true, tab: 'check' });
+    this._t = setInterval(() => { if (this.state.checkedIn) this.setState(s => ({ elapsed: s.elapsed + 1 })); }, 1000);
+  }
+  componentWillUnmount() { clearInterval(this._t); if (this._tt) clearTimeout(this._tt); }
+
+  say(msg) { this.setState({ toast: msg }); clearTimeout(this._tt); this._tt = setTimeout(() => this.setState({ toast: null }), 2400); }
+  dur(s) { const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60); return h ? h + 'h ' + m + 'm' : m + 'm'; }
+
+  renderVals() {
+    const A = '#FF6A2C', OFF = '#5A5C66', s = this.state;
+    const tabBtn = (label, cur, set) => ({ label, on: () => this.setState(set(label)), col: cur === label ? '#F4F4F6' : OFF, bar: cur === label ? A : 'transparent' });
+    const crew = [
+      { initials: 'KM', name: 'Kai', ring: 'linear-gradient(140deg,#2FE08A,#1E8F5A)' },
+      { initials: 'DR', name: 'Dre', ring: 'linear-gradient(140deg,#2FE08A,#1E8F5A)' },
+      { initials: 'JT', name: 'Jules', ring: '#262931' },
+      { initials: 'MB', name: 'Marc', ring: 'linear-gradient(140deg,#2FE08A,#1E8F5A)' },
+      { initials: 'AV', name: 'Ant', ring: '#262931' },
+    ];
+    const court = (name, meta, players, live) => ({
+      name, meta, players,
+      badge: live ? players + ' live' : 'Quiet',
+      fg: live ? '#052014' : '#9A9BA4',
+      bg: live ? '#2FE08A' : '#1D1F24',
+      on: () => this.setState({ sheet: true, court: name }),
+    });
+    const courts = [
+      court('Cadman Plaza Courts', '0.3 mi · 4 hoops · lights', 8, true),
+      court('Tompkins Square', '0.9 mi · 2 hoops', 5, true),
+      court('Rucker Park', '1.8 mi · 4 hoops · lights', 12, true),
+      court('Sixth Ave Courts', '2.4 mi · 2 hoops', 0, false),
+    ];
+    const nearby = [
+      { name: 'Cadman Plaza Courts', dist: '0.3', addr: 'Cadman Plaza W, Brooklyn', players: 8, meta: '4 hoops · lights · 8 running', chips: ['★ 4.6 (38)', '4 hoops', 'Lights until 11p', 'Outdoor'], roster: 'Kai, Dre and 6 others running' },
+      { name: 'Tompkins Square', dist: '0.9', addr: 'E 10th St, Manhattan', players: 5, meta: '2 hoops · 5 running', chips: ['★ 4.2 (17)', '2 hoops', 'No lights', 'Outdoor'], roster: 'Jules and 4 others running' },
+      { name: 'Rucker Park', dist: '1.8', addr: 'W 155th St, Harlem', players: 12, meta: '4 hoops · lights · 12 running', chips: ['★ 4.9 (204)', '4 hoops', 'Lights until 10p', 'Outdoor'], roster: 'Marc, Ant and 10 others running' },
+      { name: 'Sixth Ave Courts', dist: '2.4', addr: 'Sixth Ave, Brooklyn', players: 0, meta: '2 hoops · quiet', chips: ['★ 3.8 (9)', '2 hoops', 'No lights', 'Outdoor'], roster: 'Nobody running right now' },
+    ].map(c => ({
+      ...c,
+      badge: c.players > 0 ? 'Live' : 'Quiet',
+      fg: c.players > 0 ? '#052014' : '#9A9BA4',
+      bg: c.players > 0 ? '#2FE08A' : '#1D1F24',
+      pick: () => { this.setState({ checkedIn: true, picker: false, sheet: false, elapsed: 0, court: c.name, addr: c.addr, players: c.players, dist: c.dist }); this.say('Checked in at ' + c.name + ' — 3h session'); },
+    }));
+    const sel = nearby.find(c => c.name === s.court) || nearby[0];
+    const bio = s.bio == null ? 'Brooklyn runs, mostly nights. Never lost a game I finished.' : s.bio;
+    const chip = on => ({ bg: on ? 'rgba(255,106,44,.14)' : 'transparent', border: on ? 'rgba(255,106,44,.42)' : '#262931', col: on ? '#FF6A2C' : '#9A9BA4' });
+    const dayList = [
+      { dow: 'WED', day: '19' }, { dow: 'THU', day: '20' }, { dow: 'FRI', day: '21' }, { dow: 'SAT', day: '22' },
+      { dow: 'SUN', day: '23' }, { dow: 'MON', day: '24' }, { dow: 'TUE', day: '25' },
+    ];
+    const schedDateDay = s.schedDate || '20';
+    const schedDate = dayList.find(d => d.day === schedDateDay) || dayList[0];
+    const dates = dayList.map(d => {
+      const on = d.day === schedDateDay, c = chip(on);
+      return { ...d, ...c, on: () => this.setState({ schedDate: d.day }), dowCol: on ? '#FF6A2C' : '#5A5C66' };
+    });
+    const schedTime = s.schedTime || '6:00p';
+    const times = ['9:00a', '11:00a', '1:00p', '3:00p', '5:00p', '6:00p', '7:30p', '9:00p'].map(l => ({ label: l, ...chip(l === schedTime), on: () => this.setState({ schedTime: l }) }));
+    const schedDur = s.schedDur || '2h';
+    const durations = ['1h', '90m', '2h', '3h'].map(l => ({ label: l, ...chip(l === schedDur), on: () => this.setState({ schedDur: l }) }));
+    const invited = s.invited || [];
+    const openRun = s.openRun == null ? false : s.openRun;
+    const invitePeople = [
+      { initials: 'KM', name: 'Kai', jersey: '#11', status: 'Runs most nights', statusCol: '#5A5C66' },
+      { initials: 'MB', name: 'Marc', jersey: '#30', status: 'Usually at Rucker', statusCol: '#5A5C66' },
+      { initials: 'JT', name: 'Jules', jersey: '#4', status: 'Free after 6', statusCol: '#2FE08A' },
+      { initials: 'AV', name: 'Ant', jersey: '#8', status: 'Last run 5d ago', statusCol: '#5A5C66' },
+      { initials: 'DR', name: 'Dre', jersey: '#23', status: 'Runs most nights', statusCol: '#5A5C66' },
+    ];
+    const invites = invitePeople.map(f => {
+      const on = invited.indexOf(f.name) > -1;
+      return { ...f, on: () => this.setState({ invited: on ? invited.filter(x => x !== f.name) : invited.concat(f.name) }),
+        boxBg: on ? '#FF6A2C' : 'transparent', boxBorder: on ? '#FF6A2C' : '#343842', tick: on ? '#150B05' : 'transparent' };
+    });
+    const seedRuns = [
+      { court: 'Rucker Park', dow: 'FRI', day: '21', time: '6:30p', dur: '2h', going: [{ name: 'Kai', initials: 'KM' }, { name: 'Marc', initials: 'MB' }, { name: 'Jules', initials: 'JT' }], open: true, mine: false },
+      { court: 'Cadman Plaza Courts', dow: 'SAT', day: '22', time: '10:00a', dur: '90m', going: [{ name: 'Dre', initials: 'DR' }], open: false, mine: true },
+    ];
+    const mins = t => {
+      const m = /^(\d+):(\d+)([ap])$/.exec(t);
+      if (!m) return 0;
+      let h = +m[1] % 12;
+      if (m[3] === 'p') h += 12;
+      return h * 60 + +m[2];
+    };
+    const runs = (s.runs || []).concat(seedRuns).sort((a, b) => (+a.day - +b.day) || (mins(a.time) - mins(b.time))).map(r => ({
+      ...r,
+      when: r.dow.charAt(0) + r.dow.slice(1).toLowerCase() + ' ' + r.day + ' · ' + r.time,
+      goingLabel: r.going.length ? r.going.slice(0, 2).map(g => g.name).join(', ') + (r.going.length > 2 ? ' +' + (r.going.length - 2) : '') + ' going' : 'No replies yet',
+      badge: r.mine ? 'YOURS' : 'INVITED',
+      badgeCol: r.mine ? '#FF6A2C' : '#2FE08A',
+      badgeBg: r.mine ? 'rgba(255,106,44,.13)' : 'rgba(47,224,138,.13)',
+      avatars: r.going.map(g => ({ initials: g.initials })),
+      on: () => this.setState({ sheet: true, court: r.court }),
+    }));
+    const sw = rows => rows.map(t => {
+      const st = s[t.key] == null ? t.def : s[t.key];
+      return { ...t, on: () => this.setState({ [t.key]: !st }), track: st ? '#FF6A2C' : '#343842', justify: st ? 'flex-end' : 'flex-start' };
+    });
+    const marker = (x, y, count, live, name) => {
+      const on = s.court === name;
+      return { x, y, count, name, on: () => this.setState({ sheet: true, court: name }),
+        bg: on ? '#FF6A2C' : (live ? '#2FE08A' : '#1D1F24'),
+        fg: on ? '#150B05' : (live ? '#052014' : '#9A9BA4'),
+        dot: on ? '#150B05' : (live ? '#052014' : '#5A5C66') };
+    };
+
+    return {
+      showGrain: this.props.showGrain ?? true,
+      showCourtLines: this.props.showCourtLines ?? true,
+      isHome: s.tab === 'home', isMap: s.tab === 'map', isCheck: s.tab === 'check', isFriends: s.tab === 'friends', isProfile: s.tab === 'profile',
+      checkedIn: s.checkedIn, notCheckedIn: !s.checkedIn,
+      sheetOpen: s.sheet, toast: s.toast,
+      sheetCourt: sel.name, sheetSub: sel.addr + ' · ' + sel.dist + ' mi',
+      sheetLive: 'LIVE · ' + sel.players, sheetChips: sel.chips, sheetRoster: sel.roster,
+      scheduleOpen: s.sched, schedStepWhen: s.schedStep !== 2, schedStepWho: s.schedStep === 2,
+      schedStepLabel: s.schedStep === 2 ? 'Who is coming' : 'When are you running',
+      schedStepCount: s.schedStep === 2 ? '2 / 2' : '1 / 2',
+      schedBackLabel: s.schedStep === 2 ? 'Back' : 'Cancel',
+      schedBack: () => s.schedStep === 2 ? this.setState({ schedStep: 1 }) : this.setState({ sched: false }),
+      openSchedule: () => this.setState({ sched: true, schedStep: 1, sheet: false }),
+      closeSchedule: () => this.setState({ sched: false }),
+      schedNext: () => this.setState({ schedStep: 2 }),
+      schedDates: dates, schedTimes: times, schedDurations: durations,
+      schedSummary: schedDate.dow.charAt(0) + schedDate.dow.slice(1).toLowerCase() + ' ' + schedDate.day + ' · ' + schedTime + ' · ' + schedDur,
+      inviteList: invites, inviteCount: (s.invited || []).length,
+      openRunTrack: openRun ? '#FF6A2C' : '#343842', openRunJustify: openRun ? 'flex-end' : 'flex-start',
+      toggleOpenRun: () => this.setState({ openRun: !openRun }),
+      sendLabel: invited.length ? 'Send ' + invited.length + (invited.length === 1 ? ' invite' : ' invites') : (openRun ? 'Post open run' : 'Schedule without invites'),
+      sendInvites: () => {
+        const n = invited.length;
+        const run = { court: sel.name, dow: schedDate.dow, day: schedDate.day, time: schedTime, dur: schedDur, going: invitePeople.filter(p => invited.indexOf(p.name) > -1), open: openRun, mine: true };
+        this.setState({ sched: false, runs: [run].concat(s.runs || []), invited: [] });
+        this.say(n ? 'Run scheduled · ' + n + ' invited' : 'Run scheduled');
+      },
+      scheduledRuns: runs, hasRuns: runs.length > 0,
+      isSettings: s.tab === 'profile' && s.settings && !s.edit,
+      openSettings: () => this.setState({ settings: true }),
+      closeSettings: () => this.setState({ settings: false }),
+      autoOutLabel: s.autoOut || '3h',
+      autoOutOptions: ['1h', '2h', '3h', 'Never'].map(l => {
+        const on = (s.autoOut || '3h') === l;
+        return { label: l, on: () => this.setState({ autoOut: l }),
+          bg: on ? 'rgba(255,106,44,.14)' : 'transparent', border: on ? 'rgba(255,106,44,.4)' : '#262931', col: on ? '#FF6A2C' : '#9A9BA4' };
+      }),
+      themeOptions: ['Dark', 'Light', 'System'].map(l => {
+        const on = (s.theme || 'Dark') === l;
+        return { label: l, on: () => this.setState({ theme: l }),
+          bg: on ? 'rgba(255,106,44,.14)' : 'transparent', border: on ? 'rgba(255,106,44,.4)' : '#262931', col: on ? '#FF6A2C' : '#9A9BA4' };
+      }),
+      sessionToggles: sw([
+        { key: 'autoIn', label: 'Check in automatically', hint: 'When you arrive at a saved court', def: false },
+        { key: 'shareLoc', label: 'Share precise location', hint: 'Improves nearby court distances', def: true },
+      ]),
+      notifToggles: sw([
+        { key: 'nFriendLive', label: 'Friend checks in', hint: 'When someone in your crew starts a run', def: true },
+        { key: 'nNearby', label: 'Court fills up nearby', hint: 'Six or more players within 2 miles', def: true },
+        { key: 'nRequests', label: 'Friend requests', hint: 'New requests and accepts', def: true },
+        { key: 'nDigest', label: 'Weekly recap', hint: 'Your hours, courts and badges', def: false },
+      ]),
+      aboutRows: [
+        { label: 'Privacy policy', value: '' },
+        { label: 'Terms of service', value: '' },
+        { label: 'Report a problem', value: '' },
+        { label: 'Rate LiveHoops', value: '' },
+      ],
+      isEdit: s.tab === 'profile' && s.edit,
+      openEdit: () => this.setState({ edit: true, draft: { name: s.name, jersey: s.jersey, bio: s.bio, positions: s.positions, accent: s.accent, homeCourt: s.homeCourt } }),
+      closeEdit: () => this.setState({ edit: false, ...(s.draft || {}), draft: null }),
+      saveEdit: () => { this.setState({ edit: false, draft: null }); this.say('Profile saved'); },
+      homeCourt: s.homeCourt || 'Cadman Plaza Courts',
+      openHomePicker: () => this.setState({ homePicker: true }),
+      closeHomePicker: () => this.setState({ homePicker: false }),
+      homePickerOpen: s.homePicker,
+      homeOptions: nearby.map(c => ({ ...c, pick: () => this.setState({ homeCourt: c.name, homePicker: false }) })),
+      editName: s.name == null ? 'Royxl' : s.name,
+      setName: e => this.setState({ name: e.target.value }),
+      editJersey: s.jersey == null ? '7' : s.jersey,
+      setJersey: e => this.setState({ jersey: e.target.value.replace(/\D/g, '').slice(0, 2) }),
+      editBio: bio, bioCount: bio.length,
+      setBio: e => this.setState({ bio: e.target.value.slice(0, 120) }),
+      positions: ['Guard', 'Wing', 'Forward', 'Center', 'Wherever'].map(l => {
+        const on = (s.positions || ['Guard', 'Wing']).indexOf(l) > -1;
+        return { label: l, on: () => { const cur = s.positions || ['Guard', 'Wing']; this.setState({ positions: on ? cur.filter(x => x !== l) : cur.concat(l) }); },
+          bg: on ? 'rgba(255,106,44,.14)' : 'transparent', border: on ? 'rgba(255,106,44,.4)' : '#262931', col: on ? '#FF6A2C' : '#9A9BA4' };
+      }),
+      accentSwatches: [
+        { hex: '#FF6A2C' }, { hex: '#4C8DFF' }, { hex: '#F2C230' }, { hex: '#FF5A52' },
+        { hex: '#A182F5' }, { hex: '#3ED27F' }, { hex: '#C08457' }, { hex: '#A6A8B2' },
+      ].map(a => {
+        const on = (s.accent || '#FF6A2C') === a.hex;
+        return { ...a, on: () => this.setState({ accent: a.hex }),
+          ring: on ? '#F4F4F6' : 'transparent', glow: on ? '0 0 0 3px rgba(255,255,255,.08)' : 'none' };
+      }),
+      toggles: [
+        { key: 'showLive', label: 'Show me as live', hint: 'Friends see the court you check into' },
+        { key: 'discover', label: 'Discoverable nearby', hint: 'Players at your court can find you' },
+        { key: 'dms', label: 'Allow messages', hint: 'From anyone, not just your crew' },
+      ].map(t => {
+        const st = s[t.key] == null ? t.key !== 'dms' : s[t.key];
+        return { ...t, on: () => this.setState({ [t.key]: !st }), track: st ? '#FF6A2C' : '#343842', justify: st ? 'flex-end' : 'flex-start' };
+      }),
+      isAchievements: s.tab === 'profile' && s.ach && !s.edit,
+      openAchievements: () => this.setState({ ach: true, achTab: 'Earned' }),
+      closeAchievements: () => this.setState({ ach: false }),
+      achTabs: ['Earned', 'In progress'].map(l => tabBtn(l, s.achTab || 'Earned', v => ({ achTab: v }))),
+      achEarned: (s.achTab || 'Earned') === 'Earned',
+      achLocked: s.achTab === 'In progress',
+      badgesEarned: 6, badgesTotal: 18, badgeDashoffset: 220 - 220 * (6 / 18),
+      earned: [
+        { mark: '1', name: 'First run', date: 'Mar 2024' },
+        { mark: '5', name: 'Regular', date: '13 Aug' },
+        { mark: '3', name: 'Three courts', date: '11 Aug' },
+        { mark: '10', name: '10 hours', date: '07 Aug' },
+        { mark: '★', name: 'Rated a court', date: 'Jul 2026' },
+        { mark: '↑', name: 'Brought a friend', date: 'Jun 2026' },
+      ],
+      locked: [
+        { name: 'Night owl', need: 'Check in after 9pm five times', progress: '3/5', pct: '60%' },
+        { name: 'Ten courts', need: 'Run at ten different courts', progress: '3/10', pct: '30%' },
+        { name: 'Fifty hours', need: '50 hours logged on court', progress: '12/50', pct: '24%' },
+        { name: 'Crew of ten', need: 'Ten friends in your crew', progress: '4/10', pct: '40%' },
+        { name: 'Streak', need: 'Check in seven days running', progress: '2/7', pct: '28%' },
+      ],
+      nearby, pickerOpen: s.picker,
+      activeCourts: nearby.filter(c => c.players > 0).map(c => ({ ...c, border: '#262931', on: () => this.setState({ sheet: true, court: c.name }) })),
+      openPicker: () => this.setState({ picker: true }),
+      closePicker: () => this.setState({ picker: false }),
+      activeCourt: s.court || 'Cadman Plaza Courts',
+      activeAddress: s.addr || sel.addr,
+      activePlayers: s.players == null ? sel.players : s.players,
+      elapsedLabel: this.dur(s.elapsed), remainingLabel: this.dur(Math.max(0, 10800 - s.elapsed)),
+
+      goHome: () => this.setState({ tab: 'home', sheet: false, ach: false }),
+      goMap: () => this.setState({ tab: 'map', sheet: false, ach: false }),
+      goCheck: () => this.setState({ tab: 'check', sheet: false, ach: false }),
+      goFriends: () => this.setState({ tab: 'friends', sheet: false, ach: false }),
+      goProfile: () => this.setState({ tab: 'profile', sheet: false, ach: false, edit: false, settings: false }),
+      openCourt: () => this.setState({ sheet: true }),
+      closeSheet: () => this.setState({ sheet: false }),
+      checkInHere: () => { this.setState({ checkedIn: true, sheet: false, tab: 'check', elapsed: 0, court: sel.name, addr: sel.addr, players: sel.players, dist: sel.dist }); this.say('Checked in at ' + sel.name + ' — 3h session'); },
+      checkOut: () => { this.setState({ checkedIn: false }); this.say('Checked out of Cadman Plaza'); },
+
+      navHome: s.tab === 'home' ? A : OFF, swHome: s.tab === 'home' ? 2.5 : 2, dotHome: s.tab === 'home' ? A : 'transparent',
+      navMap: s.tab === 'map' ? A : OFF, swMap: s.tab === 'map' ? 2.5 : 2, dotMap: s.tab === 'map' ? A : 'transparent',
+      navFriends: s.tab === 'friends' ? A : OFF, swFriends: s.tab === 'friends' ? 2.5 : 2, dotFriends: s.tab === 'friends' ? A : 'transparent',
+      navProfile: s.tab === 'profile' ? A : OFF, swProfile: s.tab === 'profile' ? 2.5 : 2, dotProfile: s.tab === 'profile' ? A : 'transparent',
+      checkBg: s.checkedIn ? '#2FE08A' : A,
+      checkGlow: s.checkedIn ? '0 6px 20px rgba(47,224,138,.32)' : '0 6px 20px rgba(255,106,44,.32)',
+      checkLabel: s.checkedIn ? 'Active' : 'Check',
+      checkLabelCol: s.checkedIn ? '#2FE08A' : (s.tab === 'check' ? '#F4F4F6' : '#7C7E88'),
+
+      crew, courts, liveCourts: courts.filter(c => c.players > 0),
+      markers: [marker('96px', '300px', 8, true, 'Cadman Plaza Courts'), marker('268px', '520px', 5, true, 'Tompkins Square'), marker('150px', '640px', 12, true, 'Rucker Park')],
+      feedTabs: ['Following', 'Nearby', 'All'].map(l => tabBtn(l, s.feedTab, v => ({ feedTab: v }))),
+      frTabs: [{ ...tabBtn('Friends', s.frTab, v => ({ frTab: v })), badge: false }, { ...tabBtn('Messages', s.frTab, v => ({ frTab: v })), badge: true }],
+      profTabs: ['Posts', 'Check-ins'].map(l => tabBtn(l, s.profTab, v => ({ profTab: v }))),
+      frFriends: s.frTab === 'Friends', frMessages: s.frTab === 'Messages',
+      profPosts: s.profTab === 'Posts', profCheckins: s.profTab === 'Check-ins',
+
+      posts: [
+        { initials: 'KM', name: 'Kai', jersey: '#11', time: '12m', at: 'Cadman Plaza Courts · checked in', text: 'Got 6 up, need 4 more for full court. Lights are on till 11.', likes: 14, comments: 3, media: true },
+        { initials: 'JT', name: 'Jules', jersey: '#4', time: '1h', at: 'Tompkins Square', text: 'Runs at Tompkins are surprisingly good on Tuesdays.', likes: 8, comments: 1, media: false },
+      ],
+      friends: [
+        { initials: 'KM', name: 'Kai', jersey: '#11', status: 'At Cadman Plaza · 40m', statusCol: '#2FE08A', ring: 'linear-gradient(140deg,#2FE08A,#1E8F5A)' },
+        { initials: 'MB', name: 'Marc', jersey: '#30', status: 'At Rucker Park · 1h', statusCol: '#2FE08A', ring: 'linear-gradient(140deg,#2FE08A,#1E8F5A)' },
+        { initials: 'JT', name: 'Jules', jersey: '#4', status: 'Last run 2d ago', statusCol: '#5A5C66', ring: '#262931' },
+        { initials: 'AV', name: 'Ant', jersey: '#8', status: 'Last run 5d ago', statusCol: '#5A5C66', ring: '#262931' },
+      ],
+      dms: [
+        { initials: 'KM', name: 'Kai', time: '12m', preview: 'we need one more, you coming?', col: '#E4E4EA', unread: true, count: 2 },
+        { initials: 'DR', name: 'Dre', time: '2h', preview: 'good run today', col: '#5A5C66', unread: false, count: 0 },
+        { initials: 'MB', name: 'Marc', time: 'Mon', preview: 'Rucker at 6 tomorrow', col: '#5A5C66', unread: false, count: 0 },
+        { initials: 'JT', name: 'Jules', time: 'Sun', preview: 'you left your hoodie', col: '#5A5C66', unread: false, count: 0 },
+      ],
+      stats: [{ v: '5', k: 'Check-ins' }, { v: '3', k: 'Courts' }, { v: '12h', k: 'Hours' }],
+      history: [
+        { day: '13', mon: 'AUG', court: 'Cadman Plaza Courts', dur: '2h 40m', players: 8 },
+        { day: '11', mon: 'AUG', court: 'Rucker Park', dur: '1h 15m', players: 12 },
+        { day: '07', mon: 'AUG', court: 'Tompkins Square', dur: '3h', players: 6 },
+        { day: '02', mon: 'AUG', court: 'Cadman Plaza Courts', dur: '1h 50m', players: 10 },
+      ].map(h => ({ ...h, showOnMap: () => { this.setState({ tab: 'map', sheet: true, court: h.court }); this.say('Showing ' + h.court + ' on the map'); } })),
+      tokens: [
+        { name: '--bg', d: '#0B0B0E', l: '#F5F4F2' },
+        { name: '--bg-card', d: '#15161A', l: '#FFFFFF' },
+        { name: '--bg-elevated', d: '#1D1F24', l: '#ECEBE8' },
+        { name: '--bg-nav', d: '#0D0E12', l: '#FBFAF9' },
+        { name: '--text-primary', d: '#F4F4F6', l: '#15161A' },
+        { name: '--text-secondary', d: '#9A9BA4', l: '#5F6068' },
+        { name: '--text-tertiary', d: '#5A5C66', l: '#9A9BA4' },
+        { name: '--separator', d: '#1B1D23', l: '#E4E2DE' },
+        { name: '--separator-strong', d: '#343842', l: '#C8C6C1' },
+        { name: '--live', d: '#2FE08A', l: '#12A566' },
+      ],
+      accents: [
+        { name: 'Orange', hex: '#FF6A2C', on: '#150B05' },
+        { name: 'Blue', hex: '#4C8DFF', on: '#04102B' },
+        { name: 'Yellow', hex: '#F2C230', on: '#1F1804' },
+        { name: 'Red', hex: '#FF5A52', on: '#2A0705' },
+        { name: 'Purple', hex: '#A182F5', on: '#150A2E' },
+        { name: 'Green', hex: '#3ED27F', on: '#052014' },
+        { name: 'Brown', hex: '#C08457', on: '#20120A' },
+        { name: 'Grey', hex: '#A6A8B2', on: '#14151A' },
+      ],
+      radii: [{ name: 'xs 6', v: '6px' }, { name: 'sm 10', v: '10px' }, { name: 'md 16', v: '16px' }, { name: 'lg 26', v: '26px' }, { name: 'full', v: '999px' }],
+      spaces: [{ v: '4px' }, { v: '8px' }, { v: '12px' }, { v: '16px' }, { v: '24px' }, { v: '32px' }],
+    };
+  }
+}
+</script>
+</body>
+</html>
