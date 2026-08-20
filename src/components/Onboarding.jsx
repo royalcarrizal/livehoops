@@ -125,8 +125,9 @@ export default function Onboarding({ profile, onComplete }) {
 
   // ── Sliding strip geometry ────────────────────────────────────────────────
   // The strip holds every screen side by side. Its width and each slide's
-  // width scale with the slide count (3 or 4) so the transform math works for
-  // both, overriding the fixed 300% / 33.333% defaults in index.css.
+  // width scale with the slide count, so the transform math holds however
+  // many there are. index.css deliberately sets no width for either — this
+  // is the only place it's decided.
   const slidePct  = 100 / slides.length;
   const stripStyle = {
     width: `${slides.length * 100}%`,
