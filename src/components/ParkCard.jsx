@@ -82,7 +82,7 @@ export default function ParkCard({ park, isCheckedIn, onCheckIn, style }) {
         </div>
 
         <button
-          className={`btn-checkin ${isCheckedIn ? 'checked-in' : ''}`}
+          className={`btn btn--sm btn--pill ${isCheckedIn ? 'btn--live' : 'btn--soft'}`}
           onClick={(e) => {
             e.stopPropagation();
             onCheckIn(park.id);

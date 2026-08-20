@@ -184,15 +184,17 @@ export default function AuthScreen({ onSignUp, onSignIn, onResetPassword }) {
       </div>
 
       {/* ── Tab Toggle (Sign Up / Log In) ────────────────────────────────── */}
-      <div className="feed-tab-row" style={{ margin: '0 0 20px' }}>
+      {/* --flush because .auth-screen centres its children, which would
+          otherwise shrink this track to the width of its own labels. */}
+      <div className="segmented segmented--flush">
         <button
-          className={`feed-tab-btn${mode === 'signup' ? ' active' : ''}`}
+          className={`segmented__option${mode === 'signup' ? ' is-selected' : ''}`}
           onClick={() => switchMode('signup')}
         >
           Sign Up
         </button>
         <button
-          className={`feed-tab-btn${mode === 'login' ? ' active' : ''}`}
+          className={`segmented__option${mode === 'login' ? ' is-selected' : ''}`}
           onClick={() => switchMode('login')}
         >
           Log In
@@ -299,7 +301,7 @@ export default function AuthScreen({ onSignUp, onSignIn, onResetPassword }) {
         {/* ── Submit button ──────────────────────────────────────────────── */}
         <button
           type="submit"
-          className="auth-submit-btn"
+          className="btn btn--primary btn--lg btn--block"
           disabled={submitting}
         >
           {submitting

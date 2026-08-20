@@ -79,7 +79,7 @@ function DiagLine({ label, value, ok }) {
         style={{
           textAlign: 'right',
           fontWeight: 500,
-          color: ok === false ? '#FF453A' : 'inherit',
+          color: ok === false ? 'var(--danger)' : 'inherit',
         }}
       >
         {value}
@@ -909,7 +909,7 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
                 <div className="settings-row-icon" style={{ background: '#2C2C2E' }}>🚪</div>
                 <div className="settings-row-content">
                   {/* Red title text signals this is a destructive action */}
-                  <div className="settings-row-title" style={{ color: '#FF453A' }}>Sign Out</div>
+                  <div className="settings-row-title" style={{ color: 'var(--danger)' }}>Sign Out</div>
                 </div>
                 <div className="settings-row-right"><ChevronRight size={16} /></div>
               </button>
@@ -918,7 +918,7 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
               <button className="settings-row" onClick={() => setConfirm('delete')}>
                 <div className="settings-row-icon" style={{ background: '#2C2C2E' }}>🗑️</div>
                 <div className="settings-row-content">
-                  <div className="settings-row-title" style={{ color: '#FF453A' }}>Delete Account</div>
+                  <div className="settings-row-title" style={{ color: 'var(--danger)' }}>Delete Account</div>
                   <div className="settings-row-desc">Permanently removes all your data</div>
                 </div>
                 <div className="settings-row-right"><ChevronRight size={16} /></div>

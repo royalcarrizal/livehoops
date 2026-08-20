@@ -210,11 +210,12 @@ export default function CourtDetailSheet({
         />
 
         {/* ── Check-in / Directions buttons ─────────────────────────────────── */}
-        <div className="map-sheet-buttons">
+        {/* Two buttons, so they share one row — unlike the map sheet, which
+            has a third action and splits across two rows. */}
+        <div className="map-sheet-buttons-row">
           {isCheckedInHere ? (
             <button
-              className="auth-submit-btn"
-              style={{ flex: 1, background: '#22c55e' }}
+              className="btn btn--live-filled btn--grow"
               onClick={async () => {
                 await checkOut(activeCheckIn.checkinId, court.id, user?.id);
                 onClose();
@@ -224,8 +225,7 @@ export default function CourtDetailSheet({
             </button>
           ) : (
             <button
-              className="auth-submit-btn"
-              style={{ flex: 1 }}
+              className="btn btn--primary btn--grow"
               onClick={() => { onCheckIn(court.id); onClose(); }}
               disabled={isCheckingIn}
             >
@@ -234,7 +234,7 @@ export default function CourtDetailSheet({
           )}
 
           <a
-            className="map-directions-btn"
+            className="btn btn--secondary btn--grow"
             href={`https://maps.google.com/?q=${court.lat},${court.lng}`}
             target="_blank"
             rel="noreferrer"
@@ -308,7 +308,7 @@ export default function CourtDetailSheet({
               />
 
               <button
-                className="review-submit-btn"
+                className="btn btn--primary btn--sm btn--pill"
                 disabled={!draftRating || isSubmitting}
                 onClick={handleSubmit}
               >

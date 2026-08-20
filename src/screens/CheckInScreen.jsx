@@ -146,7 +146,7 @@ export default function CheckInScreen({
 
               {/* Check Out button — shows "Checking out..." while the Supabase update runs */}
               <button
-                className="btn-checkout"
+                className="btn btn--danger btn--block"
                 disabled={checkingOut}
                 onClick={handleCheckOut}
               >
@@ -182,12 +182,12 @@ export default function CheckInScreen({
             <p className="no-checkin-subtitle">
               Find a court near you and let others know you're running.
             </p>
-            <button className="btn-primary" onClick={() => setActiveTab('home')}>
+            <button className="btn btn--primary btn--lg" onClick={() => setActiveTab('home')}>
               Find a Court
             </button>
 
             {/* Button to open the Add a Court slide-up sheet */}
-            <button className="btn-add-court" onClick={() => setShowAddCourt(true)}>
+            <button className="btn btn--soft btn--lg btn--block" onClick={() => setShowAddCourt(true)}>
               + Add a Court
             </button>
 

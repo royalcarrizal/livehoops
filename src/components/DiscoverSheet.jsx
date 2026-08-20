@@ -129,18 +129,18 @@ export default function DiscoverSheet({ userId, onClose, onViewProfile }) {
 
               {/* Friend action button — stops propagation so row tap doesn't fire */}
               {status === 'accepted' && (
-                <button className="search-add-btn muted" disabled onClick={e => e.stopPropagation()}>
+                <button className="btn btn--secondary btn--sm btn--pill" disabled onClick={e => e.stopPropagation()}>
                   Friends
                 </button>
               )}
               {status === 'pending' && (
-                <button className="search-add-btn muted" disabled onClick={e => e.stopPropagation()}>
+                <button className="btn btn--secondary btn--sm btn--pill" disabled onClick={e => e.stopPropagation()}>
                   Pending
                 </button>
               )}
               {status === 'none' && (
                 <button
-                  className="search-add-btn"
+                  className="btn btn--primary btn--sm btn--pill"
                   onClick={e => { e.stopPropagation(); handleAdd(result.id); }}
                 >
                   Add

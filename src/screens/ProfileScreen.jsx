@@ -463,15 +463,17 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
             Friend/etc. don't make sense for a profile you can't see anyway. */}
         <div className="profile-action-row">
           {isBlocked ? (
-            <button className="profile-action-btn filled" onClick={handleUnblock}>
+            <button className="btn btn--primary btn--grow" onClick={handleUnblock}>
               Unblock
             </button>
           ) : (
             <>
-              {/* Achievements — derived from stats, so hidden on locked profiles */}
+              {/* Achievements — derived from stats, so hidden on locked profiles.
+                  Filled, per the design: on your own profile Achievements is the
+                  thing worth tapping, and Edit Profile is the quieter utility. */}
               {canViewContent && (
                 <button
-                  className="profile-action-btn outlined"
+                  className="btn btn--primary btn--grow"
                   onClick={() => setShowAchievements(true)}
                 >
                   Achievements
@@ -481,21 +483,21 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
               {/* Edit Profile — owner only. Visitors see friend status button instead. */}
               {isOwner ? (
                 <button
-                  className="profile-action-btn filled"
+                  className="btn btn--secondary btn--grow"
                   onClick={openEditProfile}
                 >
                   Edit Profile
                 </button>
               ) : alreadyFriends ? (
-                <button className="profile-action-btn filled" disabled>
+                <button className="btn btn--secondary btn--grow" disabled>
                   Friends ✓
                 </button>
               ) : requestPending ? (
-                <button className="profile-action-btn filled" disabled style={{ opacity: 0.6 }}>
+                <button className="btn btn--secondary btn--grow" disabled>
                   Pending
                 </button>
               ) : (
-                <button className="profile-action-btn filled" onClick={handleAddFriend}>
+                <button className="btn btn--primary btn--grow" onClick={handleAddFriend}>
                   Add Friend
                 </button>
               )}
@@ -702,7 +704,7 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
                 {/* Jump to this court on the Map tab */}
                 {item.court_id && (
                   <button
-                    className="checkin-history-map-btn"
+                    className="btn btn--soft btn--sm btn--pill"
                     onClick={() => handleViewOnMap(item.court_id)}
                     aria-label={`View ${item.courts?.name ?? 'court'} on the map`}
                   >
@@ -872,14 +874,13 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
             {/* Save / Cancel buttons */}
             <div style={{ display: 'flex', gap: 10 }}>
               <button
-                className="profile-action-btn filled"
+                className="btn btn--secondary btn--grow"
                 onClick={() => setShowEditProfile(false)}
               >
                 Cancel
               </button>
               <button
-                className="auth-submit-btn"
-                style={{ flex: 1, opacity: saving ? 0.6 : 1 }}
+                className="btn btn--primary btn--grow"
                 onClick={handleSaveProfile}
                 disabled={saving}
               >

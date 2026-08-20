@@ -591,7 +591,7 @@ export default function AddCourtSheet({ isOpen, onClose, user }) {
           <div className="add-court-nav">
             {/* Back button — goes to the previous step */}
             <button
-              className="add-court-back-btn"
+              className="btn btn--secondary"
               onClick={() => setStep(s => s - 1)}
               type="button"
             >
@@ -601,7 +601,7 @@ export default function AddCourtSheet({ isOpen, onClose, user }) {
             {/* Step 2: "Next" advances to Step 3 */}
             {step === 2 && (
               <button
-                className="add-court-next-btn"
+                className="btn btn--primary btn--grow"
                 disabled={!canAdvance}
                 onClick={() => setStep(3)}
                 type="button"
@@ -613,7 +613,7 @@ export default function AddCourtSheet({ isOpen, onClose, user }) {
             {/* Step 3: "Submit Court" saves to Supabase */}
             {step === 3 && (
               <button
-                className="add-court-next-btn"
+                className="btn btn--primary btn--grow"
                 disabled={submitting}
                 onClick={handleSubmit}
                 type="button"

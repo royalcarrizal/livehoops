@@ -129,14 +129,14 @@ export default function ScheduleMeetupSheet({ isOpen, onClose, court, onSchedule
           <div className="meetup-visibility-row">
             <button
               type="button"
-              className={`meetup-visibility-btn${visibility === 'public' ? ' selected' : ''}`}
+              className={`btn btn--grow ${visibility === 'public' ? 'btn--soft' : 'btn--secondary'}`}
               onClick={() => setVisibility('public')}
             >
               🌍 Everyone
             </button>
             <button
               type="button"
-              className={`meetup-visibility-btn${visibility === 'friends' ? ' selected' : ''}`}
+              className={`btn btn--grow ${visibility === 'friends' ? 'btn--soft' : 'btn--secondary'}`}
               onClick={() => setVisibility('friends')}
             >
               👥 Friends only
@@ -150,11 +150,11 @@ export default function ScheduleMeetupSheet({ isOpen, onClose, court, onSchedule
         </div>
 
         <div className="add-court-nav">
-          <button className="add-court-back-btn" onClick={onClose} type="button">
+          <button className="btn btn--secondary" onClick={onClose} type="button">
             Cancel
           </button>
           <button
-            className="add-court-next-btn"
+            className="btn btn--primary btn--grow"
             disabled={submitting}
             onClick={handleSubmit}
             type="button"

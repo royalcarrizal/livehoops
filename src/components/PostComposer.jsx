@@ -303,7 +303,7 @@ export default function PostComposer({
             </div>
 
             <button
-              className="composer-post-btn"
+              className="btn btn--primary btn--sm btn--pill"
               disabled={!canPost}
               onClick={handlePost}
             >

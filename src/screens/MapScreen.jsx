@@ -402,7 +402,12 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
             />
 
             {/* Action buttons */}
-            <div className="map-sheet-buttons" style={{ flexWrap: 'wrap' }}>
+            {/* The primary action takes its own full-width row, and the two
+                secondary actions share the row below. Previously all three
+                shared one row, which could not fit: "Get Directions" alone
+                needs ~131px and an even third of a 390px sheet is ~110px, so
+                the row wrapped and the buttons came out mismatched. */}
+            <div className="map-sheet-buttons">
               {/* Three check-in states:
                   1. Checked in HERE     → green "Checked In ✓" button that checks out
                   2. Checked in ELSEWHERE → orange "Switch Courts" button
@@ -410,8 +415,7 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
               {activeCheckIn?.courtId === selectedPark.id ? (
                 // Already at this court — tap to check out
                 <button
-                  className="auth-submit-btn"
-                  style={{ flex: 1, background: '#22c55e' }}
+                  className="btn btn--live-filled btn--block"
                   onClick={async () => {
                     await checkOut(activeCheckIn.checkinId, selectedPark.id, user?.id);
                     setSelectedPark(null);
@@ -422,8 +426,7 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
               ) : activeCheckIn ? (
                 // Checked in at a different court — swap
                 <button
-                  className="auth-submit-btn"
-                  style={{ flex: 1 }}
+                  className="btn btn--primary btn--block"
                   onClick={() => {
                     onCheckIn(selectedPark.id);
                     setSelectedPark(null);
@@ -435,8 +438,7 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
               ) : (
                 // Not checked in anywhere
                 <button
-                  className="auth-submit-btn"
-                  style={{ flex: 1 }}
+                  className="btn btn--primary btn--block"
                   onClick={() => {
                     onCheckIn(selectedPark.id);
                     setSelectedPark(null);
@@ -447,23 +449,24 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
                 </button>
               )}
 
-              <a
-                className="map-directions-btn"
-                href={`https://maps.google.com/?q=${selectedPark.lat},${selectedPark.lng}`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Get Directions
-              </a>
+              <div className="map-sheet-buttons-row">
+                <a
+                  className="btn btn--secondary btn--grow"
+                  href={`https://maps.google.com/?q=${selectedPark.lat},${selectedPark.lng}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Get Directions
+                </a>
 
-              {/* Post tagged to this court */}
-              <button
-                className="map-directions-btn"
-                style={{ flex: 1 }}
-                onClick={() => setShowPostModal(true)}
-              >
-                ✏️ Post Here
-              </button>
+                {/* Post tagged to this court */}
+                <button
+                  className="btn btn--secondary btn--grow"
+                  onClick={() => setShowPostModal(true)}
+                >
+                  ✏️ Post Here
+                </button>
+              </div>
             </div>
 
             {/* ── Upcoming runs (scheduled meetups) ─────────────────────────── */}

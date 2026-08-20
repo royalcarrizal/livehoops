@@ -109,7 +109,7 @@ function MeetupRow({ meetup, user, onJoin, onLeave, onCancel, fetchAttendees, on
             <span className="meetup-row-joined">
               You're in{meetup.viewerAnonymous ? ' (as Baller)' : ''}
             </span>
-            <button className="meetup-btn-leave" onClick={handleLeave} disabled={busy}>
+            <button className="btn btn--secondary btn--sm btn--pill meetup-action-end" onClick={handleLeave} disabled={busy}>
               {busy ? '…' : 'Leave'}
             </button>
           </>
@@ -123,14 +123,14 @@ function MeetupRow({ meetup, user, onJoin, onLeave, onCancel, fetchAttendees, on
               />
               Go as Baller
             </label>
-            <button className="meetup-btn-join" onClick={handleJoin} disabled={busy}>
+            <button className="btn btn--primary btn--sm btn--pill meetup-action-end" onClick={handleJoin} disabled={busy}>
               {busy ? '…' : "I'm in"}
             </button>
           </>
         )}
 
         {isHost && (
-          <button className="meetup-btn-cancel" onClick={handleCancel} disabled={busy}>
+          <button className="btn btn--danger btn--sm btn--pill" onClick={handleCancel} disabled={busy}>
             Cancel run
           </button>
         )}
@@ -174,7 +174,7 @@ export default function CourtMeetups({
         ))
       )}
 
-      <button className="meetup-schedule-btn" onClick={() => setShowSchedule(true)}>
+      <button className="btn btn--soft btn--block" onClick={() => setShowSchedule(true)}>
         📅 Schedule a Run
       </button>
 
