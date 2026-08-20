@@ -243,7 +243,7 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
             placeholder="🔍  Search courts..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="map-search-input"
+            className="field field--sm map-search-input"
           />
           {/* Dropdown results — shown while the user is typing so results
               appear above the keyboard instead of in the hidden bottom panel */}

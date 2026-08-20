@@ -90,6 +90,11 @@ input, textarea, select, [contenteditable] {
   --separator: #1B1D23;
   --separator-strong: #343842;
   --card-shadow: none;
+  /* Translucent card ground for panels that float over the map. Needs to be
+     see-through enough to read as floating, opaque enough to read text on.
+     Was hardcoded rgba(28,28,30,…) at two call sites, which meant near-black
+     text on a dark grey box in light mode. */
+  --bg-overlay: rgba(21, 22, 26, 0.92);
   --map-bg: #0F1116;
   --map-road: rgba(255, 255, 255, 0.04);
 }
@@ -127,6 +132,7 @@ input, textarea, select, [contenteditable] {
   --separator: #E4E2DE;
   --separator-strong: #C8C6C1;
   --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --bg-overlay: rgba(255, 255, 255, 0.92);
   --map-bg: #E7E5E1;
   --map-road: rgba(0, 0, 0, 0.06);
 }
@@ -670,6 +676,111 @@ body {
   min-width: 0;
 }
 
+/* ── Field primitive ────────────────────────────────────────────────────────
+   Text inputs, textareas and search boxes.
+
+   This replaces twelve near-duplicate classes. .add-court-input and
+   .modal-input were byte-identical; the rest differed only in padding and
+   font size, at four and three values respectively, for no reason anyone
+   could have named.
+
+   Note the iOS rule near the top of this file forces every input to 16px on
+   touch devices, because anything smaller makes Safari zoom the page on
+   focus and not zoom back. The sizes below therefore only apply on desktop —
+   do not "fix" a field that looks larger than its spec on a phone.
+
+     .field           bordered box, full width
+     .field--sm       denser, for inline and in-sheet use
+     .field--pill     capsule — the DM and comment composers
+     .field--bare     no chrome; for a field inside .field-group, where the
+                      group draws the border and the rows divide it
+     .field--grow     share a row with a button instead of filling it */
+.field {
+  width: 100%;
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  border: 1px solid var(--separator-strong);
+  border-radius: var(--radius-md);
+  padding: 11px 14px;
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.4;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+/* None of the twelve had a focus style. Keyboard and switch users had no way
+   to tell which field was active. */
+.field:focus,
+.field:focus-visible {
+  border-color: var(--accent);
+}
+
+.field::placeholder { color: var(--text-tertiary); }
+
+textarea.field {
+  resize: none;
+  display: block;
+}
+
+.field--sm {
+  padding: 9px 12px;
+  font-size: 14px;
+}
+
+.field--pill { border-radius: var(--radius-full); }
+
+.field--bare {
+  background: none;
+  border-color: transparent;
+  border-radius: 0;
+  padding: 0;
+}
+.field--bare:focus { border-color: transparent; }
+
+.field--grow {
+  flex: 1 1 0%;
+  min-width: 0;
+  width: auto;
+}
+
+/* ── Grouped rows ──
+   The canvas's recurring form shape: one bordered card whose rows are
+   divided by hairlines rather than each row carrying its own chrome. Used by
+   Settings and Edit Profile. */
+.field-group {
+  background: var(--bg-card);
+  border: 1px solid var(--separator);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.field-group__row {
+  padding: 13px 15px;
+  border-bottom: 1px solid var(--separator);
+}
+
+.field-group__row:last-child { border-bottom: none; }
+
+/* Small caps label above a field or a group. */
+.field__label {
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  line-height: 1;
+}
+
+/* Character counter, e.g. the bio's 120 limit. Tabular so the number can't
+   change the counter's width as it counts. */
+.field__counter {
+  font-size: 10.5px;
+  font-weight: 500;
+  font-family: ui-monospace, Menlo, monospace;
+  color: var(--text-tertiary);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
 /* ── Notification button ── */
 .icon-btn {
   width: 36px;
@@ -850,16 +961,9 @@ body {
 
 /* The search text input */
 .map-search-input {
-  width: 100%;
-  background: rgba(28, 28, 30, 0.92);
-  color: var(--text-primary);
-  border: 1px solid var(--separator-strong);
-  border-radius: var(--radius-md);
-  padding: 10px 14px;
-  font-size: 14px;
-  font-family: var(--font);
-  outline: none;
-  box-sizing: border-box;
+/* Floats over the map, so it takes the translucent overlay ground and a blur
+   rather than .field's opaque one. Everything else comes from .field. */
+  background: var(--bg-overlay);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
@@ -869,7 +973,7 @@ body {
 /* Search results dropdown — appears below the input while typing */
 .map-search-dropdown {
   margin-top: 6px;
-  background: rgba(28, 28, 30, 0.96);
+  background: var(--bg-overlay);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--separator-strong);
@@ -1233,22 +1337,6 @@ body {
   cursor: pointer;
 }
 
-.map-post-input {
-  width: 100%;
-  background: var(--bg-elevated);
-  border: 1px solid var(--separator-strong);
-  border-radius: var(--radius-md);
-  padding: 10px 12px;
-  font-size: 14px;
-  font-family: var(--font);
-  color: var(--text-primary);
-  resize: none;
-  outline: none;
-  line-height: 1.5;
-  box-sizing: border-box;
-}
-
-.map-post-input::placeholder { color: var(--text-secondary); }
 
 .map-post-actions {
   display: flex;
@@ -2163,7 +2251,7 @@ body {
 .settings-drag-handle {
   width: 36px;
   height: 4px;
-  background: var(--border);
+  background: var(--separator-strong);
   border-radius: 2px;
   margin: 12px auto 0;
 }
@@ -2174,7 +2262,7 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 16px 20px;
-  border-bottom: 0.5px solid var(--border);
+  border-bottom: 1px solid var(--separator);
 }
 .settings-header-title {
   font-size: 17px;
@@ -2218,7 +2306,7 @@ body {
 .settings-group {
   background: var(--bg-card);
   border-radius: var(--radius-md);
-  border: 0.5px solid var(--border);
+  border: 1px solid var(--separator);
   overflow: hidden;
 }
 
@@ -2228,7 +2316,7 @@ body {
   align-items: center;
   gap: 12px;
   padding: 13px 16px;
-  border-bottom: 0.5px solid var(--border);
+  border-bottom: 1px solid var(--separator);
   cursor: pointer;
   transition: background 0.15s;
   width: 100%;
@@ -2243,16 +2331,6 @@ body {
 .settings-row:active { background: rgba(255, 255, 255, 0.05); }
 
 /* Colored square icon on the left of each row */
-.settings-row-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-sm);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 15px;
-  flex-shrink: 0;
-}
 
 /* Text content in the middle of the row */
 .settings-row-content { flex: 1; }
@@ -2370,17 +2448,6 @@ body {
 }
 
 /* Inline email input field (expands below the Change Email row) */
-.settings-email-input {
-  flex: 1;
-  padding: 8px 12px;
-  background: var(--bg);
-  border: 0.5px solid var(--border);
-  border-radius: var(--radius-sm);
-  color: var(--text-primary);
-  font-size: 14px;
-  font-family: var(--font);
-  outline: none;
-}
 
 /* Save button next to the email input */
 .settings-email-save-btn {
@@ -2440,7 +2507,7 @@ body {
   padding: 12px;
   border-radius: var(--radius-sm);
   background: var(--bg);
-  border: 0.5px solid var(--border);
+  border: 1px solid var(--separator);
   color: var(--text-primary);
   font-size: 15px;
   font-weight: 600;
@@ -2774,25 +2841,8 @@ body {
   line-height: 1.4;
 }
 
-.modal-input {
-  width: 100%;
-  background: var(--bg-elevated);
-  border: 1px solid var(--separator-strong);
-  border-radius: var(--radius-md);
-  padding: 12px 14px;
-  font-size: 15px;
-  font-family: var(--font);
-  color: var(--text-primary);
-  outline: none;
-}
 
-.modal-input:focus {
-  border-color: var(--accent-border);
-}
 
-.modal-input::placeholder {
-  color: var(--text-secondary);
-}
 
 .request-sent-state {
   text-align: center;
@@ -3269,17 +3319,10 @@ body {
   min-width: 0;
 }
 
+/* Chromeless (.field--bare) because the composer card draws the border. */
 .composer-input {
-  width: 100%;
-  background: none;
-  border: none;
-  outline: none;
-  color: var(--text-primary);
   font-size: 14px;
-  font-family: var(--font);
-  resize: none;
   line-height: 1.5;
-  padding: 0;
 }
 
 .composer-input::placeholder {
@@ -3782,16 +3825,10 @@ body {
   right: 16px;
 }
 
+/* Placement only — chrome comes from .field. */
 .court-picker-search {
   margin: 0 16px 8px;
-  padding: 10px 14px;
-  background: var(--bg-elevated);
-  border: 1px solid var(--separator-strong);
-  border-radius: var(--radius-md);
-  font-size: 14px;
-  color: var(--text-primary);
-  font-family: var(--font);
-  outline: none;
+  width: auto;
   flex-shrink: 0;
 }
 
@@ -4049,18 +4086,10 @@ body {
   align-items: center;
 }
 
+/* Extra right padding so text clears the send button sitting over the
+   field's right edge. Chrome from .field. */
 .feed-comment-input {
-  flex: 1;
-  background: var(--bg-elevated);
-  border: 1px solid var(--separator-strong);
-  border-radius: var(--radius-full);
-  padding: 8px 38px 8px 14px;
-  font-size: 13px;
-  color: var(--text-primary);
-  font-family: var(--font);
-  outline: none;
-  transition: border-color 0.15s;
-  width: 100%;
+  padding-right: 38px;
 }
 
 .feed-comment-input::placeholder {
@@ -5443,27 +5472,10 @@ body {
 }
 
 /* Text inputs — dark background, rounded corners, matches .modal-input style */
-.add-court-input {
-  width: 100%;
-  background: var(--bg-elevated);
-  border: 1px solid var(--separator-strong);
-  border-radius: var(--radius-md);
-  padding: 12px 14px;
-  font-size: 15px;
-  font-family: var(--font);
-  color: var(--text-primary);
-  outline: none;
-}
 
 /* Orange border when the input is focused */
-.add-court-input:focus {
-  border-color: var(--accent-border);
-}
 
 /* Placeholder text color */
-.add-court-input::placeholder {
-  color: var(--text-secondary);
-}
 
 /* ── Chip selectors (Surface, Lighting) ───────────────────────────────────── */
 .add-court-chips {
@@ -6022,18 +6034,8 @@ body {
   flex-shrink: 0;
 }
 
+/* Grows with the message up to a cap, then scrolls. Chrome from .field. */
 .dm-input {
-  flex: 1;
-  background: var(--bg-elevated);
-  border: 1px solid var(--separator-strong);
-  border-radius: var(--radius-full);
-  padding: 10px 16px;
-  font-size: 14px;
-  color: var(--text-primary);
-  font-family: var(--font);
-  resize: none;
-  outline: none;
-  line-height: 1.4;
   max-height: 100px;
   overflow-y: auto;
 }
@@ -6098,21 +6100,7 @@ body {
   flex-shrink: 0;
 }
 
-.discover-input {
-  flex: 1;
-  background: var(--bg-elevated);
-  border: none;
-  border-radius: var(--radius-md);
-  padding: 10px 14px;
-  font-size: 15px;
-  color: var(--text-primary);
-  outline: none;
-  font-family: var(--font);
-}
 
-.discover-input::placeholder {
-  color: var(--text-secondary);
-}
 
 .discover-list {
   overflow-y: auto;
@@ -6269,23 +6257,7 @@ body {
   transform: scale(0.9);
 }
 
-.review-textarea {
-  width: 100%;
-  background: var(--bg-card);
-  border: none;
-  border-radius: var(--radius-md);
-  padding: 10px 12px;
-  font-size: 14px;
-  color: var(--text-primary);
-  font-family: var(--font);
-  resize: none;
-  outline: none;
-  display: block;
-}
 
-.review-textarea::placeholder {
-  color: var(--text-secondary);
-}
 
 
 

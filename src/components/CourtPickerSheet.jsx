@@ -38,7 +38,7 @@ export default function CourtPickerSheet({ courts, selected, onSelect, onClose }
 
         {/* Search input */}
         <input
-          className="court-picker-search"
+          className="field field--sm court-picker-search"
           placeholder="Search courts…"
           value={query}
           onChange={e => setQuery(e.target.value)}

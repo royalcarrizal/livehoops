@@ -73,7 +73,7 @@ export default function DiscoverSheet({ userId, onClose, onViewProfile }) {
         </button>
         <input
           ref={inputRef}
-          className="discover-input"
+          className="field field--sm field--grow"
           placeholder="Search players by username…"
           value={query}
           onChange={e => setQuery(e.target.value)}

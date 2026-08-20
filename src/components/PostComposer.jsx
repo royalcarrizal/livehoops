@@ -253,7 +253,7 @@ export default function PostComposer({
           {/* ── Text input ──────────────────────────────────────────────────── */}
           <textarea
             ref={textareaRef}
-            className="composer-input"
+            className="field field--bare composer-input"
             placeholder="What's happening on the court?"
             value={text}
             rows={focused ? 3 : 1}

@@ -195,7 +195,7 @@ export default function DMThread({ friend, currentUser, onClose, onBlock }) {
         {/* ── Input bar ────────────────────────────────────────────────────── */}
         <div className="dm-input-bar">
           <textarea
-            className="dm-input"
+            className="field field--sm field--pill field--grow dm-input"
             placeholder="Type a message…"
             value={text}
             onChange={e => setText(e.target.value)}

@@ -462,7 +462,7 @@ function SearchModal({ userId, onClose, getStatus, onSend }) {
         </div>
         <p className="modal-subtitle">Search for players by username to send a friend request.</p>
         <input
-          className="modal-input"
+          className="field"
           placeholder="Search username..."
           value={query}
           onChange={e => setQuery(e.target.value)}

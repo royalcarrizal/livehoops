@@ -429,7 +429,6 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
                 className="settings-row"
                 onClick={() => { onClose(); onEditProfile(); }}
               >
-                <div className="settings-row-icon" style={{ background: '#2C6FED' }}>👤</div>
                 <div className="settings-row-content">
                   <div className="settings-row-title">Edit Profile</div>
                 </div>
@@ -440,7 +439,6 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
 
               {/* Change Password — sends a reset email, no new screen */}
               <button className="settings-row" onClick={handleChangePassword}>
-                <div className="settings-row-icon" style={{ background: '#5856D6' }}>🔒</div>
                 <div className="settings-row-content">
                   <div className="settings-row-title">Change Password</div>
                   <div className="settings-row-desc">Sends a reset link to your email</div>
@@ -456,7 +454,6 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
                   className="settings-row"
                   onClick={() => setShowEmailForm(v => !v)}
                 >
-                  <div className="settings-row-icon" style={{ background: '#32ADE6' }}>✉️</div>
                   <div className="settings-row-content">
                     <div className="settings-row-title">Change Email</div>
                     {/* Show their current email as a hint */}
@@ -475,7 +472,7 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
                       placeholder="New email address"
                       value={newEmail}
                       onChange={e => setNewEmail(e.target.value)}
-                      className="settings-email-input"
+                      className="field field--sm field--grow"
                     />
                     <button
                       className="settings-email-save-btn"
@@ -500,7 +497,6 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
                   this device's token; off actually removes it (see the hook).
                   Shows "on" only when granted AND enabled on this device. */}
               <div className="settings-row">
-                <div className="settings-row-icon" style={{ background: '#FF9500' }}>🔔</div>
                 <div className="settings-row-content">
                   <div className="settings-row-title">Push Notifications</div>
                   <div className="settings-row-desc">
@@ -519,7 +515,6 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
                   device (granted AND enabled), so it isn't offered with no token. */}
               {pushEnabled && permission === 'granted' && (
                 <button className="settings-row" onClick={handleTestPush} disabled={testing}>
-                  <div className="settings-row-icon" style={{ background: '#0A84FF' }}>🧪</div>
                   <div className="settings-row-content">
                     <div className="settings-row-title">Send Test Notification</div>
                     <div className="settings-row-desc">Push a test alert to this device</div>
@@ -540,7 +535,6 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
                 aria-expanded={diagOpen}
                 type="button"
               >
-                <div className="settings-row-icon" style={{ background: '#8E8E93' }}>🩺</div>
                 <div className="settings-row-content">
                   <div className="settings-row-title">Diagnostics</div>
                   <div className="settings-row-desc">Why notifications may not reach this phone</div>
@@ -600,7 +594,6 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
                       type="button"
                       style={{ marginTop: 10 }}
                     >
-                      <div className="settings-row-icon" style={{ background: '#5E5CE6' }}>🔄</div>
                       <div className="settings-row-content">
                         <div className="settings-row-title">
                           {reReging ? 'Re-registering…' : 'Re-register this device'}
@@ -620,7 +613,6 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
                       disabled={probing}
                       type="button"
                     >
-                      <div className="settings-row-icon" style={{ background: '#FF375F' }}>🔬</div>
                       <div className="settings-row-content">
                         <div className="settings-row-title">
                           {probing ? 'Running probe…' : 'Run push probe'}
@@ -667,7 +659,6 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
 
               {/* Friend request alerts — notified when someone sends a friend request */}
               <div className="settings-row">
-                <div className="settings-row-icon" style={{ background: '#30D158' }}>👥</div>
                 <div className="settings-row-content">
                   <div className="settings-row-title">Friend Request Alerts</div>
                 </div>
@@ -676,7 +667,6 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
 
               {/* Court goes live — notified when activity is detected at a saved court */}
               <div className="settings-row">
-                <div className="settings-row-icon" style={{ background: 'var(--accent)' }}>🏀</div>
                 <div className="settings-row-content">
                   <div className="settings-row-title">Court Goes Live Alerts</div>
                 </div>
@@ -685,7 +675,6 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
 
               {/* Run alerts — notified when a friend schedules a meetup at a court */}
               <div className="settings-row">
-                <div className="settings-row-icon" style={{ background: '#5856D6' }}>📅</div>
                 <div className="settings-row-content">
                   <div className="settings-row-title">Run Alerts</div>
                   <div className="settings-row-desc">When a friend schedules a run</div>
@@ -703,7 +692,6 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
 
               {/* Dark Mode — toggles the entire app theme instantly */}
               <div className="settings-row">
-                <div className="settings-row-icon" style={{ background: '#1C1C1E' }}>🌙</div>
                 <div className="settings-row-content">
                   <div className="settings-row-title">Dark Mode</div>
                 </div>
@@ -715,7 +703,6 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
                   mode, so what you tap is what you get: several accents are
                   deliberately darker in light mode to stay readable. */}
               <div className="settings-row">
-                <div className="settings-row-icon" style={{ background: 'var(--accent)' }}>🎨</div>
                 <div className="settings-row-content">
                   <div className="settings-row-title">Accent Colour</div>
                   <div className="settings-row-desc">
@@ -761,7 +748,6 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
 
               {/* Profile visibility — tapping cycles through Public / Friends only / Private */}
               <button className="settings-row" onClick={cycleVisibility}>
-                <div className="settings-row-icon" style={{ background: '#5856D6' }}>👁</div>
                 <div className="settings-row-content">
                   <div className="settings-row-title">Profile Visibility</div>
                   <div className="settings-row-desc">
@@ -779,7 +765,6 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
 
               {/* Show my location — controls whether check-in location is visible to others */}
               <div className="settings-row">
-                <div className="settings-row-icon" style={{ background: '#30D158' }}>📍</div>
                 <div className="settings-row-content">
                   <div className="settings-row-title">Show My Location</div>
                   <div className="settings-row-desc">Appear on the map at courts you check into</div>
@@ -789,7 +774,6 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
 
               {/* Blocked accounts — opens the management list */}
               <button className="settings-row" onClick={() => setShowBlocked(true)}>
-                <div className="settings-row-icon" style={{ background: '#8E8E93' }}>🚫</div>
                 <div className="settings-row-content">
                   <div className="settings-row-title">Blocked Accounts</div>
                   {blockedUsers.length > 0 && (
@@ -810,7 +794,6 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
               <div className="settings-section-label">Admin</div>
               <div className="settings-group">
                 <button className="settings-row" onClick={() => setShowAdmin(true)}>
-                  <div className="settings-row-icon" style={{ background: '#AF52DE' }}>🛡️</div>
                   <div className="settings-row-content">
                     <div className="settings-row-title">Moderation</div>
                     <div className="settings-row-desc">
@@ -840,7 +823,6 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
                 className="settings-row"
                 onClick={() => setShowTour(true)}
               >
-                <div className="settings-row-icon" style={{ background: 'var(--accent)' }}>📖</div>
                 <div className="settings-row-content">
                   <div className="settings-row-title">How LiveHoops Works</div>
                   <div className="settings-row-desc">A quick tour of the app</div>
@@ -853,7 +835,6 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
                 className="settings-row"
                 onClick={() => setLegalType('privacy')}
               >
-                <div className="settings-row-icon" style={{ background: '#636366' }}>📄</div>
                 <div className="settings-row-content">
                   <div className="settings-row-title">Privacy Policy</div>
                 </div>
@@ -865,7 +846,6 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
                 className="settings-row"
                 onClick={() => setLegalType('terms')}
               >
-                <div className="settings-row-icon" style={{ background: '#636366' }}>📋</div>
                 <div className="settings-row-content">
                   <div className="settings-row-title">Terms of Service</div>
                 </div>
@@ -877,7 +857,6 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
                 className="settings-row"
                 onClick={() => window.open('mailto:royalanthony96@gmail.com', '_blank')}
               >
-                <div className="settings-row-icon" style={{ background: '#32ADE6' }}>💬</div>
                 <div className="settings-row-content">
                   <div className="settings-row-title">Send Feedback</div>
                 </div>
@@ -889,7 +868,6 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
                 className="settings-row"
                 onClick={() => showToast('Rating available after App Store launch 🏀')}
               >
-                <div className="settings-row-icon" style={{ background: '#FF9500' }}>⭐</div>
                 <div className="settings-row-content">
                   <div className="settings-row-title">Rate LiveHoops</div>
                 </div>
@@ -906,7 +884,6 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
 
               {/* Sign Out — shows a confirmation dialog before logging out */}
               <button className="settings-row" onClick={() => setConfirm('signout')}>
-                <div className="settings-row-icon" style={{ background: '#2C2C2E' }}>🚪</div>
                 <div className="settings-row-content">
                   {/* Red title text signals this is a destructive action */}
                   <div className="settings-row-title" style={{ color: 'var(--danger)' }}>Sign Out</div>
@@ -916,7 +893,6 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
 
               {/* Delete Account — shows a stronger confirmation before deleting */}
               <button className="settings-row" onClick={() => setConfirm('delete')}>
-                <div className="settings-row-icon" style={{ background: '#2C2C2E' }}>🗑️</div>
                 <div className="settings-row-content">
                   <div className="settings-row-title" style={{ color: 'var(--danger)' }}>Delete Account</div>
                   <div className="settings-row-desc">Permanently removes all your data</div>
