@@ -38,46 +38,54 @@ input, textarea, select, [contenteditable] {
   --font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', system-ui, sans-serif;
   /* Maximum width of the app shell — fills any phone, caps on tablets/desktop */
   --app-width: 480px;
+
+  /* Radius scale (redesign). Previously every radius was a literal, which is
+     why one conceptual button shipped at 12px, 14px and 20px in three places. */
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 26px;
+  --radius-full: 999px;
 }
 
 /* ── Dark theme (default) ── */
 .theme-dark {
-  --bg: #000000;
-  --bg-card: #1C1C1E;
-  --bg-elevated: #2C2C2E;
-  --bg-input: #1C1C1E;
-  --bg-nav: rgba(18, 18, 18, 0.95);
+  --bg: #0B0B0E;
+  --bg-card: #15161A;
+  --bg-elevated: #1D1F24;
+  --bg-input: #15161A;
+  --bg-nav: rgba(13, 14, 18, 0.95);
   /* Accent — orange by default, overridden per choice below. Declared as an
      RGB triple so the translucent variants derive from it: a [data-accent]
      rule only has to restate --accent-rgb, and --accent / -dim / -border all
      follow. --accent-contrast is the text colour for FILLED accent surfaces
-     (see src/utils/accents.js — white is unreadable on several of them). */
-  --accent-rgb: 255 107 0;
-  --accent-bright: #FF8040;
-  --accent-contrast: #FFFFFF;
+     (see src/utils/accents.js — in dark mode a deep tint of the accent). */
+  --accent-rgb: 255 106 44;
+  --accent-bright: #FF8B57;
+  --accent-contrast: #150B05;
   --accent: rgb(var(--accent-rgb));
   --accent-dim: rgb(var(--accent-rgb) / 0.15);
   --accent-border: rgb(var(--accent-rgb) / 0.3);
-  --green: #30D158;
-  --green-dim: rgba(48, 209, 88, 0.12);
-  --blue: #0A84FF;
-  --text-primary: #FFFFFF;
-  --text-secondary: #8E8E93;
-  --text-tertiary: #3A3A3C;
-  --separator: #2C2C2E;
-  --separator-strong: #3A3A3C;
+  --green: #2FE08A;
+  --green-dim: rgba(47, 224, 138, 0.12);
+  --blue: #4C8DFF;
+  --text-primary: #F4F4F6;
+  --text-secondary: #9A9BA4;
+  --text-tertiary: #5A5C66;
+  --separator: #1B1D23;
+  --separator-strong: #343842;
   --card-shadow: none;
-  --map-bg: #111317;
+  --map-bg: #0F1116;
   --map-road: rgba(255, 255, 255, 0.04);
 }
 
 /* ── Light theme ── */
 .theme-light {
-  --bg: #F2F2F7;
+  --bg: #F5F4F2;
   --bg-card: #FFFFFF;
-  --bg-elevated: #E5E5EA;
+  --bg-elevated: #ECEBE8;
   --bg-input: #FFFFFF;
-  --bg-nav: rgba(248, 248, 248, 0.95);
+  --bg-nav: rgba(251, 250, 249, 0.95);
   /* Light theme uses softer alphas than dark — kept as they were. */
   --accent-rgb: 255 107 0;
   --accent-bright: #FF7A00;
@@ -85,16 +93,16 @@ input, textarea, select, [contenteditable] {
   --accent: rgb(var(--accent-rgb));
   --accent-dim: rgb(var(--accent-rgb) / 0.12);
   --accent-border: rgb(var(--accent-rgb) / 0.25);
-  --green: #34C759;
-  --green-dim: rgba(52, 199, 89, 0.12);
-  --blue: #007AFF;
-  --text-primary: #000000;
-  --text-secondary: #6C6C70;
-  --text-tertiary: #AEAEB2;
-  --separator: #E5E5EA;
-  --separator-strong: #C6C6C8;
+  --green: #12A566;
+  --green-dim: rgba(18, 165, 102, 0.12);
+  --blue: #0066CC;
+  --text-primary: #15161A;
+  --text-secondary: #5F6068;
+  --text-tertiary: #9A9BA4;
+  --separator: #E4E2DE;
+  --separator-strong: #C8C6C1;
   --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  --map-bg: #E0E4EC;
+  --map-bg: #E7E5E1;
   --map-road: rgba(0, 0, 0, 0.06);
 }
 
@@ -109,20 +117,23 @@ input, textarea, select, [contenteditable] {
 
    Light variants are deliberately darker: several of these disappear against a
    near-white background at their dark-mode brightness (literal yellow scores
-   ~1.4:1). --accent-contrast is the text colour for FILLED accent surfaces,
-   and drops to black on the three dark-mode accents where white is unreadable.
+   ~1.4:1). --accent-contrast is the text colour for FILLED accent surfaces.
 
-   Orange is the pre-existing brand colour and is exempt from both rules, so
-   that keeping it as the default really does leave the app looking unchanged. */
+   In dark mode it is a deep tint of the accent itself rather than white or
+   black — from the redesign, and measurably better: every dark fill clears
+   3:1, including orange, which needed an exemption at 2.86:1 on white. Light
+   mode keeps white. Orange still carries one documented exemption: at 2.60:1
+   on the light background it sits below the 3:1 bar, which the accents tests
+   assert deliberately rather than by oversight. */
 
-.theme-dark[data-accent="orange"] { --accent-rgb: 255 107 0; --accent-bright: #FF8040; --accent-contrast: #FFFFFF; }
-.theme-dark[data-accent="blue"] { --accent-rgb: 10 132 255; --accent-bright: #4FA6FF; --accent-contrast: #FFFFFF; }
-.theme-dark[data-accent="yellow"] { --accent-rgb: 255 214 10; --accent-bright: #FFE14F; --accent-contrast: #000000; }
-.theme-dark[data-accent="red"] { --accent-rgb: 255 69 58; --accent-bright: #FF7971; --accent-contrast: #FFFFFF; }
-.theme-dark[data-accent="purple"] { --accent-rgb: 191 90 242; --accent-bright: #D188F6; --accent-contrast: #FFFFFF; }
-.theme-dark[data-accent="green"] { --accent-rgb: 48 209 88; --accent-bright: #6ADE87; --accent-contrast: #000000; }
-.theme-dark[data-accent="brown"] { --accent-rgb: 172 142 104; --accent-bright: #C3AE92; --accent-contrast: #FFFFFF; }
-.theme-dark[data-accent="grey"] { --accent-rgb: 152 152 157; --accent-bright: #B5B5B8; --accent-contrast: #000000; }
+.theme-dark[data-accent="orange"] { --accent-rgb: 255 106 44; --accent-bright: #FF8B57; --accent-contrast: #150B05; }
+.theme-dark[data-accent="blue"] { --accent-rgb: 76 141 255; --accent-bright: #7EADFF; --accent-contrast: #04102B; }
+.theme-dark[data-accent="yellow"] { --accent-rgb: 242 194 48; --accent-bright: #F6D36A; --accent-contrast: #1F1804; }
+.theme-dark[data-accent="red"] { --accent-rgb: 255 90 82; --accent-bright: #FF8882; --accent-contrast: #2A0705; }
+.theme-dark[data-accent="purple"] { --accent-rgb: 161 130 245; --accent-bright: #BBA5F8; --accent-contrast: #150A2E; }
+.theme-dark[data-accent="green"] { --accent-rgb: 62 210 127; --accent-bright: #74DFA3; --accent-contrast: #052014; }
+.theme-dark[data-accent="brown"] { --accent-rgb: 192 132 87; --accent-bright: #D2A686; --accent-contrast: #20120A; }
+.theme-dark[data-accent="grey"] { --accent-rgb: 166 168 178; --accent-bright: #BFC0C8; --accent-contrast: #14151A; }
 
 .theme-light[data-accent="orange"] { --accent-rgb: 255 107 0; --accent-bright: #FF7A00; --accent-contrast: #FFFFFF; }
 .theme-light[data-accent="blue"] { --accent-rgb: 0 102 204; --accent-bright: #4791DA; --accent-contrast: #FFFFFF; }
@@ -141,7 +152,9 @@ html {
 }
 
 html, body {
-  background: #000;
+  /* Backdrop outside the 480px app shell (visible on tablet/desktop). The
+     shell itself paints var(--bg); this only needs to sit on the same ramp. */
+  background: #0B0B0E;
   min-height: 100svh;
   font-family: var(--font);
   -webkit-font-smoothing: antialiased;
