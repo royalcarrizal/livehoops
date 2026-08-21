@@ -25,6 +25,7 @@ import FeedPost from '../components/FeedPost';
 import PhotoViewer from '../components/PhotoViewer';
 import Toast from '../components/Toast';
 import { BIO_MAX_LENGTH, bioLength, clampBio, normalizeBio } from '../utils/bio';
+import { profileHasColumn, pickSupportedUpdates } from '../utils/profileSchema';
 import SettingsSheet from '../components/SettingsSheet';
 import BlockUserConfirm from '../components/BlockUserConfirm';
 import { useToast } from '../hooks/useToast';
@@ -64,6 +65,12 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
     // than rendering an empty gap. An all-whitespace bio counts as not set.
     bio:           profile?.bio?.trim() || null,
   };
+
+  // Whether supabase/profile_bio.sql has been applied yet. Migrations here are
+  // run by hand, so the deployed app can be ahead of the database. Rather than
+  // show a field that would silently fail to save, the bio UI stays dormant
+  // until the column actually exists. See utils/profileSchema.js.
+  const bioEnabled = profileHasColumn(profile, 'bio');
 
   // ── Derive ownership ───────────────────────────────────────────────────────
   // profile.id is the UUID of whoever's profile is being shown.
@@ -386,13 +393,17 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
     // for why the clamp counts characters rather than String.length.
     const bio = normalizeBio(editBio);
 
+    // Drop any column the table does not have yet. Migrations here are run by
+    // hand, so deployed code can outrun the database — and PostgREST rejects an
+    // update naming an unknown column outright, which would fail the username
+    // and jersey number too, not just the bio. See utils/profileSchema.js.
     setSaving(true);
-    const { error } = await updateProfile({
+    const { error } = await updateProfile(pickSupportedUpdates(profile, {
       username:       trimmedUsername,
       favorite_court: editFavCourt.trim(),
       jersey_number:  jerseyNumber,
       bio,
-    });
+    }));
     setSaving(false);
     if (error) {
       showToast('❌ Failed to save');
@@ -847,7 +858,9 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
               />
             </div>
 
-            {/* Bio (optional, 120 characters) */}
+            {/* Bio (optional, 120 characters). Hidden until the migration has
+                been applied — see bioEnabled above. */}
+            {bioEnabled && (
             <div className="edit-field-row">
               <label className="edit-field-label" htmlFor="edit-bio">Bio</label>
               <textarea
@@ -866,6 +879,7 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
                 {bioLength(editBio)}/{BIO_MAX_LENGTH}
               </div>
             </div>
+            )}
 
             {/* Favorite Court input */}
             <div className="edit-field-row edit-field-row--last">
