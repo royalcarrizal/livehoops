@@ -32,6 +32,12 @@ import LegalSheet from './LegalSheet';
 import FeatureTour from './FeatureTour';
 import AdminSheet from './AdminSheet';
 import BlockedAccountsSheet from './BlockedAccountsSheet';
+import {
+  AUTO_CHECKOUT_OPTIONS,
+  normalizeAutoCheckoutHours,
+  autoCheckoutLabel,
+} from '../utils/autoCheckout';
+import { profileHasColumn, pickSupportedUpdates } from '../utils/profileSchema';
 
 // ── Environment detection (for the notification diagnostics) ────────────────
 // Mirrors the standalone check in Onboarding.jsx: navigator.standalone is the
@@ -100,6 +106,25 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
     pushProbe, runPushProbe,
     enablePush, disablePush,
   } = useNotifications(user?.id);
+
+  // ── Auto check-out limit ────────────────────────────────────────────────
+  // Hidden entirely until the column exists — see utils/profileSchema.js. The
+  // saved value drives both the client-side expiry in useCheckIn and the
+  // pg_cron job server-side, so the two always agree on one number.
+  const autoCheckoutEnabled = profileHasColumn(profile, 'auto_checkout_hours');
+  const autoCheckoutHours = normalizeAutoCheckoutHours(profile?.auto_checkout_hours);
+  const [savingAutoCheckout, setSavingAutoCheckout] = useState(false);
+
+  const handleAutoCheckoutChange = async (hours) => {
+    if (hours === autoCheckoutHours || savingAutoCheckout) return;
+    setSavingAutoCheckout(true);
+    // Saved immediately rather than behind a Save button: it is a single
+    // choice from three, and the surrounding rows all commit on tap too.
+    await updateProfile(pickSupportedUpdates(profile, {
+      auto_checkout_hours: normalizeAutoCheckoutHours(hours),
+    }));
+    setSavingAutoCheckout(false);
+  };
 
   // ── Category toggles (account-level) ────────────────────────────────────
   // Friend Request / Court Goes Live / Run alerts are REAL settings stored on
@@ -487,6 +512,41 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
 
             </div>
           </div>
+
+          {/* ── Session ─────────────────────────────────────────────────────── */}
+          {/* Hidden until supabase/configurable_auto_checkout.sql has been
+              applied. Showing the control before then would let a player pick
+              1h while the server still expires everyone at 3h. */}
+          {autoCheckoutEnabled && (
+          <div>
+            <div className="settings-section-label">Session</div>
+            <div className="settings-group">
+              <div className="settings-row settings-row--stacked">
+                <div className="settings-row-content">
+                  <div className="settings-row-title">Auto check-out after</div>
+                  <div className="settings-row-desc">
+                    Your session ends on its own after this long, so your court
+                    doesn't show you as still playing.
+                  </div>
+                </div>
+                <div className="segmented segmented--flush" role="group" aria-label="Auto check-out after">
+                  {AUTO_CHECKOUT_OPTIONS.map(hours => (
+                    <button
+                      key={hours}
+                      type="button"
+                      aria-pressed={hours === autoCheckoutHours}
+                      className={`segmented__option${hours === autoCheckoutHours ? ' is-selected' : ''}`}
+                      onClick={() => handleAutoCheckoutChange(hours)}
+                      disabled={savingAutoCheckout}
+                    >
+                      {autoCheckoutLabel(hours)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+          )}
 
           {/* ── Section 2: Notifications ────────────────────────────────────── */}
           <div>

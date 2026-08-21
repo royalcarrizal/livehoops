@@ -2035,6 +2035,14 @@ textarea.field {
   color: var(--text-tertiary);
 }
 
+/* A settings row whose control sits under its label rather than beside it —
+   a segmented control needs the full width, unlike a toggle. */
+.settings-row--stacked {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+}
+
 .profile-username {
   font-size: 22px;
   font-weight: 800;
