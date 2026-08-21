@@ -17,7 +17,7 @@
 //   6. Settings sheet     — owner only, full settings slide-up
 
 import { useState, useRef, useEffect } from 'react';
-import { Settings, X, ChevronLeft, Map, UserX } from 'lucide-react';
+import { Settings, X, ChevronLeft, Map, UserX, ChevronDown, MapPin } from 'lucide-react';
 import { useFriends } from '../hooks/useFriends';
 import AchievementsSection from '../components/AchievementsSection';
 import Avatar from '../components/Avatar';
@@ -27,6 +27,7 @@ import Toast from '../components/Toast';
 import { BIO_MAX_LENGTH, bioLength, clampBio, normalizeBio } from '../utils/bio';
 import { profileHasColumn, pickSupportedUpdates } from '../utils/profileSchema';
 import { POSITIONS, togglePosition, normalizePositions, formatPositions } from '../utils/positions';
+import CourtPickerSheet from '../components/CourtPickerSheet';
 import SettingsSheet from '../components/SettingsSheet';
 import BlockUserConfirm from '../components/BlockUserConfirm';
 import { useToast } from '../hooks/useToast';
@@ -45,7 +46,7 @@ import { supabase } from '../lib/supabase';
 //                   Named distinctly from the local activeTab/setActiveTab
 //                   state below, which only toggles this screen's Posts vs.
 //                   Check-ins view.
-export default function ProfileScreen({ signOut, profile, updateProfile, user, onBack, onViewProfile, onNavigateTab, blockedIds, blockedUsers, blockUser, unblockUser }) {
+export default function ProfileScreen({ signOut, profile, updateProfile, user, onBack, onViewProfile, onNavigateTab, blockedIds, blockedUsers, blockUser, unblockUser, courts = [] }) {
   // ── Refs ──────────────────────────────────────────────────────────────────
   // Hidden file input — triggered when the owner taps "Change Photo"
   const fileInputRef = useRef(null);
@@ -68,6 +69,11 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
     // Normalised on read as well as write — this row is also another player's
     // profile, and rendering is the wrong place to discover bad data.
     positions:     normalizePositions(profile?.positions),
+    // Resolved against the loaded court list rather than stored denormalised,
+    // so a court that gets renamed reads correctly everywhere at once.
+    homeCourt:     profile?.home_court_id
+      ? courts.find(c => c.id === profile.home_court_id) ?? null
+      : null,
   };
 
   // Whether supabase/profile_bio.sql has been applied yet. Migrations here are
@@ -76,6 +82,13 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
   // until the column actually exists. See utils/profileSchema.js.
   const bioEnabled = profileHasColumn(profile, 'bio');
   const positionsEnabled = profileHasColumn(profile, 'positions');
+  const homeCourtEnabled = profileHasColumn(profile, 'home_court_id');
+
+  // The court currently chosen in the *editor*, which is not necessarily the
+  // saved one — resolved from the same list the picker offers.
+  const selectedHomeCourt = editHomeCourtId
+    ? courts.find(c => c.id === editHomeCourtId) ?? null
+    : null;
 
   // ── Derive ownership ───────────────────────────────────────────────────────
   // profile.id is the UUID of whoever's profile is being shown.
@@ -129,6 +142,8 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
   const [editJersey, setEditJersey]             = useState('');
   const [editBio, setEditBio]                   = useState('');
   const [editPositions, setEditPositions]       = useState([]);
+  const [editHomeCourtId, setEditHomeCourtId]   = useState(null);
+  const [showCourtPicker, setShowCourtPicker]   = useState(false);
 
   // True while the Save button is processing
   const [saving, setSaving]                     = useState(false);
@@ -365,11 +380,14 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
   // Pre-fills the form fields with the current profile values
   const openEditProfile = () => {
     setEditUsername(displayUser.name);
-    setEditFavCourt(displayUser.favoriteCourt);
+    // The raw value, not displayUser.favoriteCourt — that falls back to the
+    // literal string 'None yet', which saving unchanged would then store.
+    setEditFavCourt(profile?.favorite_court ?? '');
     // 0 is a valid number, so check != null rather than truthiness
     setEditJersey(profile?.jersey_number != null ? String(profile.jersey_number) : '');
     setEditBio(profile?.bio ?? '');
     setEditPositions(normalizePositions(profile?.positions));
+    setEditHomeCourtId(profile?.home_court_id ?? null);
     setShowEditProfile(true);
   };
 
@@ -411,6 +429,7 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
       jersey_number:  jerseyNumber,
       bio,
       positions:      normalizePositions(editPositions),
+      home_court_id:  editHomeCourtId,
     }));
     setSaving(false);
     if (error) {
@@ -484,6 +503,20 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
             Omitted when nothing is chosen so there is no stray separator. */}
         {displayUser.positions.length > 0 && (
           <p className="profile-positions">{formatPositions(displayUser.positions)}</p>
+        )}
+
+        {/* Home court — tappable through to the court itself, which is the
+            whole reason this is a reference and not a string. Like positions
+            it is factual, so it is not gated on canViewContent. */}
+        {displayUser.homeCourt && (
+          <button
+            type="button"
+            className="profile-home-court"
+            onClick={() => onNavigateTab?.('map')}
+          >
+            <MapPin size={12} strokeWidth={2.2} />
+            {displayUser.homeCourt.name}
+          </button>
         )}
 
         {/* 3 stat pills showing the user's key numbers.
@@ -922,18 +955,48 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
             </div>
             )}
 
-            {/* Favorite Court input */}
-            <div className="edit-field-row edit-field-row--last">
-              <label className="edit-field-label" htmlFor="edit-fav-court">Favorite Court</label>
-              <input
-                id="edit-fav-court"
-                className="field"
-                type="text"
-                value={editFavCourt}
-                onChange={e => setEditFavCourt(e.target.value)}
-                placeholder="e.g. Rucker Park"
-              />
-            </div>
+            {/* Home court. Once the migration has run this is a real
+                reference to a row in `courts`, which is what makes it a link
+                on the profile rather than a string. Until then the old
+                free-text field stands in, so this window never leaves the
+                form without a court field at all. */}
+            {homeCourtEnabled ? (
+              <div className="edit-field-row edit-field-row--last">
+                <span className="edit-field-label" id="edit-home-court-label">Home court</span>
+                <button
+                  type="button"
+                  className="field home-court-select"
+                  aria-labelledby="edit-home-court-label"
+                  onClick={() => setShowCourtPicker(true)}
+                >
+                  <span className={selectedHomeCourt ? '' : 'home-court-select__placeholder'}>
+                    {selectedHomeCourt ? selectedHomeCourt.name : 'Choose a court'}
+                  </span>
+                  <ChevronDown size={16} strokeWidth={2.4} />
+                </button>
+                {selectedHomeCourt && (
+                  <button
+                    type="button"
+                    className="home-court-clear"
+                    onClick={() => setEditHomeCourtId(null)}
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="edit-field-row edit-field-row--last">
+                <label className="edit-field-label" htmlFor="edit-fav-court">Favorite Court</label>
+                <input
+                  id="edit-fav-court"
+                  className="field"
+                  type="text"
+                  value={editFavCourt}
+                  onChange={e => setEditFavCourt(e.target.value)}
+                  placeholder="e.g. Rucker Park"
+                />
+              </div>
+            )}
 
             {/* Save / Cancel buttons */}
             <div style={{ display: 'flex', gap: 10 }}>
@@ -977,6 +1040,22 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
             unblockUser={unblockUser}
           />
         </>
+      )}
+
+      {/* Home-court picker. Reuses the post composer's court sheet rather
+          than being a second picker — same list, same search, same rows —
+          with nearest-first ordering, which is the useful order when the
+          question is "where do you usually hoop". */}
+      {showCourtPicker && (
+        <CourtPickerSheet
+          courts={courts}
+          selected={selectedHomeCourt}
+          title="Home court"
+          subtitle="Nearest to you first"
+          sortByDistance
+          onSelect={court => setEditHomeCourtId(court.id)}
+          onClose={() => setShowCourtPicker(false)}
+        />
       )}
 
       {/* Full-screen photo viewer — available to all viewers */}

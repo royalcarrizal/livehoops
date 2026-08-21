@@ -2,7 +2,7 @@
 // lighting normalization, and the DB-row → UI-shape transforms.
 
 import { describe, it, expect } from 'vitest';
-import { haversine, formatMiles, normalizeLighting, normalizeCourt, groupPlayersByCourt } from '../useCourts';
+import { haversine, formatMiles, normalizeLighting, normalizeCourt, groupPlayersByCourt, sortByDistance } from '../useCourts';
 
 describe('haversine', () => {
   it('returns 0 for identical points', () => {
@@ -139,5 +139,40 @@ describe('groupPlayersByCourt', () => {
   it('returns an empty object for empty or missing input', () => {
     expect(groupPlayersByCourt([])).toEqual({});
     expect(groupPlayersByCourt(null)).toEqual({});
+  });
+});
+
+describe('sortByDistance', () => {
+  const near = { id: 'a', distanceMi: 0.3 };
+  const far = { id: 'b', distanceMi: 4.2 };
+  const unknown = { id: 'c', distanceMi: null };
+
+  it('puts the closest court first', () => {
+    expect(sortByDistance([far, near]).map(c => c.id)).toEqual(['a', 'b']);
+  });
+
+  it('sorts courts with no known distance LAST, not first', () => {
+    // The case that matters. distanceMi is null when GPS is unavailable or
+    // denied — if those floated to the top, a list labelled "nearest first"
+    // would bury the courts we can actually locate.
+    expect(sortByDistance([unknown, far, near]).map(c => c.id)).toEqual(['a', 'b', 'c']);
+  });
+
+  it('handles every distance being unknown', () => {
+    const all = [{ id: 'a', distanceMi: null }, { id: 'b', distanceMi: null }];
+    expect(sortByDistance(all).map(c => c.id)).toEqual(['a', 'b']);
+  });
+
+  it('does not mutate the array it was given', () => {
+    const input = [far, near];
+    sortByDistance(input);
+    expect(input.map(c => c.id)).toEqual(['b', 'a']);
+  });
+
+  it('treats 0 miles as a real distance, not as missing', () => {
+    // 0 is falsy; a truthiness check here would sort "you are standing on it"
+    // to the bottom.
+    const here = { id: 'here', distanceMi: 0 };
+    expect(sortByDistance([far, here]).map(c => c.id)).toEqual(['here', 'b']);
   });
 });
