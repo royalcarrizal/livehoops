@@ -1972,6 +1972,69 @@ textarea.field {
   width: 100%;
 }
 
+/* Home court on the profile — a button, not a label, because the whole point
+   of storing a reference rather than a string is that you can go there. */
+.profile-home-court {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: 8px auto 0;
+  padding: 5px 11px;
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius-full);
+  background: var(--accent-dim);
+  color: var(--accent);
+  font-family: var(--font);
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.profile-home-court:active { background: rgb(var(--accent-rgb) / 0.22); }
+
+/* The disclosure control in the editor. Uses .field for its chrome, so this
+   only adds the row layout and the chevron's placement. */
+.home-court-select {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  text-align: left;
+  cursor: pointer;
+  color: var(--text-primary);
+}
+
+.home-court-select__placeholder { color: var(--text-tertiary); }
+
+.home-court-clear {
+  margin-top: 8px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-secondary);
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.home-court-clear:active { color: var(--accent); }
+
+/* Two-line heading in the court picker, so the sheet can carry a subtitle
+   ("Nearest to you first") without disturbing the centred title. */
+.court-picker-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.court-picker-subtitle {
+  font-size: 11.5px;
+  font-weight: 400;
+  color: var(--text-tertiary);
+}
+
 .profile-username {
   font-size: 22px;
   font-weight: 800;

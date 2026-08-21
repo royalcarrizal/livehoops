@@ -58,6 +58,26 @@ export function milesFrom(userPos, row) {
 // We convert the database column names (snake_case) to the shape the
 // UI components were built with.
 // userPos is optional — if provided, distance is calculated; otherwise "—".
+// ── Sort courts nearest first ────────────────────────────────────────────────
+// Used by the home-court picker, where "which of these is closest" is the
+// question being asked.
+//
+// distanceMi is null whenever GPS is unavailable or the user denied the
+// permission prompt. Those sort to the END, not the start. An unknown distance
+// is not a near one, and letting nulls float to the top would bury the courts
+// we can actually locate underneath the ones we cannot — making a list
+// labelled "nearest first" actively misleading.
+//
+// Returns a new array; the caller's list is left alone.
+export function sortByDistance(courts) {
+  return [...courts].sort((a, b) => {
+    if (a.distanceMi == null && b.distanceMi == null) return 0;
+    if (a.distanceMi == null) return 1;
+    if (b.distanceMi == null) return -1;
+    return a.distanceMi - b.distanceMi;
+  });
+}
+
 export function normalizeCourt(row, userPos = null) {
   const distanceMi = milesFrom(userPos, row);
   const distance = distanceMi == null ? '—' : formatMiles(distanceMi);

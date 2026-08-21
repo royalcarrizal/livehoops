@@ -1,19 +1,42 @@
 import { useState } from 'react';
 import { X, Check } from 'lucide-react';
+import { sortByDistance as sortCourtsByDistance } from '../hooks/useCourts';
 
-// Slide-up sheet that lets the user search and select a court to tag in a post.
+// Slide-up sheet that lets the user search and select a court.
+//
+// Used twice, for two different jobs: tagging a court in a post, and choosing
+// a home court on Edit Profile. The defaults below are the post-composer's
+// wording, so that call site did not have to change.
 //
 // Props:
 //   courts   — full array of court objects from useCourts
 //   selected — the currently selected court object (or null)
 //   onSelect(court) — called when the user taps a court row
 //   onClose  — called when the sheet is dismissed
-export default function CourtPickerSheet({ courts, selected, onSelect, onClose }) {
+//   title    — sheet heading
+//   subtitle — optional line under the heading
+//   sortByDistance — nearest first. Off by default: when tagging a post the
+//                    user is usually looking for a court by name, and
+//                    reordering the list under them is unhelpful. When
+//                    choosing a home court, nearest-first is almost always
+//                    the right order.
+export default function CourtPickerSheet({
+  courts,
+  selected,
+  onSelect,
+  onClose,
+  title = 'Tag a Court',
+  subtitle,
+  sortByDistance = false,
+}) {
   const [query, setQuery] = useState('');
 
-  const filtered = courts.filter(c =>
+  const matches = courts.filter(c =>
     c.name.toLowerCase().includes(query.toLowerCase())
   );
+
+  // See sortCourtsByDistance for why null distances sort last, not first.
+  const filtered = sortByDistance ? sortCourtsByDistance(matches) : matches;
 
   return (
     <>
@@ -30,7 +53,10 @@ export default function CourtPickerSheet({ courts, selected, onSelect, onClose }
 
         {/* Header */}
         <div className="court-picker-header">
-          <span className="court-picker-title">Tag a Court</span>
+          <div className="court-picker-heading">
+            <span className="court-picker-title">{title}</span>
+            {subtitle && <span className="court-picker-subtitle">{subtitle}</span>}
+          </div>
           <button className="court-picker-close" onClick={onClose} aria-label="Close">
             <X size={18} strokeWidth={2} />
           </button>

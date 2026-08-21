@@ -521,6 +521,9 @@ export default function App() {
             profile={viewedProfile ?? profile}
             updateProfile={updateProfile}
             user={user}
+            // The already-memoized court array, so the home-court picker does
+            // not re-run useCourts and prompt for geolocation a second time.
+            courts={parksWithMeetups}
             onBack={viewedProfile ? handleBackFromProfile : null}
             onViewProfile={handleViewProfile}
             onNavigateTab={setActiveTab}
