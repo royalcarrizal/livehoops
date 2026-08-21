@@ -26,6 +26,7 @@ import PhotoViewer from '../components/PhotoViewer';
 import Toast from '../components/Toast';
 import { BIO_MAX_LENGTH, bioLength, clampBio, normalizeBio } from '../utils/bio';
 import { profileHasColumn, pickSupportedUpdates } from '../utils/profileSchema';
+import { POSITIONS, togglePosition, normalizePositions, formatPositions } from '../utils/positions';
 import SettingsSheet from '../components/SettingsSheet';
 import BlockUserConfirm from '../components/BlockUserConfirm';
 import { useToast } from '../hooks/useToast';
@@ -64,6 +65,9 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
     // Bio: null means "not set" and the header omits the line entirely rather
     // than rendering an empty gap. An all-whitespace bio counts as not set.
     bio:           profile?.bio?.trim() || null,
+    // Normalised on read as well as write — this row is also another player's
+    // profile, and rendering is the wrong place to discover bad data.
+    positions:     normalizePositions(profile?.positions),
   };
 
   // Whether supabase/profile_bio.sql has been applied yet. Migrations here are
@@ -71,6 +75,7 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
   // show a field that would silently fail to save, the bio UI stays dormant
   // until the column actually exists. See utils/profileSchema.js.
   const bioEnabled = profileHasColumn(profile, 'bio');
+  const positionsEnabled = profileHasColumn(profile, 'positions');
 
   // ── Derive ownership ───────────────────────────────────────────────────────
   // profile.id is the UUID of whoever's profile is being shown.
@@ -123,6 +128,7 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
   const [editFavCourt, setEditFavCourt]         = useState('');
   const [editJersey, setEditJersey]             = useState('');
   const [editBio, setEditBio]                   = useState('');
+  const [editPositions, setEditPositions]       = useState([]);
 
   // True while the Save button is processing
   const [saving, setSaving]                     = useState(false);
@@ -363,6 +369,7 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
     // 0 is a valid number, so check != null rather than truthiness
     setEditJersey(profile?.jersey_number != null ? String(profile.jersey_number) : '');
     setEditBio(profile?.bio ?? '');
+    setEditPositions(normalizePositions(profile?.positions));
     setShowEditProfile(true);
   };
 
@@ -403,6 +410,7 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
       favorite_court: editFavCourt.trim(),
       jersey_number:  jerseyNumber,
       bio,
+      positions:      normalizePositions(editPositions),
     }));
     setSaving(false);
     if (error) {
@@ -468,6 +476,14 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
             not leak it to strangers. */}
         {canViewContent && displayUser.bio && (
           <p className="profile-bio">{displayUser.bio}</p>
+        )}
+
+        {/* Positions — factual rather than user-authored, so unlike the bio it
+            is not gated on canViewContent: "plays Guard" is the kind of thing
+            a locked profile still shows, the same way the username does.
+            Omitted when nothing is chosen so there is no stray separator. */}
+        {displayUser.positions.length > 0 && (
+          <p className="profile-positions">{formatPositions(displayUser.positions)}</p>
         )}
 
         {/* 3 stat pills showing the user's key numbers.
@@ -877,6 +893,31 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
               />
               <div className="field__counter" aria-live="polite">
                 {bioLength(editBio)}/{BIO_MAX_LENGTH}
+              </div>
+            </div>
+            )}
+
+            {/* Positions — multi-select chips. Reuses the button primitive
+                rather than adding chip CSS: soft when chosen, secondary when
+                not. Hidden until the migration has been applied. */}
+            {positionsEnabled && (
+            <div className="edit-field-row">
+              <span className="edit-field-label" id="edit-positions-label">Positions</span>
+              <div className="position-chips" role="group" aria-labelledby="edit-positions-label">
+                {POSITIONS.map(position => {
+                  const selected = editPositions.includes(position);
+                  return (
+                    <button
+                      key={position}
+                      type="button"
+                      aria-pressed={selected}
+                      className={`btn btn--sm btn--pill ${selected ? 'btn--soft' : 'btn--secondary'}`}
+                      onClick={() => setEditPositions(togglePosition(editPositions, position))}
+                    >
+                      {position}
+                    </button>
+                  );
+                })}
               </div>
             </div>
             )}
