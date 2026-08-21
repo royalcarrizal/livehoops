@@ -7,7 +7,8 @@
 // How it works end to end:
 //   1. On app load, we check localStorage for a saved check-in.
 //      If one exists, we verify it's still active in Supabase.
-//      If it's older than 3 hours, we auto check out.
+//      If it's older than the player's auto check-out limit, we check
+//      them out. See utils/autoCheckout.js.
 //   2. checkIn(courtId, userId) calls a Supabase RPC that atomically creates
 //      the check-in and updates court player counts.
 //   3. checkOut() calls a Supabase RPC that atomically closes the check-in,
@@ -20,15 +21,20 @@
 //     refetchProfile      // callback to reload profile stats after checkout
 //   );
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { sendPush } from '../lib/push';
+import { autoCheckoutMs } from '../utils/autoCheckout';
 
 // Key used to save the active check-in in localStorage
 const STORAGE_KEY = 'lh_active_checkin';
 
-// How long a check-in lasts before auto-expiring (3 hours in milliseconds)
-const MAX_CHECKIN_MS = 3 * 60 * 60 * 1000;
+// How long a check-in lasts before auto-expiring is now per-user — see
+// utils/autoCheckout.js and supabase/configurable_auto_checkout.sql. The
+// profile is passed in so this hook can read the caller's own limit; when it
+// is missing (still loading, or the column not yet added) autoCheckoutMs
+// falls back to the 3 hours every row already behaves like. It never falls
+// back to "no limit".
 
 // ── Notify friends that this user just checked in ──────────────────────────
 // Respects two things:
@@ -83,7 +89,22 @@ async function notifyFriendsOfCheckIn(userId, courtName, courtId) {
   }
 }
 
-export function useCheckIn(userId, onPlayerCountChange, onProfileRefetch) {
+export function useCheckIn(userId, onPlayerCountChange, onProfileRefetch, profile = null) {
+  // Read the limit through a ref rather than closing over `profile` directly.
+  // Putting `profile` in the restore effect's dependency array would re-run a
+  // Supabase query every time the profile object changed identity, which is
+  // often; leaving it out of the array while reading it directly would capture
+  // a stale value.
+  //
+  // Worth being clear about what this does and does not guarantee: if the
+  // profile has not loaded when the restore effect runs, this falls back to
+  // 3 hours, so a player with a 1-hour limit could keep a stale session for a
+  // few more minutes on that one code path. That is acceptable because the
+  // client check is only an immediate best-effort cleanup — the pg_cron job in
+  // supabase/configurable_auto_checkout.sql is the actual enforcement, and it
+  // runs every five minutes whether or not anyone has the app open.
+  const profileRef = useRef(profile);
+  useEffect(() => { profileRef.current = profile; }, [profile]);
   // The user's current active check-in, or null if not checked in anywhere.
   // Shape: { checkinId, courtId, courtName, courtAddress, checkedInAt }
   //   checkinId   — the UUID of the row in the checkins table
@@ -98,7 +119,7 @@ export function useCheckIn(userId, onPlayerCountChange, onProfileRefetch) {
 
   // ── Internal: check out a specific check-in row ────────────────────────────
   // We define this before checkOut so that the startup effect can call it
-  // for the auto-expire case (check-in older than 3 hours).
+  // for the auto-expire case (check-in older than the player's limit).
   //
   const performCheckOut = useCallback(async (checkinId) => {
     const { data, error } = await supabase.rpc('livehoops_check_out', {
@@ -173,11 +194,11 @@ export function useCheckIn(userId, onPlayerCountChange, onProfileRefetch) {
         return;
       }
 
-      // Check if the session has been running for more than 3 hours
+      // Has the session outlived this player's own limit?
       const checkedInMs = new Date(data.checked_in_at).getTime();
       const elapsed     = Date.now() - checkedInMs;
 
-      if (elapsed >= MAX_CHECKIN_MS) {
+      if (elapsed >= autoCheckoutMs(profileRef.current)) {
         // Auto-expire: check them out silently
         try {
           await performCheckOut(data.id);

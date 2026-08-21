@@ -85,7 +85,8 @@ export default function App() {
   const { activeCheckIn, checkIn, checkOut } = useCheckIn(
     user?.id,
     updatePlayerCount,  // called after check-in/out to update court player count instantly
-    refetchProfile      // called after checkout to reload profile stats
+    refetchProfile,     // called after checkout to reload profile stats
+    profile             // carries the player's own auto check-out limit
   );
 
   // ── Meetups ("runs") ──────────────────────────────────────────────────────
