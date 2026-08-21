@@ -1908,6 +1908,48 @@ textarea.field {
 }
 
 /* Username — large bold text below avatar */
+/* ── Edit Profile form rows ──
+   Label above field, consistent gap. The fields themselves are .field. */
+.edit-field-row {
+  margin-bottom: 16px;
+}
+
+.edit-field-row--last {
+  margin-bottom: 24px;
+}
+
+.edit-field-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+/* The bio's character counter sits under its textarea. */
+.edit-field-row .field__counter {
+  margin-top: 6px;
+}
+
+/* ── Bio on the profile header ──
+   Sits between the join/meta line and the stat pills. Rendered only when the
+   player has actually written one — the element is omitted entirely rather
+   than left empty, so a profile without a bio gains no dead space.
+
+   max-width keeps it to a readable measure instead of running the full width
+   of a phone, and text-wrap: pretty avoids leaving one word alone on line two. */
+.profile-bio {
+  max-width: 30ch;
+  margin: 8px auto 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  text-align: center;
+  text-wrap: pretty;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .profile-username {
   font-size: 22px;
   font-weight: 800;
