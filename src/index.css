@@ -1950,6 +1950,28 @@ textarea.field {
   overflow-wrap: anywhere;
 }
 
+/* Positions line, e.g. "Guard · Wing". Sits under the bio in the header, in
+   the quieter tertiary colour and LABEL type — it is metadata about the
+   player, not something they wrote, and should not compete with the bio. */
+.profile-positions {
+  margin: 6px 0 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.9px;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  text-align: center;
+}
+
+/* The selectable chip row in Edit Profile. The chips themselves are .btn
+   --soft/--secondary --sm --pill, so this only has to lay them out. */
+.position-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+}
+
 .profile-username {
   font-size: 22px;
   font-weight: 800;
