@@ -24,6 +24,8 @@ import Avatar from '../components/Avatar';
 import FeedPost from '../components/FeedPost';
 import PhotoViewer from '../components/PhotoViewer';
 import Toast from '../components/Toast';
+import { BIO_MAX_LENGTH, bioLength, clampBio, normalizeBio } from '../utils/bio';
+import { profileHasColumn, pickSupportedUpdates } from '../utils/profileSchema';
 import SettingsSheet from '../components/SettingsSheet';
 import BlockUserConfirm from '../components/BlockUserConfirm';
 import { useToast } from '../hooks/useToast';
@@ -59,7 +61,16 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
     favoriteCourt: profile?.favorite_court || 'None yet',
     // Jersey number: 0 is valid and falsy, so keep null distinct from a set 0.
     jerseyNumber:  profile?.jersey_number ?? null,
+    // Bio: null means "not set" and the header omits the line entirely rather
+    // than rendering an empty gap. An all-whitespace bio counts as not set.
+    bio:           profile?.bio?.trim() || null,
   };
+
+  // Whether supabase/profile_bio.sql has been applied yet. Migrations here are
+  // run by hand, so the deployed app can be ahead of the database. Rather than
+  // show a field that would silently fail to save, the bio UI stays dormant
+  // until the column actually exists. See utils/profileSchema.js.
+  const bioEnabled = profileHasColumn(profile, 'bio');
 
   // ── Derive ownership ───────────────────────────────────────────────────────
   // profile.id is the UUID of whoever's profile is being shown.
@@ -111,6 +122,7 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
   const [editUsername, setEditUsername]         = useState('');
   const [editFavCourt, setEditFavCourt]         = useState('');
   const [editJersey, setEditJersey]             = useState('');
+  const [editBio, setEditBio]                   = useState('');
 
   // True while the Save button is processing
   const [saving, setSaving]                     = useState(false);
@@ -350,6 +362,7 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
     setEditFavCourt(displayUser.favoriteCourt);
     // 0 is a valid number, so check != null rather than truthiness
     setEditJersey(profile?.jersey_number != null ? String(profile.jersey_number) : '');
+    setEditBio(profile?.bio ?? '');
     setShowEditProfile(true);
   };
 
@@ -376,12 +389,21 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
       jerseyNumber = parseInt(trimmedJersey, 10);
     }
 
+    // Blank clears back to null so "not set" stays one state; see utils/bio.js
+    // for why the clamp counts characters rather than String.length.
+    const bio = normalizeBio(editBio);
+
+    // Drop any column the table does not have yet. Migrations here are run by
+    // hand, so deployed code can outrun the database — and PostgREST rejects an
+    // update naming an unknown column outright, which would fail the username
+    // and jersey number too, not just the bio. See utils/profileSchema.js.
     setSaving(true);
-    const { error } = await updateProfile({
+    const { error } = await updateProfile(pickSupportedUpdates(profile, {
       username:       trimmedUsername,
       favorite_court: editFavCourt.trim(),
       jersey_number:  jerseyNumber,
-    });
+      bio,
+    }));
     setSaving(false);
     if (error) {
       showToast('❌ Failed to save');
@@ -438,6 +460,15 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
             <span className="jersey-number">#{displayUser.jerseyNumber}</span>
           )}
         </div>
+
+        {/* Bio — the one place a player describes themselves in their own
+            words. Omitted entirely when unset so the header gains no dead
+            space, and gated behind canViewContent like the stats: it is
+            user-authored content, and a profile locked to friends-only should
+            not leak it to strangers. */}
+        {canViewContent && displayUser.bio && (
+          <p className="profile-bio">{displayUser.bio}</p>
+        )}
 
         {/* 3 stat pills showing the user's key numbers.
             Hidden when the profile is locked to us (friends-only/private). */}
@@ -795,79 +826,71 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
               </button>
             </div>
 
+            {/* These four used to carry the same nine inline style properties
+                each — the same duplication the forms phase removed from the
+                class-based inputs. They were missed then because they were
+                inline rather than classed. .field owns the chrome now. */}
+
             {/* Username input */}
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6 }}>
-                Username
-              </label>
+            <div className="edit-field-row">
+              <label className="edit-field-label" htmlFor="edit-username">Username</label>
               <input
+                id="edit-username"
+                className="field"
                 type="text"
                 value={editUsername}
                 onChange={e => setEditUsername(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 14px',
-                  background: 'var(--bg-card)',
-                  border: '1px solid var(--separator-strong)',
-                  borderRadius: 10,
-                  color: 'var(--text-primary)',
-                  fontSize: 15,
-                  fontFamily: 'var(--font)',
-                  outline: 'none',
-                  boxSizing: 'border-box',
-                }}
               />
             </div>
 
             {/* Jersey Number input (0–99, optional) */}
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6 }}>
-                Jersey Number
-              </label>
+            <div className="edit-field-row">
+              <label className="edit-field-label" htmlFor="edit-jersey">Jersey Number</label>
               <input
+                id="edit-jersey"
+                className="field"
                 type="text"
                 inputMode="numeric"
                 maxLength={2}
                 value={editJersey}
                 onChange={e => setEditJersey(e.target.value.replace(/[^0-9]/g, ''))}
                 placeholder="e.g. 23"
-                style={{
-                  width: '100%',
-                  padding: '10px 14px',
-                  background: 'var(--bg-card)',
-                  border: '1px solid var(--separator-strong)',
-                  borderRadius: 10,
-                  color: 'var(--text-primary)',
-                  fontSize: 15,
-                  fontFamily: 'var(--font)',
-                  outline: 'none',
-                  boxSizing: 'border-box',
-                }}
               />
             </div>
 
+            {/* Bio (optional, 120 characters). Hidden until the migration has
+                been applied — see bioEnabled above. */}
+            {bioEnabled && (
+            <div className="edit-field-row">
+              <label className="edit-field-label" htmlFor="edit-bio">Bio</label>
+              <textarea
+                id="edit-bio"
+                className="field"
+                rows={3}
+                maxLength={BIO_MAX_LENGTH * 2}
+                value={editBio}
+                /* clampBio counts characters rather than String.length, so a
+                   pasted 500-character bio is cut to exactly what the database
+                   will accept, and an emoji is never split in half. */
+                onChange={e => setEditBio(clampBio(e.target.value))}
+                placeholder="Brooklyn runs, mostly nights."
+              />
+              <div className="field__counter" aria-live="polite">
+                {bioLength(editBio)}/{BIO_MAX_LENGTH}
+              </div>
+            </div>
+            )}
+
             {/* Favorite Court input */}
-            <div style={{ marginBottom: 24 }}>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6 }}>
-                Favorite Court
-              </label>
+            <div className="edit-field-row edit-field-row--last">
+              <label className="edit-field-label" htmlFor="edit-fav-court">Favorite Court</label>
               <input
+                id="edit-fav-court"
+                className="field"
                 type="text"
                 value={editFavCourt}
                 onChange={e => setEditFavCourt(e.target.value)}
                 placeholder="e.g. Rucker Park"
-                style={{
-                  width: '100%',
-                  padding: '10px 14px',
-                  background: 'var(--bg-card)',
-                  border: '1px solid var(--separator-strong)',
-                  borderRadius: 10,
-                  color: 'var(--text-primary)',
-                  fontSize: 15,
-                  fontFamily: 'var(--font)',
-                  outline: 'none',
-                  boxSizing: 'border-box',
-                }}
               />
             </div>
 
