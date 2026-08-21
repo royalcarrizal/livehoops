@@ -300,7 +300,7 @@ export default function CourtDetailSheet({
               </div>
 
               <textarea
-                className="review-textarea"
+                className="field field--sm"
                 placeholder="Add a comment (optional)"
                 value={draftContent}
                 onChange={e => setDraftContent(e.target.value)}

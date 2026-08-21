@@ -223,7 +223,7 @@ export default function MapPostModal({
 
             <textarea
               ref={textareaRef}
-              className="map-post-input"
+              className="field field--sm"
               placeholder={`What's happening at ${court.name}?`}
               value={text}
               rows={3}

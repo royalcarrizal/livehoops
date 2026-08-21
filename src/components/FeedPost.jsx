@@ -620,7 +620,7 @@ export default function FeedPost({
             <div className="feed-comment-input-wrap">
               <input
                 ref={inputRef}
-                className="feed-comment-input"
+                className="field field--sm field--pill feed-comment-input"
                 placeholder={replyingTo ? `Reply to @${replyingTo.username}…` : 'Add a comment…'}
                 value={draft}
                 onChange={e => setDraft(e.target.value)}

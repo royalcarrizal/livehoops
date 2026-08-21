@@ -103,7 +103,7 @@ export default function ScheduleMeetupSheet({ isOpen, onClose, court, onSchedule
           {/* When */}
           <label className="add-court-field-label">When *</label>
           <input
-            className="add-court-input"
+            className="field"
             type="datetime-local"
             value={when}
             min={minWhen}
@@ -116,7 +116,7 @@ export default function ScheduleMeetupSheet({ isOpen, onClose, court, onSchedule
           {/* Optional note */}
           <label className="add-court-field-label">Note <span style={{ color: 'var(--text-secondary)', fontWeight: 400 }}>(optional)</span></label>
           <input
-            className="add-court-input"
+            className="field"
             type="text"
             placeholder="e.g. 5v5 full court, bring a light + dark shirt"
             value={title}

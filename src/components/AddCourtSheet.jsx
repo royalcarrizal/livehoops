@@ -380,7 +380,7 @@ export default function AddCourtSheet({ isOpen, onClose, user }) {
               {/* Court name — required */}
               <label className="add-court-field-label">Court name *</label>
               <input
-                className="add-court-input"
+                className="field"
                 type="text"
                 placeholder="e.g. Westpark Community Courts"
                 value={name}
@@ -390,7 +390,7 @@ export default function AddCourtSheet({ isOpen, onClose, user }) {
               {/* Street address — required */}
               <label className="add-court-field-label">Address *</label>
               <input
-                className="add-court-input"
+                className="field"
                 type="text"
                 placeholder="Street address"
                 value={address}
@@ -403,7 +403,7 @@ export default function AddCourtSheet({ isOpen, onClose, user }) {
                 <div style={{ flex: 2 }}>
                   <label className="add-court-field-label">City *</label>
                   <input
-                    className="add-court-input"
+                    className="field"
                     type="text"
                     placeholder="City"
                     value={city}
@@ -413,7 +413,7 @@ export default function AddCourtSheet({ isOpen, onClose, user }) {
                 <div style={{ flex: 1 }}>
                   <label className="add-court-field-label">State</label>
                   <input
-                    className="add-court-input"
+                    className="field"
                     type="text"
                     placeholder="TX"
                     maxLength={2}
