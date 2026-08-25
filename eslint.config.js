@@ -25,6 +25,20 @@ export default defineConfig([
     rules: {
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
       'react-hooks/set-state-in-effect': 'off',
+      // Catches the temporal-dead-zone bug that took the whole Profile screen
+      // down: a `const` read earlier in the function body than its own
+      // declaration. `const` is hoisted but not initialised, so it throws at
+      // runtime rather than being undefined — and eslint:recommended does not
+      // include this rule, so nothing flagged it.
+      //
+      // functions: false because function declarations really are hoisted and
+      // safe to call before their definition; flagging those is just noise.
+      'no-use-before-define': ['error', {
+        functions: false,
+        variables: true,
+        classes: true,
+        allowNamedExports: true,
+      }],
     },
   },
   {
