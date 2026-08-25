@@ -84,12 +84,6 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
   const positionsEnabled = profileHasColumn(profile, 'positions');
   const homeCourtEnabled = profileHasColumn(profile, 'home_court_id');
 
-  // The court currently chosen in the *editor*, which is not necessarily the
-  // saved one — resolved from the same list the picker offers.
-  const selectedHomeCourt = editHomeCourtId
-    ? courts.find(c => c.id === editHomeCourtId) ?? null
-    : null;
-
   // ── Derive ownership ───────────────────────────────────────────────────────
   // profile.id is the UUID of whoever's profile is being shown.
   // user.id is the UUID of whoever is currently logged in.
@@ -144,6 +138,17 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
   const [editPositions, setEditPositions]       = useState([]);
   const [editHomeCourtId, setEditHomeCourtId]   = useState(null);
   const [showCourtPicker, setShowCourtPicker]   = useState(false);
+
+  // The court currently chosen in the *editor*, which is not necessarily the
+  // saved one — resolved from the same list the picker offers.
+  //
+  // This has to sit BELOW the useState above, not up with the other derived
+  // values. `const` is hoisted but not initialised, so reading it earlier in
+  // the function body threw "Cannot access 'editHomeCourtId' before
+  // initialization" on every render and took the whole screen down.
+  const selectedHomeCourt = editHomeCourtId
+    ? courts.find(c => c.id === editHomeCourtId) ?? null
+    : null;
 
   // True while the Save button is processing
   const [saving, setSaving]                     = useState(false);
