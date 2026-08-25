@@ -219,6 +219,123 @@ body {
   overflow: hidden;
   box-shadow: 0 0 80px rgba(0,0,0,0.8);
   padding-top: var(--safe-top);
+  /* Scopes the grain overlay's mix-blend-mode to the app column. Without it
+     the blend reaches past #root to the body behind, which on desktop tints
+     the letterbox either side of the app. */
+  isolation: isolate;
+}
+
+/* ── Grain ──
+   "Textured dark" is the first clause of the redesign's stated direction. One
+   fixed overlay of fractal noise, blended at 5%, sits above everything and
+   stops the flat surfaces reading as flat.
+
+   Mounted on #root::after rather than in JSX because App.jsx renders
+   .app-shell at three separate call sites and the Onboarding branch renders
+   none of them — a per-branch overlay would miss cases. #root is the one
+   element every branch is inside. inset:0 resolves against #root's padding
+   box, so the --safe-top strip is covered too.
+
+   Dark theme only: `overlay` at 5% over the light theme's #F5F4F2 is
+   invisible, and the direction is textured *dark*. */
+.theme-dark #root::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  /* Above the app's existing ceiling (999, the photo viewer) so sheets and
+     modals are textured too, not just the base screens. */
+  z-index: 9999;
+  /* Load-bearing. Without it this overlay swallows every tap in the app, and
+     that failure is invisible in a screenshot. */
+  pointer-events: none;
+  opacity: 0.05;
+  /* At 5% `overlay` reads as texture. Raising the opacity to "make it
+     visible" turns it into dirt — if you can see grain, it is too strong. */
+  mix-blend-mode: overlay;
+  /* A 200x200 tile that repeats, rather than one viewport-sized turbulence
+     filter: the tile is rasterized once instead of being recomputed on every
+     resize. fractalNoise does not tile seamlessly, but at 5% overlay the seam
+     is imperceptible. */
+  background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='200'%20height='200'%3E%3Cfilter%20id='n'%3E%3CfeTurbulence%20type='fractalNoise'%20baseFrequency='0.9'%20numOctaves='3'/%3E%3C/filter%3E%3Crect%20width='100%25'%20height='100%25'%20filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Escape hatch for users who have asked the OS to cut down on visual noise. */
+@media (prefers-reduced-transparency: reduce) {
+  .theme-dark #root::after {
+    display: none;
+  }
+}
+
+/* ── Court geometry ──
+   Placement for <CourtLines>. The component carries the paths, this carries
+   where they sit — so the two can be tuned independently.
+
+   Every host must be `position: relative; overflow: hidden`; the negative
+   `right`/`bottom` offsets below are deliberate and rely on the host clipping
+   them. Sizes come from the 390px canvas artboard; the right-anchored variants
+   keep bleeding correctly on the app's wider 480px cap, and the centred ones
+   stay centred. */
+.court-lines {
+  position: absolute;
+  /* Sits behind the host's content. Paired with `isolation: isolate` on the
+     host, this paints the geometry directly above the host's own background
+     and below everything in it — without touching a single child's
+     positioning. Lifting the content instead (`.host > * { position:
+     relative }`) is the obvious alternative and it is wrong: it also matches
+     absolutely-positioned children like .gear-btn and drops them into the
+     flow. */
+  z-index: -1;
+  /* The strokes are `currentColor`, so this one line is what makes the
+     geometry follow the user's chosen accent instead of a fixed orange. */
+  color: var(--accent);
+  pointer-events: none;
+}
+
+/* Placement deviates from the canvas on one axis, deliberately.
+   Both arcs sweep RIGHT — each is a semicircle centred near viewBox x=300
+   bulging out to x≈420 — so the canvas's `right: -90px`, which puts the SVG's
+   left edge at screen x=140, lands the whole arc at x 401-507 on a 390px
+   screen. Nothing of it is visible; copied faithfully, this block renders as
+   the single vertical lane line and no arcs at all. That is what the canvas
+   itself renders, and it is plainly not the intent of a block that defines
+   three paths at three different opacities.
+   `right: 0` puts the SVG's right edge on the screen's right edge, so the arcs
+   read and still run off the edge exactly as intended. The paths, the size and
+   every opacity are untouched. */
+.court-lines--home {
+  top: 28px;
+  right: 0;
+  width: 340px;
+  height: 200px;
+  opacity: 0.5;
+}
+
+.court-lines--check {
+  left: 50%;
+  top: 0;
+  transform: translateX(-50%);
+  width: 390px;
+  height: 300px;
+  opacity: 0.5;
+}
+
+.court-lines--profile {
+  left: 50%;
+  top: 34px;
+  transform: translateX(-50%);
+  width: 390px;
+  height: 260px;
+  opacity: 0.45;
+}
+
+/* Same arc-direction correction as .court-lines--home above: the canvas's
+   `right: -110px` puts these arcs off the right edge entirely. */
+.court-lines--achievements {
+  top: 20px;
+  right: 0;
+  width: 340px;
+  height: 220px;
+  opacity: 0.5;
 }
 
 .app-shell {
@@ -278,6 +395,17 @@ body {
 .screen-header {
   padding: 8px 20px 16px;
   flex-shrink: 0;
+}
+
+/* Court-geometry host. Deliberately a modifier and not .screen-header itself:
+   that base class is shared with Friends and Check-in, and `overflow: hidden`
+   on it would risk clipping the absolutely-positioned .bell-badge.
+   `isolation` scopes the geometry's z-index:-1 to this element, so it lands
+   above the header's own background rather than behind .app-shell's. */
+.screen-header--court {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
 }
 
 .header-row {
@@ -1037,6 +1165,48 @@ textarea.field {
   justify-content: center;
   gap: 12px;
   z-index: 5;
+}
+
+/* ── The map's painted court ──
+   Backs the loading overlay only (see src/components/MapCourtGround.jsx for
+   why). Full-bleed behind the emoji and text, which .map-loading centres. */
+.map-court-ground {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  /* Behind the loading emoji, title and text — which are real states the
+     canvas does not have, and which stay. .map-loading is already its own
+     stacking context (position: absolute + z-index: 5), so this lands above
+     its background rather than behind it. */
+  z-index: -1;
+}
+
+/* The canvas's #131A16 — a green-tinted dark — expressed against the token so
+   it holds up in light theme too. */
+.map-court-ground__court {
+  fill: rgb(var(--green-rgb) / 0.06);
+}
+
+/* Canvas #1B1E25 / #171A20: the two street weights, mapped onto the surface
+   tokens so they sit a step apart from the background in either theme. */
+.map-court-ground__street {
+  fill: none;
+  stroke: var(--bg-elevated);
+  stroke-width: 9;
+}
+
+.map-court-ground__street--minor {
+  stroke: var(--bg-card);
+  stroke-width: 4;
+}
+
+.map-court-ground__key {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1;
+  stroke-opacity: 0.2;
 }
 
 /* Pulsing basketball emoji during loading */
@@ -1859,7 +2029,12 @@ textarea.field {
 .no-checkin-state {
   text-align: center;
   padding: 40px 20px;
+  /* Court-geometry host — the centre-circle variant sits behind this block. */
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
 }
+
 
 .no-checkin-icon {
   font-size: 56px;
@@ -1892,12 +2067,16 @@ textarea.field {
    .profile-action-row both set width: 100% deliberately. */
 .profile-header {
   position: relative;
+  /* Court-geometry host — clips the key/arc variant behind the avatar. */
+  overflow: hidden;
+  isolation: isolate;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
   padding: 24px 20px 0;
 }
+
 
 /* Avatar wrapper — positions the 80px avatar */
 .profile-avatar-wrap {
@@ -2267,6 +2446,10 @@ textarea.field {
   z-index: 201;
   max-height: 88svh;
   overflow-y: auto;
+  /* Court-geometry host. Explicit because `overflow-y: auto` alone computes
+     overflow-x to `auto` too, which would turn the geometry's deliberate
+     right-edge bleed into a horizontal scrollbar inside the sheet. */
+  overflow-x: hidden;
   padding: 20px 0 40px;
   transition: transform 0.3s ease;
 }
@@ -2282,6 +2465,8 @@ textarea.field {
   justify-content: space-between;
   align-items: center;
   padding: 0 20px 16px;
+  /* Paints above the sheet's court geometry rather than under it. */
+  position: relative;
   font-size: 18px;
   font-weight: 800;
   color: var(--text-primary);

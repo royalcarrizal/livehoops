@@ -7,6 +7,7 @@
 import { useState, useEffect } from 'react';
 import ParkCard from '../components/ParkCard';
 import AddCourtSheet from '../components/AddCourtSheet';
+import CourtLines from '../components/CourtLines';
 import { useToast } from '../hooks/useToast';
 import Toast from '../components/Toast';
 
@@ -177,6 +178,7 @@ export default function CheckInScreen({
         ) : (
           // ── Not checked in state ─────────────────────────────────────────────
           <div className="no-checkin-state">
+            <CourtLines variant="check" />
             <div className="no-checkin-icon">🏀</div>
             <h2 className="no-checkin-title">Not checked in</h2>
             <p className="no-checkin-subtitle">
