@@ -270,11 +270,13 @@ body {
    Placement for <CourtLines>. The component carries the paths, this carries
    where they sit — so the two can be tuned independently.
 
-   Every host must be `position: relative; overflow: hidden`; the negative
-   `right`/`bottom` offsets below are deliberate and rely on the host clipping
-   them. Sizes come from the 390px canvas artboard; the right-anchored variants
-   keep bleeding correctly on the app's wider 480px cap, and the centred ones
-   stay centred. */
+   Every host must be `position: relative; overflow: hidden; isolation:
+   isolate`. The clipping is not incidental — each variant is sized to overrun
+   its host so the geometry runs off the edge rather than sitting inside the
+   frame, which is what makes it read as a court rather than a decal.
+   Sizes come from the 390px canvas artboard; the right-anchored variants keep
+   bleeding correctly on the app's wider 480px cap, and the centred ones stay
+   centred. */
 .court-lines {
   position: absolute;
   /* Sits behind the host's content. Paired with `isolation: isolate` on the
