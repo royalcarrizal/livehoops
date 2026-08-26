@@ -14,6 +14,7 @@ import { supabase } from '../lib/supabase';
 import { useFriends } from '../hooks/useFriends';
 import { useDirectMessages } from '../hooks/useDirectMessages';
 import FriendCard from '../components/FriendCard';
+import Tabs from '../components/Tabs';
 import DMThread from '../components/DMThread';
 import Avatar from '../components/Avatar';
 
@@ -190,23 +191,21 @@ export default function FriendsScreen({ user, profile, onViewProfile, onUnreadDM
       </div>
 
       {/* ── Friends | Messages tab toggle ──────────────────────────────────── */}
-      <div className="segmented">
-        <button
-          className={`segmented__option${activeView === 'friends' ? ' is-selected' : ''}`}
-          onClick={() => setActiveView('friends')}
-        >
-          Friends
-        </button>
-        <button
-          className={`segmented__option${activeView === 'messages' ? ' is-selected' : ''}`}
-          onClick={() => setActiveView('messages')}
-        >
-          Messages
-          {unreadCount > 0 && (
-            <span className="tab-unread-pill">{unreadCount > 9 ? '9+' : unreadCount}</span>
-          )}
-        </button>
-      </div>
+      <Tabs
+        className="tabs--flush"
+        value={activeView}
+        onChange={setActiveView}
+        tabs={[
+          { value: 'friends',  label: 'Friends' },
+          {
+            value: 'messages',
+            label: 'Messages',
+            // Capped at 9+ so a big number cannot widen the tab and unbalance
+            // the row. undefined rather than 0 so no badge renders at zero.
+            badge: unreadCount > 0 ? (unreadCount > 9 ? '9+' : unreadCount) : undefined,
+          },
+        ]}
+      />
 
       {/* ════════════════════════════════════════════════════════════════════ */}
       {/* FRIENDS VIEW                                                        */}
