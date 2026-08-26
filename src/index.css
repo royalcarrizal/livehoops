@@ -3199,6 +3199,88 @@ textarea.field {
 }
 
 /* ── Achievements ── */
+/* ── Achievements summary ──
+   The count as a ring rather than a "N / 12" string. Same information, read at
+   a glance instead of parsed. The sheet header already carries the title, so
+   this block deliberately does not repeat it. */
+.achievements-summary {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 4px 20px 20px;
+}
+
+.achievements-ring {
+  position: relative;
+  width: 82px;
+  height: 82px;
+  flex: none;
+}
+
+.achievements-ring svg {
+  width: 82px;
+  height: 82px;
+  /* Start the arc at twelve o'clock; SVG circles begin at three. */
+  transform: rotate(-90deg);
+}
+
+.achievements-ring__track,
+.achievements-ring__fill {
+  fill: none;
+  stroke-width: 6;
+}
+
+.achievements-ring__track {
+  stroke: var(--bg-elevated);
+}
+
+.achievements-ring__fill {
+  stroke: var(--accent);
+  /* Rounded cap so a single earned badge still reads as a mark rather than a
+     hairline. */
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.5s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .achievements-ring__fill { transition: none; }
+}
+
+.achievements-ring__label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.achievements-ring__count {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--text-primary);
+  /* Stops the number jittering horizontally as it changes width. */
+  font-variant-numeric: tabular-nums;
+}
+
+.achievements-ring__total {
+  font-size: 9.5px;
+  font-weight: 500;
+  line-height: 1;
+  margin-top: 3px;
+  color: var(--text-secondary);
+}
+
+.achievements-summary-text {
+  flex: 1;
+  min-width: 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+  text-wrap: pretty;
+}
+
 .achievements-category {
   margin: 0 20px 20px;
 }
