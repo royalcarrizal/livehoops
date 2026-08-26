@@ -3,3 +3,7 @@ dist
 .env
 .env.local
 supabase/.temp
+
+# macOS Finder metadata. Created in any directory the Finder opens, so it
+# turns up unbidden in `git status` and eventually in someone's commit.
+.DS_Store
