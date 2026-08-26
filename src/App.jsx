@@ -106,7 +106,10 @@ export default function App() {
   // ── Blocked users ──────────────────────────────────────────────────────────
   // blockedIds gates who you can see/message; blockedUsers (with profile
   // info) powers the Settings → Blocked Accounts management list.
-  const { blockedIds, blockedUsers, blockUser, unblockUser } = useBlockedUsers(user?.id);
+  const {
+    blockedIds, blockedUsers, blockUser, unblockUser,
+    loadFailed: blockedLoadFailed, refresh: refreshBlocked,
+  } = useBlockedUsers(user?.id);
 
   // ── App State ───────────────────────────────────────────────────────────
   const [splashDone,  setSplashDone]  = useState(false);
@@ -532,6 +535,10 @@ export default function App() {
             blockedUsers={blockedUsers}
             blockUser={blockUser}
             unblockUser={unblockUser}
+            // So Settings can tell "you have blocked nobody" apart from "we
+            // could not find out" — the two look identical otherwise.
+            blockedLoadFailed={blockedLoadFailed}
+            refreshBlocked={refreshBlocked}
           />
         )}
 
