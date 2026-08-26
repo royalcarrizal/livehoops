@@ -510,11 +510,46 @@ body {
 }
 
 /* Court thumbnail shown at the top of the card when a photo exists */
+.park-card-media {
+  position: relative;
+}
+
 .park-card-photo {
   width: 100%;
   height: 140px;
   object-fit: cover;
   display: block;
+}
+
+/* The live marker, laid over the photo as a glass pill (canvas:97). The blur
+   is what keeps it legible over an arbitrary photo — a flat translucent fill
+   goes muddy over a busy image.
+
+   Deliberately theme-independent, and the one place in this file that does not
+   follow the surface tokens. This pill sits on a PHOTOGRAPH, not on app chrome,
+   and a photo looks the same in both themes — so a light-mode variant would put
+   pale glass and the darker light-mode green over an image that never got
+   lighter. Both values below are the dark-theme ones, pinned on purpose. */
+.park-card-overlay {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(11, 11, 14, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  /* Decorative position only — the card itself is the tap target. */
+  pointer-events: none;
+  /* No border: the blur already separates it from the photo, and a hairline
+     over a busy image reads as a rendering artefact. */
+  border: none;
+}
+
+.park-card-overlay .live-dot {
+  background: #2FE08A;
+}
+
+.park-card-overlay .live-text {
+  color: #2FE08A;
 }
 
 .park-card:active {
@@ -541,12 +576,16 @@ body {
   line-height: 1.2;
 }
 
+/* Green, not accent. Green means live/active and nothing else — a badge that
+   literally reads "Live" drawn in the brand colour is the exact thing that rule
+   exists to prevent. The canvas agrees: its one LIVE label is #2FE08A
+   (canvas:98). Same class of fix as the avatar's check-in ring in #28. */
 .live-badge {
   display: flex;
   align-items: center;
   gap: 5px;
-  background: var(--accent-dim);
-  border: 1px solid var(--accent-border);
+  background: var(--green-dim);
+  border: 1px solid var(--green-border);
   border-radius: var(--radius-full);
   padding: 3px 8px;
   flex-shrink: 0;
@@ -556,14 +595,14 @@ body {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--accent);
+  background: var(--green);
   animation: pulse 1.5s ease-in-out infinite;
 }
 
 .live-text {
   font-size: 11px;
   font-weight: 700;
-  color: var(--accent);
+  color: var(--green);
   letter-spacing: 0.5px;
   text-transform: uppercase;
 }
@@ -575,23 +614,51 @@ body {
   margin-bottom: 12px;
 }
 
-.park-meta {
-  display: flex;
-  align-items: center;
-  gap: 16px;
+.park-distance {
+  color: var(--text-secondary);
 }
 
-.meta-item {
+/* Chips rather than an icon-and-text row (canvas:105-108). They read as
+   discrete facts about the court instead of one run-on line, and they wrap
+   cleanly on a narrow screen where a flex row of icon+label would not. */
+.park-chips {
   display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.park-chip {
+  display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: 13px;
-  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: var(--bg-elevated);
+  padding: 6px 9px;
+  border-radius: var(--radius-xs);
+  white-space: nowrap;
 }
 
-.meta-item svg {
+.park-chip svg {
   color: var(--text-secondary);
   flex-shrink: 0;
+}
+
+.park-chip--rating {
+  color: var(--accent);
+}
+
+.park-chip-muted {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* Pushed to the end of the chip row, per the canvas. margin-left:auto rather
+   than a spacer so it still sits right when the chips wrap. */
+.park-chip-action {
+  margin-left: auto;
 }
 
 /* ── Player section ── */
@@ -600,7 +667,6 @@ body {
   padding: 12px 16px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
 }
 
