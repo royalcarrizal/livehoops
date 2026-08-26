@@ -76,6 +76,10 @@ input, textarea, select, [contenteditable] {
   --green-dim: rgb(var(--green-rgb) / 0.12);
   --green-border: rgb(var(--green-rgb) / 0.3);
   --green-contrast: #052014;
+  /* The deep end of the live avatar ring's gradient. A ring drawn in one flat
+     green reads as a solid border; the fall to a deeper green is what makes it
+     read as a ring with a light source. Canvas value, at the dark-mode green. */
+  --green-deep: #1E8F5A;
   /* Destructive red. Was three different literals (#FF453A, #FF3B30,
      rgba(255,59,48,…)) sitting next to each other; this is the redesign's
      red accent, which is the one the design actually specifies. */
@@ -121,6 +125,10 @@ input, textarea, select, [contenteditable] {
   --green-dim: rgb(var(--green-rgb) / 0.12);
   --green-border: rgb(var(--green-rgb) / 0.28);
   --green-contrast: #FFFFFF;
+  /* Deeper again than dark mode's, because light-mode green starts darker
+     (#12A566 rather than #2FE08A) — reusing the dark value would invert the
+     gradient and make the ring lighten downward instead of deepening. */
+  --green-deep: #0C6B42;
   --danger-rgb: 215 0 21;
   --danger: rgb(var(--danger-rgb));
   --danger-dim: rgb(var(--danger-rgb) / 0.1);
