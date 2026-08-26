@@ -1,4 +1,4 @@
-import { MapPin, Layers, Navigation } from 'lucide-react';
+import { MapPin, Layers } from 'lucide-react';
 import Avatar from './Avatar';
 
 function AvatarStack({ checkins }) {
@@ -23,18 +23,28 @@ export default function ParkCard({ park, isCheckedIn, onCheckIn, style }) {
 
   return (
     <div className="park-card" style={style}>
-      {/* Court photo thumbnail — only shown when a photo exists */}
+      {/* Court photo, with the live marker laid over it as a glass pill — the
+          canvas's treatment (canvas:97). Only rendered when a photo exists:
+          the canvas always has one, but most real courts do not, and an empty
+          132px grey block on every card would make the list unreadable. */}
       {park.photoUrl && (
-        <img
-          src={park.photoUrl}
-          alt={`${park.name}`}
-          className="park-card-photo"
-        />
+        <div className="park-card-media">
+          <img src={park.photoUrl} alt={park.name} className="park-card-photo" />
+          {hasPlayers && (
+            <div className="park-card-overlay live-badge">
+              <div className="live-dot" />
+              <span className="live-text">Live</span>
+            </div>
+          )}
+        </div>
       )}
+
       <div className="park-card-top">
         <div className="park-name-row">
           <span className="park-name">{park.name}</span>
-          {hasPlayers && (
+          {/* Without a photo the marker has nowhere to sit, so it stays inline
+              beside the name as it always has. */}
+          {hasPlayers && !park.photoUrl && (
             <div className="live-badge">
               <div className="live-dot" />
               <span className="live-text">Live</span>
@@ -42,30 +52,43 @@ export default function ParkCard({ park, isCheckedIn, onCheckIn, style }) {
           )}
         </div>
 
-        <p className="park-address">{park.shortAddress}</p>
+        {/* Address and distance on one line, per the canvas — they answer the
+            same question ("where is this?") and read better together. */}
+        <p className="park-address">
+          {park.shortAddress}
+          {park.distance && <span className="park-distance"> · {park.distance}</span>}
+        </p>
 
-        <div className="park-meta">
-          <div className="meta-item">
-            <Layers size={13} />
-            <span>{park.courts} {park.courts === 1 ? 'court' : 'courts'}</span>
-          </div>
-          <div className="meta-item">
-            <Navigation size={13} />
-            <span>{park.distance}</span>
-          </div>
-          <div className="meta-item">
-            <MapPin size={13} />
-            <span>{park.surface}</span>
-          </div>
+        <div className="park-chips">
+          <span className="park-chip">
+            <Layers size={12} />
+            {park.courts} {park.courts === 1 ? 'court' : 'courts'}
+          </span>
+          <span className="park-chip">
+            <MapPin size={12} />
+            {park.surface}
+          </span>
           {park.reviewCount > 0 && (
-            <div className="meta-item" style={{ color: 'var(--accent)' }}>
-              <span>★ {Number(park.avgRating).toFixed(1)}</span>
-              <span style={{ color: 'var(--text-secondary)' }}>({park.reviewCount})</span>
-            </div>
+            <span className="park-chip park-chip--rating">
+              ★ {Number(park.avgRating).toFixed(1)}
+              <span className="park-chip-muted">({park.reviewCount})</span>
+            </span>
           )}
+
+          <button
+            className={`btn btn--sm btn--pill park-chip-action ${isCheckedIn ? 'btn--live' : 'btn--soft'}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              onCheckIn(park.id);
+            }}
+          >
+            {isCheckedIn ? '✓ Checked In' : 'Check In'}
+          </button>
         </div>
       </div>
 
+      {/* Who is actually here. The canvas has no equivalent — that is the
+          mockup being thinner than the app, not a cue to drop it. */}
       <div className="park-card-bottom">
         <div className="player-info">
           {hasPlayers ? (
@@ -80,16 +103,6 @@ export default function ParkCard({ park, isCheckedIn, onCheckIn, style }) {
             <span className="empty-text">Empty — Be the first!</span>
           )}
         </div>
-
-        <button
-          className={`btn btn--sm btn--pill ${isCheckedIn ? 'btn--live' : 'btn--soft'}`}
-          onClick={(e) => {
-            e.stopPropagation();
-            onCheckIn(park.id);
-          }}
-        >
-          {isCheckedIn ? '✓ Checked In' : 'Check In'}
-        </button>
       </div>
     </div>
   );
