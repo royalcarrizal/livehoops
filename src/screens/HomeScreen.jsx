@@ -28,6 +28,7 @@ import { useNotifications } from '../hooks/useNotifications';
 import { useFriends } from '../hooks/useFriends';
 import { usePosts } from '../hooks/usePosts';
 import { usePullToRefresh } from '../hooks/usePullToRefresh';
+import CourtLines from '../components/CourtLines';
 import { supabase } from '../lib/supabase';
 
 // Props:
@@ -246,7 +247,8 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
       )}
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <div className="screen-header">
+      <div className="screen-header screen-header--court">
+        <CourtLines variant="home" />
         <div className="header-row">
           <h1 className="app-title">Live<span>Hoops</span></h1>
 

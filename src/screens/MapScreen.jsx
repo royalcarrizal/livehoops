@@ -23,6 +23,7 @@ import Avatar from '../components/Avatar';
 import { useToast } from '../hooks/useToast';
 import { useCourtKing } from '../hooks/useCourtKing';
 import { formatMeetupTime } from '../utils/datetime';
+import MapCourtGround from '../components/MapCourtGround';
 
 import 'mapbox-gl/dist/mapbox-gl.css';
 
@@ -275,6 +276,7 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
         {/* Loading overlay — absolutely positioned over the map until it's ready */}
         {!mapLoaded && (
           <div className="map-loading">
+            <MapCourtGround />
             <div className="map-loading-emoji">🏀</div>
             <div className="map-loading-title">Live<span>Hoops</span></div>
             <div className="map-loading-text">Loading map...</div>

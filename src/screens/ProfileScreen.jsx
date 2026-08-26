@@ -33,6 +33,7 @@ import BlockUserConfirm from '../components/BlockUserConfirm';
 import { useToast } from '../hooks/useToast';
 import { usePosts } from '../hooks/usePosts';
 import { useStorage } from '../hooks/useStorage';
+import CourtLines from '../components/CourtLines';
 import { supabase } from '../lib/supabase';
 
 // Props:
@@ -451,6 +452,7 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
       {/* ── Profile Header ──────────────────────────────────────────────────── */}
       {/* Centered column: avatar → username → stat pills → action buttons */}
       <div className="profile-header">
+        <CourtLines variant="profile" />
 
         {/* Back button — only shown in visitor mode */}
         {onBack && (
@@ -815,6 +817,7 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
 
       {/* ── Achievements slide-up panel — visible to everyone ────────────────── */}
       <div className={`achievements-sheet${showAchievements ? ' open' : ''}`}>
+        <CourtLines variant="achievements" />
         <div className="achievements-sheet-header">
           <span>Achievements</span>
           <button
