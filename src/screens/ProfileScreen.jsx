@@ -47,7 +47,7 @@ import { supabase } from '../lib/supabase';
 //                   Named distinctly from the local activeTab/setActiveTab
 //                   state below, which only toggles this screen's Posts vs.
 //                   Check-ins view.
-export default function ProfileScreen({ signOut, profile, updateProfile, user, onBack, onViewProfile, onNavigateTab, blockedIds, blockedUsers, blockUser, unblockUser, courts = [] }) {
+export default function ProfileScreen({ signOut, profile, updateProfile, user, onBack, onViewProfile, onNavigateTab, blockedIds, blockedUsers, blockUser, unblockUser, blockedLoadFailed, refreshBlocked, courts = [] }) {
   // ── Refs ──────────────────────────────────────────────────────────────────
   // Hidden file input — triggered when the owner taps "Change Photo"
   const fileInputRef = useRef(null);
@@ -1048,6 +1048,8 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
             updateProfile={updateProfile}
             blockedUsers={blockedUsers}
             unblockUser={unblockUser}
+            blockedLoadFailed={blockedLoadFailed}
+            refreshBlocked={refreshBlocked}
           />
         </>
       )}
