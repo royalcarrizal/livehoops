@@ -17,6 +17,7 @@ import FeedPost from '../components/FeedPost';
 import ActiveFriendsRow from '../components/ActiveFriendsRow';
 import UpcomingMeetupsRow from '../components/UpcomingMeetupsRow';
 import PostComposer from '../components/PostComposer';
+import Tabs from '../components/Tabs';
 import PhotoViewer from '../components/PhotoViewer';
 import CourtDetailSheet from '../components/CourtDetailSheet';
 import DiscoverSheet from '../components/DiscoverSheet';
@@ -312,20 +313,15 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
       />
 
       {/* ── Feed tab toggle ──────────────────────────────────────────────────── */}
-      <div className="segmented">
-        <button
-          className={`segmented__option${feedTab === 'following' ? ' is-selected' : ''}`}
-          onClick={() => setFeedTab('following')}
-        >
-          Following
-        </button>
-        <button
-          className={`segmented__option${feedTab === 'nearby' ? ' is-selected' : ''}`}
-          onClick={() => setFeedTab('nearby')}
-        >
-          Nearby
-        </button>
-      </div>
+      <Tabs
+        className="tabs--flush"
+        value={feedTab}
+        onChange={setFeedTab}
+        tabs={[
+          { value: 'following', label: 'Following' },
+          { value: 'nearby',    label: 'Nearby' },
+        ]}
+      />
 
       {/* ── New posts pill ───────────────────────────────────────────────────── */}
       {/* Appears when Supabase Realtime detects a new post from a friend.      */}

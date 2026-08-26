@@ -34,6 +34,7 @@ import { useToast } from '../hooks/useToast';
 import { usePosts } from '../hooks/usePosts';
 import { useStorage } from '../hooks/useStorage';
 import CourtLines from '../components/CourtLines';
+import Tabs from '../components/Tabs';
 import { supabase } from '../lib/supabase';
 
 // Props:
@@ -677,22 +678,16 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
       {/* is personal data (reveals where/when you go) and the checkins RLS     */}
       {/* policy blocks reading another user's rows anyway.                     */}
       {canViewContent && (
-        <div className="profile-tabs">
-          <button
-            className={`profile-tab${activeTab === 'posts' ? ' active' : ''}`}
-            onClick={() => setActiveTab('posts')}
-          >
-            Posts
-          </button>
-          {isOwner && (
-            <button
-              className={`profile-tab${activeTab === 'checkins' ? ' active' : ''}`}
-              onClick={() => setActiveTab('checkins')}
-            >
-              Check-ins
-            </button>
-          )}
-        </div>
+        <Tabs
+          value={activeTab}
+          onChange={setActiveTab}
+          tabs={[
+            { value: 'posts', label: 'Posts' },
+            // Check-ins is owner-only: it reveals where and when you go, and
+            // the checkins RLS policy blocks reading another user's rows anyway.
+            ...(isOwner ? [{ value: 'checkins', label: 'Check-ins' }] : []),
+          ]}
+        />
       )}
 
       {/* ── Posts tab content ────────────────────────────────────────────────── */}
