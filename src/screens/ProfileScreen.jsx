@@ -477,12 +477,13 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
           </button>
         )}
 
-        {/* Large centered avatar (80px) */}
+        {/* Large centered avatar (80px), wearing the identity ring */}
         <div className="profile-avatar-wrap">
           <Avatar
             avatarUrl={avatarUrl}
             initials={displayUser.initials}
             size="large"
+            identityRing
           />
         </div>
 
@@ -857,6 +858,7 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
                   avatarUrl={avatarUrl}
                   initials={displayUser.initials}
                   size="large"
+                  identityRing
                   cameraOverlay={!avatarUploading}
                 />
                 {/* Spinner overlay — only visible while a photo is uploading */}
