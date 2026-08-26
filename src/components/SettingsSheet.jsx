@@ -94,7 +94,7 @@ function DiagLine({ label, value, ok }) {
   );
 }
 
-export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditProfile, profile, updateProfile, blockedUsers = [], unblockUser }) {
+export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditProfile, profile, updateProfile, blockedUsers = [], unblockUser, blockedLoadFailed = false, refreshBlocked }) {
 
   // ── Master push toggle (per-device) ─────────────────────────────────────
   // The hook is the single source of truth: enablePush asks the browser +
@@ -833,10 +833,19 @@ export default function SettingsSheet({ isOpen, onClose, user, signOut, onEditPr
               </div>
 
               {/* Blocked accounts — opens the management list */}
-              <button className="settings-row" onClick={() => setShowBlocked(true)}>
+              {/* When the list failed to load, say so and offer a retry instead
+                  of opening an empty sheet. An empty list and an unknown list
+                  look identical otherwise, which is what let a failed load pass
+                  for "you have blocked nobody". */}
+              <button
+                className="settings-row"
+                onClick={() => (blockedLoadFailed ? refreshBlocked?.() : setShowBlocked(true))}
+              >
                 <div className="settings-row-content">
                   <div className="settings-row-title">Blocked Accounts</div>
-                  {blockedUsers.length > 0 && (
+                  {blockedLoadFailed ? (
+                    <div className="settings-row-desc">Couldn't load — tap to retry</div>
+                  ) : blockedUsers.length > 0 && (
                     <div className="settings-row-desc">
                       {blockedUsers.length} {blockedUsers.length === 1 ? 'account' : 'accounts'} blocked
                     </div>
