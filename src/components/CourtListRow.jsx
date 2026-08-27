@@ -11,6 +11,7 @@
 //   onClick — tapping the row flies the map to that court
 
 import { hasRealDistance } from '../hooks/useCourts';
+import { BALL_VIEWBOX, BALL_CIRCLE, BALL_SEAMS } from '../utils/courtGlyph';
 
 // The facts line: "0.3 mi · 4 courts · lights".
 //
@@ -50,12 +51,13 @@ export default function CourtListRow({ court, onClick }) {
       aria-label={`${court.name}${isLive ? `, ${players} playing now` : ''}`}
     >
       <div className="map-court-row-glyph" aria-hidden="true">
-        {/* Inline rather than an icon-font glyph so it inherits currentColor
-            and stays crisp at any density. */}
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none"
+        {/* Same drawing as the map pin — the geometry is shared so the ball in
+            a row and the ball on a pin cannot drift apart. Inline SVG rather
+            than an icon font so it inherits currentColor and stays crisp. */}
+        <svg viewBox={BALL_VIEWBOX} width="20" height="20" fill="none"
              stroke="currentColor" strokeWidth="1.6">
-          <circle cx="12" cy="12" r="9" />
-          <path d="M12 3v18M3 12h18M5.6 5.6c3.5 3.5 3.5 9.3 0 12.8M18.4 5.6c-3.5 3.5-3.5 9.3 0 12.8" />
+          <circle cx={BALL_CIRCLE.cx} cy={BALL_CIRCLE.cy} r={BALL_CIRCLE.r} />
+          <path d={BALL_SEAMS} />
         </svg>
       </div>
 

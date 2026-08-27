@@ -46,12 +46,39 @@ describe('createMarkerEl', () => {
     expect(createMarkerEl(park({ players: 3 })).querySelector('.mb-pin-stem')).not.toBeNull();
   });
 
+  it('carries a basketball, live or not', () => {
+    // The ball is what says "court"; colour is what says "busy". Both pins
+    // need it, so neither reads as a generic map dot.
+    [0, 6].forEach(players => {
+      const el = createMarkerEl(park({ players }));
+      const svg = el.querySelector('.mb-pin-ball svg');
+      expect(svg, `players=${players}`).not.toBeNull();
+      // Real SVG, not an HTML element named "svg" — see createBallSvg.
+      expect(svg.namespaceURI).toBe('http://www.w3.org/2000/svg');
+      expect(svg.querySelector('circle')).not.toBeNull();
+      expect(svg.querySelector('path')).not.toBeNull();
+    });
+  });
+
+  it('no longer carries the plain dot the ball replaced', () => {
+    expect(createMarkerEl(park({ players: 4 })).querySelector('.mb-pin-dot')).toBeNull();
+  });
+
+  it('leaves the ball colour to CSS', () => {
+    // currentColor is how the ball goes dark on a live green pill and muted on
+    // an empty grey one. Baking a colour in here would break both.
+    const svg = createMarkerEl(park({ players: 4 })).querySelector('.mb-pin-ball svg');
+    expect(svg.getAttribute('stroke')).toBe('currentColor');
+    expect(svg.getAttribute('fill')).toBe('none');
+  });
+
   it('carries none of the signals the old marker stacked on itself', () => {
     const el = createMarkerEl(park({
       players: 4,
       checkins: [{ id: 'a', initials: 'KM', avatarUrl: null }],
       nextMeetup: { id: 'm1', scheduledAt: new Date().toISOString() },
     }));
+    // The ball is drawn SVG now, not the emoji this marker used to render.
     expect(el.textContent).not.toContain('🏀');
     expect(el.querySelector('.mb-marker-avatars')).toBeNull();
     expect(el.querySelector('.mb-fav-star')).toBeNull();

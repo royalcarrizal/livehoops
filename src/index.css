@@ -1746,7 +1746,7 @@ textarea.field {
 .mb-pin-bubble {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   padding: 5px 11px;
   border-radius: var(--radius-full);
   background: var(--bg-elevated);
@@ -1754,11 +1754,17 @@ textarea.field {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
 }
 
-.mb-pin-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--text-tertiary);
+/* The basketball inside the pill, in the user's chosen accent — it follows the
+   accent picker like every other --accent surface.
+   Light-mode orange sits at 2.39:1 on this ground, just under the 3:1 bar.
+   That is the SAME documented exemption light-mode orange already carries in
+   src/utils/accents.js: orange is the shipping brand default, and darkening it
+   would change every existing user's app. The other seven accents clear the
+   bar here. See the exemption test in utils/__tests__/accents.test.js. */
+.mb-pin-ball {
+  display: flex;
+  align-items: center;
+  color: var(--accent);
 }
 
 /* Green, and green only when someone is actually on the court. */
@@ -1768,10 +1774,20 @@ textarea.field {
   box-shadow: 0 4px 14px rgb(var(--green-rgb) / 0.5);
 }
 
-/* Dark-on-green, the same contrast token every filled green surface uses. */
-.mb-pin.is-live .mb-pin-dot {
-  background: var(--green-contrast);
-  animation: pulse 1.5s ease-in-out infinite;
+/* On a LIVE pill the ball stays dark-on-green rather than taking the accent,
+   and this is deliberate — do not "fix" it to var(--accent).
+   Measured against --green with the repo's own contrastRatio(): every one of
+   the eight accents is illegible here. Orange is 1.65:1 in dark mode and
+   1.11:1 in light, which is very nearly the same luminance as the pill itself;
+   the best of the eight, brown, only reaches 2.67:1. These are the pins that
+   matter most, so the ball keeps the contrast token every filled green surface
+   uses. accents.test.js pins the measurement so this stays justified.
+
+   Also deliberately not animated: the dot this replaced pulsed, which read as a
+   heartbeat, but a basketball scaling in and out reads as a glitch. The green
+   fill and the count already say the court is live. */
+.mb-pin.is-live .mb-pin-ball {
+  color: var(--green-contrast);
 }
 
 .mb-pin-count {
@@ -1812,6 +1828,9 @@ textarea.field {
 }
 .map-court-row:active { background: var(--bg-elevated); }
 
+/* Same ball, same accent as the map pin — the row and the pin are the same
+   court, so they are the same colour. Sits on the same --bg-elevated ground,
+   so it carries the same light-mode-orange exemption noted on .mb-pin-ball. */
 .map-court-row-glyph {
   flex-shrink: 0;
   width: 40px;
@@ -1821,7 +1840,7 @@ textarea.field {
   justify-content: center;
   border-radius: var(--radius-sm);
   background: var(--bg-elevated);
-  color: var(--text-tertiary);
+  color: var(--accent);
 }
 
 /* min-width:0 lets the name below actually shrink — without it a flex child
