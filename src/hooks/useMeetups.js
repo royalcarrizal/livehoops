@@ -12,7 +12,7 @@
 //   upcomingMeetups  — array of visible upcoming runs (Home row)
 //   meetupsByCourt   — { courtId: [run, …] } for map badges + court sheets
 //   loading
-//   createMeetup(courtId, scheduledAtISO, title, visibility)
+//   createMeetup(courtId, scheduledAtISO, title, visibility, label, durationMinutes)
 //   joinMeetup(meetupId, anonymous)   / leaveMeetup(meetupId)
 //   cancelMeetup(meetupId)            — host only
 //   fetchAttendees(meetupId)          — masked attendee list
@@ -92,6 +92,9 @@ function normMeetup(row) {
     hostInitials:  hostName.slice(0, 2).toUpperCase(),
     title:         row.title ?? null,
     scheduledAt:   row.scheduled_at,
+    // null for runs created before the duration column existed — the cards
+    // render without a length rather than inventing one (see formatRunLength).
+    durationMinutes: row.duration_minutes ?? null,
     visibility:    row.visibility ?? 'public',
     attendeeCount: Number(row.attendee_count ?? 0),
     viewerJoined:  !!row.viewer_joined,
@@ -133,14 +136,17 @@ export function useMeetups(userId) {
   }, [userId, refreshMeetups]);
 
   // ── Create a run ──────────────────────────────────────────────────────────
-  const createMeetup = useCallback(async (courtId, scheduledAtISO, title, visibility, scheduledLabel) => {
+  const createMeetup = useCallback(async (courtId, scheduledAtISO, title, visibility, scheduledLabel, durationMinutes) => {
     if (!userId || !courtId || !scheduledAtISO) return null;
 
     const { data, error } = await supabase.rpc('livehoops_create_meetup', {
-      p_court_id:     courtId,
-      p_scheduled_at: scheduledAtISO,
-      p_title:        title ?? null,
-      p_visibility:   visibility ?? 'public',
+      p_court_id:         courtId,
+      p_scheduled_at:     scheduledAtISO,
+      p_title:            title ?? null,
+      p_visibility:       visibility ?? 'public',
+      // null means "didn't say" — the RPC falls back to its own 90-minute
+      // default rather than rejecting the call.
+      p_duration_minutes: durationMinutes ?? null,
     });
 
     if (error) {

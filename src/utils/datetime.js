@@ -73,3 +73,29 @@ export function formatMeetupTime(iso, now = new Date()) {
   });
   return `${dateLabel} · ${clockTime(date)}`;
 }
+
+// ── formatRunLength(minutes) ────────────────────────────────────────────────
+// Turns a run's length in minutes into the short label the run cards show:
+//   45  → "45m"     90  → "90m"     60  → "1h"
+//   120 → "2h"      150 → "2h 30m"  480 → "8h"
+//
+// The 90 → "90m" case is why this isn't a plain hours-and-minutes split. A
+// 90-minute run is universally said as "90 minutes", not "1h 30m", and the
+// design asks for it that way — so anything under two hours that isn't a whole
+// number of hours stays in minutes. Past two hours "2h 30m" is shorter to read
+// than "150m", so it flips.
+//
+// Returns '' for null/invalid input rather than "NaNm", so a run created before
+// the duration column existed simply renders without a length.
+export function formatRunLength(minutes) {
+  const mins = Number(minutes);
+  if (!Number.isFinite(mins) || mins <= 0) return '';
+
+  const whole = Math.round(mins);
+  const hours = Math.floor(whole / 60);
+  const rest  = whole % 60;
+
+  if (rest === 0)   return `${hours}h`;
+  if (whole < 120)  return `${whole}m`;
+  return `${hours}h ${rest}m`;
+}
