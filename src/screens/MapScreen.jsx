@@ -241,7 +241,7 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
         <div className="map-search-bar">
           <input
             type="text"
-            placeholder="🔍  Search courts..."
+            placeholder="🔍  Search courts near you"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             className="field field--sm map-search-input"
@@ -495,7 +495,7 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
       <div className="map-courts-sheet">
         <div className="sheet-handle" />
         <div className="sheet-handle-row">
-          <span className="section-title" style={{ fontSize: 15 }}>Nearby</span>
+          <span className="section-title" style={{ fontSize: 15 }}>Sorted by distance</span>
           <span className="section-count">{filteredParks.length} courts</span>
         </div>
         <div className="map-court-list">

@@ -5,7 +5,10 @@
 //   - A text box to write and post status updates
 //   - A "Following" tab (posts from friends only) and "Nearby" tab (all posts)
 //   - A "Your Crew" section showing accepted friends
-//   - A list of nearby basketball courts
+//
+// It does NOT list courts, despite what this comment said for a long time —
+// courts live on the Map and Check screens. The stale line sent one scoping
+// pass looking for a courts list that had not been here in months.
 //
 // Data is now loaded from Supabase using the useFriends and usePosts hooks.
 // Mock data is no longer used.
@@ -53,6 +56,9 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
   const [nearbyOffset, setNearbyOffset]           = useState(0);
   const [nearbyHasMore, setNearbyHasMore]         = useState(false);
   const [nearbyLoadingMore, setNearbyLoadingMore] = useState(false);
+
+  // Courts with at least one player on them right now.
+  const liveCourtCount = (parks ?? []).filter(p => p.players > 0).length;
 
   const { toast, showToast } = useToast();
 
@@ -282,6 +288,15 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
         <div className="location-row">
           <MapPin size={13} color="var(--accent)" />
           <span>{cityLabel}</span>
+          {/* How many courts have someone on them right now (canvas:63). The
+              data is already in hand — `parks` is a prop — so this costs a
+              filter, not a fetch. Hidden at zero rather than showing
+              "0 courts running", which reads as a broken feed. */}
+          {liveCourtCount > 0 && (
+            <span className="location-row-live">
+              · {liveCourtCount} {liveCourtCount === 1 ? 'court' : 'courts'} running
+            </span>
+          )}
         </div>
       </div>
 
