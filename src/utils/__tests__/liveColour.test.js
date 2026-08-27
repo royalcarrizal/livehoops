@@ -41,6 +41,11 @@ const LIVE_SELECTORS = [
   '.session-stat-value--live',
   '.active-friend-live-dot',
   '.active-friends-live-dot-header',
+  // Two ways of saying the same thing — a friend is on a court right now. The
+  // Friends screen always drew it green; the Home crew chip drew it in the
+  // accent for months, because neither was listed here.
+  '.friend-status.active',
+  '.crew-chip-court.active',
 ];
 
 describe('rule 4 — green means live/active', () => {
