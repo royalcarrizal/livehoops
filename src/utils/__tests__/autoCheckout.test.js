@@ -18,6 +18,7 @@ import {
   autoCheckoutMs,
   expiredDurationMinutes,
   autoCheckoutLabel,
+  remainingMs,
 } from '../autoCheckout';
 
 const HOUR_MS = 60 * 60 * 1000;
@@ -124,5 +125,60 @@ describe('autoCheckoutLabel', () => {
 
   it('shows the default rather than a blank for an unknown value', () => {
     expect(autoCheckoutLabel(undefined)).toBe('3h');
+  });
+});
+
+// ── remainingMs ─────────────────────────────────────────────────────────────
+// The countdown the Check screen shows. It used to be computed inline against
+// a hardcoded three hours, which was right for the default and wrong for
+// everyone who changed the setting — the screen told a 1h player they had
+// 2h 47m left while their session ended in 47 minutes.
+
+describe('remainingMs', () => {
+  const HOUR = 3600000;
+  const NOW = 1_700_000_000_000;
+
+  it('counts down from the profile\'s own limit, not a fixed three hours', () => {
+    // Checked in 10 minutes ago. What is left depends entirely on the setting.
+    const checkedInAt = NOW - 10 * 60000;
+    expect(remainingMs(checkedInAt, { auto_checkout_hours: 1 }, NOW)).toBe(HOUR - 10 * 60000);
+    expect(remainingMs(checkedInAt, { auto_checkout_hours: 2 }, NOW)).toBe(2 * HOUR - 10 * 60000);
+    expect(remainingMs(checkedInAt, { auto_checkout_hours: 3 }, NOW)).toBe(3 * HOUR - 10 * 60000);
+  });
+
+  it('is the bug it replaces: a 1h session is not 3h', () => {
+    // The exact case that shipped. 13 minutes into a 1-hour session the old
+    // code said 2h 47m; the truth is 47m.
+    const checkedInAt = NOW - 13 * 60000;
+    const left = remainingMs(checkedInAt, { auto_checkout_hours: 1 }, NOW);
+    expect(Math.round(left / 60000)).toBe(47);
+    expect(Math.round(left / 60000)).not.toBe(167); // 2h 47m
+  });
+
+  it('falls back to the default limit when the profile is unknown', () => {
+    // Profile still loading, or the column not yet added.
+    const checkedInAt = NOW;
+    expect(remainingMs(checkedInAt, null, NOW)).toBe(DEFAULT_AUTO_CHECKOUT_HOURS * HOUR);
+    expect(remainingMs(checkedInAt, {}, NOW)).toBe(DEFAULT_AUTO_CHECKOUT_HOURS * HOUR);
+  });
+
+  it('clamps an overdue session at zero rather than going negative', () => {
+    // The expiry job runs every five minutes, so a session can sit past its
+    // limit briefly. "-4m remaining" is not a thing.
+    expect(remainingMs(NOW - 5 * HOUR, { auto_checkout_hours: 3 }, NOW)).toBe(0);
+  });
+
+  it('returns zero for a missing or invalid check-in time', () => {
+    expect(remainingMs(null, { auto_checkout_hours: 3 }, NOW)).toBe(0);
+    expect(remainingMs(NaN, { auto_checkout_hours: 3 }, NOW)).toBe(0);
+  });
+
+  it('agrees with the limit the server will enforce', () => {
+    // remainingMs and expiredDurationMinutes must describe the same session,
+    // or the countdown and the recorded hours_played disagree.
+    [1, 2, 3].forEach(hours => {
+      const total = remainingMs(NOW, { auto_checkout_hours: hours }, NOW);
+      expect(total / 60000).toBe(expiredDurationMinutes(hours));
+    });
   });
 });

@@ -2065,9 +2065,12 @@ textarea.field {
   padding: 0 20px;
 }
 
+/* Green, not accent. A running session is the definition of live — the card
+   said "Checked in" in the brand colour, which is the same rule-4 slip the
+   ParkCard "Live" badge and the map marker both had. */
 .active-session-card {
-  background: linear-gradient(135deg, rgb(var(--accent-rgb) / 0.15), rgb(var(--accent-rgb) / 0.05));
-  border: 1px solid var(--accent-border);
+  background: linear-gradient(135deg, rgb(var(--green-rgb) / 0.10), rgb(var(--green-rgb) / 0.03));
+  border: 1px solid var(--green-border);
   border-radius: var(--radius-md);
   padding: 20px;
   margin-bottom: 24px;
@@ -2077,16 +2080,14 @@ textarea.field {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: var(--accent-dim);
   border-radius: var(--radius-full);
-  padding: 4px 10px;
   margin-bottom: 14px;
 }
 
 .session-badge-text {
   font-size: 11px;
   font-weight: 700;
-  color: var(--accent);
+  color: var(--green);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -2105,27 +2106,69 @@ textarea.field {
   margin-bottom: 16px;
 }
 
+/* Hairline rule above, and dividers between each stat — the design reads them
+   as three columns of one block rather than three loose pairs. */
 .session-stats {
   display: flex;
-  gap: 16px;
   margin-bottom: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--green-border);
 }
 
 .session-stat {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+  padding-left: 16px;
+  border-left: 1px solid var(--green-border);
+}
+
+/* No divider or indent on the first column, so the block aligns with the
+   court name above it. */
+.session-stat:first-child {
+  padding-left: 0;
+  border-left: none;
 }
 
 .session-stat-value {
   font-size: 22px;
   font-weight: 700;
-  color: var(--accent);
+  color: var(--text-primary);
   line-height: 1;
-  /* Always tabular. This one counts up in real time — in proportional
-     figures the whole row twitches every time a digit changes width. */
+  /* Always tabular. These count in real time — in proportional figures the
+     whole row twitches every time a digit changes width. */
   font-variant-numeric: tabular-nums;
 }
+
+/* Only the countdown is green: it is the one number that says the session is
+   still running. The other two are facts about it, not signals. */
+.session-stat-value--live {
+  color: var(--green);
+}
+
+/* Check out sits beside Post to feed, secondary against the accent. */
+.session-actions {
+  display: flex;
+  gap: 12px;
+}
+
+/* "Know a court that's missing? Add it →", at the end of the map's court list.
+   Quiet: it is the thing you want only after failing to find your court. */
+.map-add-court {
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 14px 4px 8px;
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  cursor: pointer;
+  text-align: left;
+}
+.map-add-court:active { opacity: 0.6; }
 
 .session-stat-label {
   font-size: 11px;
@@ -6342,21 +6385,6 @@ textarea.field {
 /* ── CheckInScreen: "Add a Court" secondary button ────────────────────────── */
 /* Transparent background with an orange border — sits below "Find a Court". */
 
-
-/* ── CheckInScreen: "Know a court?" text link ─────────────────────────────── */
-/* Small orange text centered below the checkout button in the active card.  */
-.add-court-link {
-  text-align: center;
-  margin-top: 12px;
-  font-size: 13px;
-  color: var(--accent);
-  cursor: pointer;
-  font-weight: 500;
-}
-
-.add-court-link:active {
-  opacity: 0.7;
-}
 
 /* ── Check-in history rows (ProfileScreen → Check-ins tab) ──────────────── */
 /* Each row shows one past session: court name on the left, date + duration  */

@@ -90,3 +90,30 @@ export function expiredDurationMinutes(hours) {
 export function autoCheckoutLabel(hours) {
   return `${normalizeAutoCheckoutHours(hours)}h`;
 }
+
+/**
+ * Milliseconds left in a session before it expires on its own.
+ *
+ * This lives here rather than in the screen that displays it for the same
+ * reason everything else in this file does: the number has to agree with the
+ * limit the server will actually enforce. CheckInScreen used to compute it
+ * inline against a hardcoded three hours —
+ *
+ *     const expiresAt = checkInTime + 3 * 60 * 60 * 1000;
+ *
+ * — which was right for the default and wrong for everyone else. A player who
+ * set 1h in Settings was told they had 2h 47m left while the session ended in
+ * 47 minutes. Nothing threw; the screen simply lied.
+ *
+ * Clamped at zero: a session past its limit has no negative time left, it has
+ * none. The expiry job may not have swept it yet.
+ *
+ * @param {number} checkedInAtMs  Date.getTime() of the check-in
+ * @param {object|null} profile   the viewer's profile, for their own limit
+ * @param {number} now            injectable clock, for tests
+ * @returns {number} milliseconds remaining, never below 0
+ */
+export function remainingMs(checkedInAtMs, profile, now = Date.now()) {
+  if (!Number.isFinite(checkedInAtMs)) return 0;
+  return Math.max(0, checkedInAtMs + autoCheckoutMs(profile) - now);
+}

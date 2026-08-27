@@ -1,72 +1,79 @@
 // src/screens/CheckInScreen.jsx
 //
-// Shows the user's current check-in session (if active) or a list of
-// courts to check in to. Uses real Supabase data via the useCheckIn hook
-// passed down from App.jsx — no more hardcoded timers or mock state.
+// Your active session, and nothing else.
+//
+// This screen used to be two screens wearing one name: the session card, and —
+// either side of it — a list of courts to check into. That list is now the
+// third copy of the same thing, after Home's Nearby tab and the Map's court
+// panel. Finding a court is those screens' job; this one answers "what is
+// happening with MY session right now", which nothing else shows.
 
 import { useState, useEffect } from 'react';
-import ParkCard from '../components/ParkCard';
-import AddCourtSheet from '../components/AddCourtSheet';
+import MapPostModal from '../components/MapPostModal';
+import WhosHere from '../components/WhosHere';
 import CourtLines from '../components/CourtLines';
-import { useToast } from '../hooks/useToast';
 import Toast from '../components/Toast';
+import { useToast } from '../hooks/useToast';
+import { usePosts } from '../hooks/usePosts';
+import { remainingMs } from '../utils/autoCheckout';
 
 // ── Time display helpers ────────────────────────────────────────────────────
-// These take a Unix timestamp (milliseconds) and return a human-friendly
-// string. They're called every minute so the timer stays up to date.
 
+// How long the session has been running: "Just now", "42m", "1h 12m".
 function formatElapsed(checkInTime) {
-  // checkInTime is Date.getTime() — milliseconds since epoch
   const minutes = Math.floor((Date.now() - checkInTime) / 60000);
   if (minutes < 1) return 'Just now';
-  if (minutes === 1) return '1 min';
-  if (minutes < 60) return `${minutes} min`;
+  if (minutes < 60) return `${minutes}m`;
   const hours = Math.floor(minutes / 60);
   const mins  = minutes % 60;
   return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
 }
 
-function formatTimeLeft(checkInTime) {
-  // Sessions expire after 3 hours — show how much time is left
-  const expiresAt = checkInTime + 3 * 60 * 60 * 1000;
-  const msLeft    = expiresAt - Date.now();
+// How long is left before the session expires on its own: "1h 47m".
+//
+// The limit comes from the user's own profile via remainingMs. This used to be
+// hardcoded to three hours, which was right for the default and wrong for
+// anyone who changed the setting — a player on 1h was told they had 2h 47m
+// left while the session actually ended in 47 minutes.
+function formatRemaining(checkInTime, profile) {
+  const msLeft = remainingMs(checkInTime, profile);
   if (msLeft <= 0) return 'Expired';
   const hoursLeft = Math.floor(msLeft / 3600000);
   const minsLeft  = Math.floor((msLeft % 3600000) / 60000);
-  return `${hoursLeft}h ${minsLeft}m left`;
+  if (hoursLeft === 0) return `${minsLeft}m`;
+  return minsLeft > 0 ? `${hoursLeft}h ${minsLeft}m` : `${hoursLeft}h`;
 }
 
 export default function CheckInScreen({
   parks,
   activeCheckIn,   // { checkinId, courtId, courtName, courtAddress, checkedInAt } or null
-  checkIn,         // function(courtId, userId)
   checkOut,        // function(checkinId, courtId, userId)
   setActiveTab,
   user,
+  profile,         // needed for the auto check-out limit — see formatRemaining
   refreshCounts,   // re-fetches player counts from DB
+  onViewProfile,
 }) {
   // Forces a re-render every minute so the elapsed / remaining timers update
   const [, forceUpdate] = useState(0);
 
-  // Controls whether the "Add a Court" slide-up sheet is visible
-  const [showAddCourt, setShowAddCourt] = useState(false);
-
   // Loading state while the checkout Supabase call is in progress
   const [checkingOut, setCheckingOut] = useState(false);
 
-  // Toast for the checkout success message
+  // The "Post to feed" compose sheet
+  const [showPostModal, setShowPostModal] = useState(false);
+
   const { toast, showToast } = useToast();
+  const { createPost } = usePosts();
 
   // ── Real court data from the parks array ──────────────────────────────────
-  // Look up the full court object using the courtId from activeCheckIn.
-  // We need this for the live player count (which changes as others check in)
-  // and the address. Fall back to the values stored in activeCheckIn itself
-  // in case the parks array hasn't loaded yet.
+  // Look up the full court object using the courtId from activeCheckIn, for
+  // the live player count and who else is here. Falls back to the values
+  // stored on activeCheckIn itself while parks is still loading.
   const checkedInPark = activeCheckIn
     ? parks.find(p => p.id === activeCheckIn.courtId) ?? null
     : null;
 
-  // Convert the ISO timestamp string from Supabase to milliseconds
   const checkInTime = activeCheckIn
     ? new Date(activeCheckIn.checkedInAt).getTime()
     : null;
@@ -78,15 +85,14 @@ export default function CheckInScreen({
   }, []);
 
   // ── Live player count refresh ─────────────────────────────────────────────
-  // Every 60 seconds, re-fetch player_count for all courts from Supabase
-  // so the "Active Courts" list shows real numbers as other users check in/out.
+  // Every 60 seconds, re-fetch player counts so "Players here" and the faces
+  // below stay true as others check in and out around you.
   useEffect(() => {
     if (!refreshCounts) return;
     const id = setInterval(refreshCounts, 60000);
     return () => clearInterval(id);
   }, [refreshCounts]);
 
-  // ── Handle check-out button press ─────────────────────────────────────────
   async function handleCheckOut() {
     if (!activeCheckIn || checkingOut) return;
     setCheckingOut(true);
@@ -95,6 +101,37 @@ export default function CheckInScreen({
     showToast(`Great run! Checked out of ${activeCheckIn.courtName} 🏀`);
   }
 
+  // ── Not checked in ────────────────────────────────────────────────────────
+  // Deliberately slim. The old version listed courts here, which the Map and
+  // Home's Nearby tab both do better — this just points at them.
+  if (!activeCheckIn) {
+    return (
+      <div className="screen-content">
+        <div className="screen-header">
+          <h1 className="app-title">Live<span>Hoops</span></h1>
+        </div>
+
+        <div className="no-checkin-state">
+          <CourtLines variant="check" />
+          <div className="no-checkin-icon">🏀</div>
+          <h2 className="no-checkin-title">Not checked in</h2>
+          <p className="no-checkin-subtitle">
+            Check in at a court so your crew knows where you&apos;re running.
+          </p>
+          <button className="btn btn--primary btn--lg" onClick={() => setActiveTab('map')}>
+            Find a Court
+          </button>
+        </div>
+
+        <Toast message={toast} />
+      </div>
+    );
+  }
+
+  // ── Checked in ────────────────────────────────────────────────────────────
+  const courtName    = checkedInPark?.name ?? activeCheckIn.courtName;
+  const courtAddress = checkedInPark?.shortAddress ?? activeCheckIn.courtAddress;
+
   return (
     <div className="screen-content">
       <div className="screen-header">
@@ -102,138 +139,93 @@ export default function CheckInScreen({
       </div>
 
       <div className="checkin-screen">
-        {activeCheckIn ? (
-          <>
-            {/* ── Active session card ──────────────────────────────────────── */}
-            {/* Shown when the user is currently checked in somewhere.         */}
-            {/* All values are real: court name from Supabase, live timer.     */}
-            <div className="active-session-card">
-              <div className="session-badge">
-                <div className="live-dot" style={{ width: 7, height: 7 }} />
-                <span className="session-badge-text">Active Session</span>
-              </div>
+        <div className="active-session-card">
+          <div className="session-badge">
+            <div className="live-dot" />
+            <span className="session-badge-text">Checked in</span>
+          </div>
 
-              {/* Real court name from Supabase */}
-              <div className="session-court-name">
-                {checkedInPark?.name ?? activeCheckIn.courtName}
-              </div>
+          <div className="session-court-name">{courtName}</div>
+          <div className="session-court-address">{courtAddress}</div>
 
-              {/* Real court address */}
-              <div className="session-court-address">
-                {checkedInPark?.shortAddress ?? activeCheckIn.courtAddress}
-              </div>
-
-              <div className="session-stats">
-                {/* Live player count from the courts table */}
-                <div className="session-stat">
-                  <span className="session-stat-value">{checkedInPark?.players ?? 0}</span>
-                  <span className="session-stat-label">players here</span>
-                </div>
-
-                {/* Real elapsed time calculated from the Supabase timestamp */}
-                <div className="session-stat">
-                  <span className="session-stat-value">{formatElapsed(checkInTime)}</span>
-                  <span className="session-stat-label">checked in</span>
-                </div>
-
-                {/* Countdown to the 3-hour auto-expire */}
-                <div className="session-stat">
-                  <span className="session-stat-value" style={{ fontSize: 16 }}>
-                    {formatTimeLeft(checkInTime)}
-                  </span>
-                  <span className="session-stat-label">remaining</span>
-                </div>
-              </div>
-
-              {/* Check Out button — shows "Checking out..." while the Supabase update runs */}
-              <button
-                className="btn btn--danger btn--block"
-                disabled={checkingOut}
-                onClick={handleCheckOut}
-              >
-                {checkingOut ? 'Checking out...' : 'Check Out'}
-              </button>
-
-              {/* Small link to open the Add a Court sheet */}
-              <div className="add-court-link" onClick={() => setShowAddCourt(true)}>
-                Know a court that's missing? Add it →
-              </div>
+          <div className="session-stats">
+            <div className="session-stat">
+              <span className="session-stat-value">{checkedInPark?.players ?? 0}</span>
+              <span className="session-stat-label">Players here</span>
             </div>
 
-            {/* ── Other nearby courts ───────────────────────────────────────── */}
-            <div className="section-header" style={{ paddingLeft: 0, paddingRight: 0 }}>
-              <span className="section-title">Other Nearby Courts</span>
+            <div className="session-stat">
+              <span className="session-stat-value">{formatElapsed(checkInTime)}</span>
+              <span className="session-stat-label">Checked in</span>
             </div>
-            <div className="park-list" style={{ padding: 0, gap: 8 }}>
-              {parks.filter(p => p.id !== activeCheckIn.courtId).slice(0, 3).map(park => (
-                <ParkCard
-                  key={park.id}
-                  park={park}
-                  isCheckedIn={false}
-                  onCheckIn={(courtId) => checkIn(courtId, user?.id)}
-                />
-              ))}
-            </div>
-          </>
-        ) : (
-          // ── Not checked in state ─────────────────────────────────────────────
-          <div className="no-checkin-state">
-            <CourtLines variant="check" />
-            <div className="no-checkin-icon">🏀</div>
-            <h2 className="no-checkin-title">Not checked in</h2>
-            <p className="no-checkin-subtitle">
-              Find a court near you and let others know you're running.
-            </p>
-            <button className="btn btn--primary btn--lg" onClick={() => setActiveTab('home')}>
-              Find a Court
-            </button>
 
-            {/* Button to open the Add a Court slide-up sheet */}
-            <button className="btn btn--soft btn--lg btn--block" onClick={() => setShowAddCourt(true)}>
-              + Add a Court
-            </button>
-
-            {/* ── Active Courts list ─────────────────────────────────────────── */}
-            {/* Only shows courts with at least one player right now.            */}
-            {/* Player counts come from useCourts (real DB data), refreshed      */}
-            {/* every 60 seconds by the setInterval above.                       */}
-            <div style={{ marginTop: 32, textAlign: 'left' }}>
-              <div className="section-header" style={{ paddingLeft: 0, paddingRight: 0 }}>
-                <span className="section-title">Active Courts</span>
-              </div>
-              <div className="park-list" style={{ padding: 0, gap: 8 }}>
-                {parks.filter(p => p.players > 0).length === 0 ? (
-                  <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>
-                    No courts are active right now.
-                  </p>
-                ) : (
-                  parks.filter(p => p.players > 0).map(park => (
-                    <ParkCard
-                      key={park.id}
-                      park={park}
-                      isCheckedIn={false}
-                      onCheckIn={(courtId) => checkIn(courtId, user?.id)}
-                    />
-                  ))
-                )}
-              </div>
+            {/* Green because it is counting down a live session. The value
+                comes from the user's own auto check-out setting. */}
+            <div className="session-stat">
+              <span className="session-stat-value session-stat-value--live">
+                {formatRemaining(checkInTime, profile)}
+              </span>
+              <span className="session-stat-label">Remaining</span>
             </div>
           </div>
-        )}
+
+          <div className="session-actions">
+            <button
+              className="btn btn--secondary btn--grow"
+              disabled={checkingOut}
+              onClick={handleCheckOut}
+            >
+              {checkingOut ? 'Checking out…' : 'Check out'}
+            </button>
+            <button
+              className="btn btn--primary btn--grow"
+              onClick={() => setShowPostModal(true)}
+            >
+              Post to feed
+            </button>
+          </div>
+        </div>
+
+        {/* Who else is on this court. Renders nothing when nobody else is
+            visible — see WhosHere for how hidden players are counted. */}
+        <WhosHere
+          checkins={checkedInPark?.checkins ?? []}
+          players={checkedInPark?.players ?? 0}
+          currentUserId={user?.id}
+          label="Who's here"
+          onViewProfile={onViewProfile}
+        />
       </div>
 
-      <div style={{ height: 16 }} />
+      {/* ── Post to feed ───────────────────────────────────────────────────── */}
+      {/* The same compose sheet the Map uses, pre-tagged to this court. */}
+      {showPostModal && (
+        <MapPostModal
+          court={checkedInPark ?? { id: activeCheckIn.courtId, name: activeCheckIn.courtName }}
+          currentUser={{
+            id:        user?.id,
+            username:  profile?.username ?? 'Player',
+            avatarUrl: profile?.avatar_url ?? null,
+          }}
+          onPost={async (data) => {
+            await createPost(
+              user.id,
+              data.content,
+              data.type,
+              data.image_url,
+              data.court_id,
+              data.court_name,
+              profile,
+            );
+          }}
+          // This screen's toast, not the modal's own — the modal's lives inside
+          // its portal and would be torn down before the message could be read.
+          onToast={showToast}
+          onClose={() => setShowPostModal(false)}
+          activeCheckIn={activeCheckIn}
+        />
+      )}
 
-      {/* ── Add a Court sheet ──────────────────────────────────────────────── */}
-      {/* Slides up from the bottom. Always in the DOM so the CSS transition   */}
-      {/* animates properly — visibility is controlled by the .open class.     */}
-      <AddCourtSheet
-        isOpen={showAddCourt}
-        onClose={() => setShowAddCourt(false)}
-        user={user}
-      />
-
-      {/* Checkout success toast */}
       <Toast message={toast} />
     </div>
   );

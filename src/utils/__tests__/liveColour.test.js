@@ -37,6 +37,8 @@ const LIVE_SELECTORS = [
   '.mb-pin.is-live .mb-pin-bubble',
   '.mb-pin.is-live .mb-pin-stem',
   '.map-court-row-live',
+  '.session-badge-text',
+  '.session-stat-value--live',
   '.active-friend-live-dot',
   '.active-friends-live-dot-header',
 ];
