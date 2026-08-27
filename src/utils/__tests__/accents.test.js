@@ -148,3 +148,55 @@ describe('resolveAccent', () => {
     expect(getAccent('blue').label).toBe('Blue');
   });
 });
+
+// ── The accent basketball ───────────────────────────────────────────────────
+// The court glyph on the map pins and the map's court rows takes var(--accent),
+// so it follows the accent picker. It sits on two different grounds, and they
+// give opposite answers — which is why the live pin does NOT use the accent.
+
+// --green, the fill of a live pin. From index.css.
+const DARK_GREEN  = '#2FE08A';
+const LIGHT_GREEN = '#12A566';
+// --bg-elevated, the ground under an empty pin and a court row.
+const DARK_ELEVATED  = '#1D1F24';
+const LIGHT_ELEVATED = '#ECEBE8';
+
+describe('the accent basketball', () => {
+  it.each(ACCENTS)('$id is legible on an empty pin and a court row (dark)', ({ id, dark }) => {
+    const ratio = contrastRatio(dark, DARK_ELEVATED);
+    expect(ratio, `${id} dark on elevated = ${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(MIN_CONTRAST);
+  });
+
+  it.each(ACCENTS)('$id is legible on an empty pin and a court row (light)', ({ id, light }) => {
+    const ratio = contrastRatio(light, LIGHT_ELEVATED);
+    // Light-mode orange lands at 2.39:1 here — the same exemption it already
+    // carries against the page background, for the same reason: it is the
+    // shipping brand default and darkening it changes every existing app.
+    if (isExempt(id, 'light')) return;
+    expect(ratio, `${id} light on elevated = ${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(MIN_CONTRAST);
+  });
+
+  it('keeps the light-orange exemption on that ground honest too', () => {
+    // Fails if orange is ever darkened, prompting removal of the exemption
+    // rather than leaving a stale one behind.
+    const orange = getAccent('orange');
+    expect(contrastRatio(orange.light, LIGHT_ELEVATED)).toBeLessThan(MIN_CONTRAST);
+  });
+
+  it('justifies why a LIVE pin keeps a dark ball instead of the accent', () => {
+    // Not one of the eight accents is legible on the green fill — the best,
+    // brown, reaches only 2.67:1 and orange bottoms out near 1.1:1 in light
+    // mode. If this ever stops being true (say --green is darkened), this test
+    // fails and the live pin becomes worth revisiting.
+    for (const a of ACCENTS) {
+      expect(
+        contrastRatio(a.dark, DARK_GREEN),
+        `${a.id} dark on green is now legible — revisit the live pin`,
+      ).toBeLessThan(MIN_CONTRAST);
+      expect(
+        contrastRatio(a.light, LIGHT_GREEN),
+        `${a.id} light on green is now legible — revisit the live pin`,
+      ).toBeLessThan(MIN_CONTRAST);
+    }
+  });
+});

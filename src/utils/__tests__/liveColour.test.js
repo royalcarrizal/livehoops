@@ -95,3 +95,22 @@ describe('visited is not a live signal', () => {
     expect(CSS).not.toMatch(/\.mb-pin[^{]*\.visited/);
   });
 });
+
+describe('the ball on a live pin stays readable', () => {
+  it('does not take the accent', () => {
+    // Every accent measures illegible on the green fill (see accents.test.js —
+    // orange is 1.11:1 in light mode). This guards against someone making the
+    // live ball match the empty one for consistency's sake and quietly
+    // erasing it from the pins that matter most.
+    const body = ruleBody('.mb-pin.is-live .mb-pin-ball');
+    expect(body, 'rule renamed — update this guard too').not.toBeNull();
+    expect(body, 'the live ball must not use the accent').not.toMatch(/var\(--accent/);
+    expect(body).toMatch(/var\(--green-contrast/);
+  });
+
+  it('the empty pin and court rows DO take the accent', () => {
+    // The other half of the same decision: accent everywhere it reads.
+    expect(ruleBody('.mb-pin-ball')).toMatch(/var\(--accent\)/);
+    expect(ruleBody('.map-court-row-glyph')).toMatch(/var\(--accent\)/);
+  });
+});
