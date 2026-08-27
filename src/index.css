@@ -444,6 +444,13 @@ body {
   font-size: 13px;
 }
 
+/* "· N courts running". Green because it states that play is happening right
+   now, which is the one thing green is for. */
+.location-row-live {
+  color: var(--green);
+  font-weight: 600;
+}
+
 /* ── Search Bar ── */
 .search-bar {
   margin: 0 20px 20px;
@@ -2179,13 +2186,7 @@ textarea.field {
   margin-bottom: 24px;
 }
 
-.edit-field-label {
-  display: block;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  margin-bottom: 6px;
-}
+
 
 /* The bio's character counter sits under its textarea. */
 .edit-field-row .field__counter {
@@ -2723,7 +2724,23 @@ textarea.field {
 }
 
 /* Small uppercase label above each section group */
-.settings-section-label {
+/* ── The label treatment ──
+   Small, uppercase, letterspaced, muted. One definition, shared by every place
+   that labels a field or heads a group — Settings' section headings, the Edit
+   Profile sheet, and the two court/run forms. Each of those used to spell out
+   its own near-miss of this (11px vs 12px vs 13px, with and without the
+   uppercase), which is how a single visual language ends up looking like three.
+
+   This is what the canvas uses throughout: DATE, TIP-OFF, HOW LONG, IDENTITY,
+   BIO, POSITIONS, INVITE YOUR CREW. Note it serves both jobs there — labelling
+   one field and heading a group — so it does here too.
+
+   NOT to be applied to .section-title, which heads a LIST ("Your Crew",
+   "Active Courts", "Nearby"). A large title above a list is a different job. */
+.settings-section-label,
+.edit-field-label,
+.add-court-field-label {
+  display: block;
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.06em;
@@ -5974,13 +5991,10 @@ textarea.field {
 /* ── Step 2: Form fields ──────────────────────────────────────────────────── */
 
 /* Small label above each field (like "Court name *") */
+/* Only the leading gap is particular to this one — the rest comes from the
+   shared label treatment above. */
 .add-court-field-label {
-  display: block;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-secondary);
   margin-top: 14px;
-  margin-bottom: 6px;
 }
 
 /* Text inputs — dark background, rounded corners, matches .modal-input style */
