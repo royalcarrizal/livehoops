@@ -12,7 +12,7 @@
 //   court         — { id, name }
 //   meetups       — array of this court's runs (from meetupsByCourt[court.id])
 //   user          — logged-in user ({ id })
-//   onSchedule    — createMeetup(courtId, iso, title, visibility, label)
+//   onSchedule    — createMeetup(courtId, iso, title, visibility, label, durationMinutes)
 //   onJoin        — joinMeetup(meetupId, anonymous)
 //   onLeave       — leaveMeetup(meetupId)
 //   onCancel      — cancelMeetup(meetupId)   (host only)

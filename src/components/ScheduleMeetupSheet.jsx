@@ -8,12 +8,12 @@
 //   isOpen    — controls the slide-up
 //   onClose   — close the sheet
 //   court     — { id, name } the run is being scheduled at
-//   onSchedule(courtId, scheduledAtISO, title, visibility, label) — async;
-//               throws on failure so we can show an error toast
+//   onSchedule(courtId, scheduledAtISO, title, visibility, label, durationMinutes)
+//               — async; throws on failure so we can show an error toast
 //   onToast   — brief message pill
 
 import { useState, useEffect } from 'react';
-import { formatMeetupTime } from '../utils/datetime';
+import { formatMeetupTime, formatRunLength } from '../utils/datetime';
 import Toast from './Toast';
 import { useToast } from '../hooks/useToast';
 
@@ -32,10 +32,18 @@ function defaultWhen() {
   return toLocalInputValue(d);
 }
 
+// How long the run goes. Presets rather than a free number field: every real
+// pickup run is one of these, and a text input would invite the 5-minute and
+// 3-day typos the DB constraint then has to reject. 90 is the default because
+// it is the most common session length.
+const LENGTH_OPTIONS = [60, 90, 120, 180];
+const DEFAULT_LENGTH = 90;
+
 export default function ScheduleMeetupSheet({ isOpen, onClose, court, onSchedule, onToast }) {
   const [when,       setWhen]       = useState(defaultWhen);
   const [title,      setTitle]      = useState('');
   const [visibility, setVisibility] = useState('public');
+  const [duration,   setDuration]   = useState(DEFAULT_LENGTH);
   const [submitting, setSubmitting] = useState(false);
 
   const { toast, showToast } = useToast();
@@ -46,6 +54,7 @@ export default function ScheduleMeetupSheet({ isOpen, onClose, court, onSchedule
       setWhen(defaultWhen());
       setTitle('');
       setVisibility('public');
+      setDuration(DEFAULT_LENGTH);
       setSubmitting(false);
     }
   }, [isOpen]);
@@ -71,7 +80,7 @@ export default function ScheduleMeetupSheet({ isOpen, onClose, court, onSchedule
     setSubmitting(true);
     try {
       const iso = localDate.toISOString();
-      await onSchedule(court.id, iso, title.trim(), visibility, formatMeetupTime(iso));
+      await onSchedule(court.id, iso, title.trim(), visibility, formatMeetupTime(iso), duration);
       onToast?.('🏀 Run scheduled!');
       onClose();
     } catch {
@@ -112,6 +121,22 @@ export default function ScheduleMeetupSheet({ isOpen, onClose, court, onSchedule
           {when && !Number.isNaN(new Date(when).getTime()) && (
             <div className="meetup-form-preview">{formatMeetupTime(new Date(when).toISOString())}</div>
           )}
+
+          {/* How long — presets, same row treatment as the visibility buttons */}
+          <label className="add-court-field-label">How long?</label>
+          <div className="meetup-visibility-row">
+            {LENGTH_OPTIONS.map(mins => (
+              <button
+                key={mins}
+                type="button"
+                className={`btn btn--grow ${duration === mins ? 'btn--soft' : 'btn--secondary'}`}
+                onClick={() => setDuration(mins)}
+                aria-pressed={duration === mins}
+              >
+                {formatRunLength(mins)}
+              </button>
+            ))}
+          </div>
 
           {/* Optional note */}
           <label className="add-court-field-label">Note <span style={{ color: 'var(--text-secondary)', fontWeight: 400 }}>(optional)</span></label>
