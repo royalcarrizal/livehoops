@@ -8,15 +8,14 @@
 // check-in action.
 
 import { Layers, Lightbulb, Image as ImageIcon } from 'lucide-react';
+import { hasRealDistance } from '../hooks/useCourts';
 
 export default function ParkCard({ park, isCheckedIn, onCheckIn, style }) {
   const hasPlayers = park.players > 0;
 
-  // normalizeCourt sets distance to the em dash when GPS is unavailable, and
-  // that string is truthy — so a plain `park.distance &&` check renders a
-  // dangling "Simsbrook Dr, Houston · —" on every card the moment someone
-  // declines the location prompt.
-  const hasDistance = !!park.distance && park.distance !== '—';
+  // Shared with the Map's court rows — see hasRealDistance in useCourts.js for
+  // why this can't just be `park.distance &&`.
+  const hasDistance = hasRealDistance(park.distance);
 
   return (
     <div className="park-card" style={style}>
