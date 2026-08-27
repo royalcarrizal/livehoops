@@ -20,12 +20,13 @@ import MapPostModal from '../components/MapPostModal';
 import CourtMeetups from '../components/CourtMeetups';
 import CourtRoyalty from '../components/CourtRoyalty';
 import Toast from '../components/Toast';
-import Avatar from '../components/Avatar';
+import WhosHere from '../components/WhosHere';
 import { useToast } from '../hooks/useToast';
 import { useCourtKing } from '../hooks/useCourtKing';
 import { formatMeetupTime } from '../utils/datetime';
 import MapCourtGround from '../components/MapCourtGround';
 import CourtListRow from '../components/CourtListRow';
+import AddCourtSheet from '../components/AddCourtSheet';
 import { createMarkerEl } from '../utils/mapMarker';
 import { sortByDistance } from '../hooks/useCourts';
 import { Search, LocateFixed } from 'lucide-react';
@@ -60,6 +61,7 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
   const [searchQuery,     setSearchQuery]     = useState('');
   const [showPostModal,   setShowPostModal]   = useState(false);
   const [visitMap,        setVisitMap]        = useState({});
+  const [showAddCourt,    setShowAddCourt]    = useState(false);
 
   const { createPost } = usePosts();
   const { toast, showToast } = useToast();
@@ -408,40 +410,12 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
             {/* enforced by the get_court_active_players RPC). The count badge  */}
             {/* above can be higher — those extras are players who've hidden    */}
             {/* themselves, so we note them anonymously.                        */}
-            {livePark.checkins.length > 0 && (
-              <div className="whos-here">
-                <div className="whos-here-label">Playing now</div>
-                <div className="whos-here-row">
-                  {livePark.checkins.slice(0, 6).map(player => (
-                    <button
-                      key={player.userId}
-                      className="whos-here-player"
-                      onClick={() => onViewProfile?.(player.userId)}
-                      aria-label={`View ${player.username}'s profile`}
-                    >
-                      <Avatar
-                        avatarUrl={player.avatarUrl}
-                        initials={player.initials}
-                        size={34}
-                      />
-                      <span className="whos-here-name">
-                        {player.userId === user?.id ? 'You' : player.username.split('_')[0]}
-                      </span>
-                    </button>
-                  ))}
-                  {livePark.checkins.length > 6 && (
-                    <span className="whos-here-more">
-                      +{livePark.checkins.length - 6}
-                    </span>
-                  )}
-                </div>
-                {livePark.players > livePark.checkins.length && (
-                  <div className="whos-here-hidden">
-                    +{livePark.players - livePark.checkins.length} more playing
-                  </div>
-                )}
-              </div>
-            )}
+            <WhosHere
+              checkins={livePark.checkins}
+              players={livePark.players}
+              currentUserId={user?.id}
+              onViewProfile={onViewProfile}
+            />
 
             {/* ── King of the Court — the two reigning per-court leaders ────── */}
             <CourtRoyalty
@@ -565,8 +539,29 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
               />
             ))
           )}
+
+          {/* Adding a court used to live on the Check screen, which was the
+              only route to it in the whole app. It belongs here: you add a
+              court you know the location of, and this is where someone who
+              scrolled the list without finding theirs ends up. */}
+          <button
+            type="button"
+            className="map-add-court"
+            onClick={() => setShowAddCourt(true)}
+          >
+            Know a court that&apos;s missing? Add it →
+          </button>
         </div>
       </div>
+
+      {/* ── Add a Court sheet ───────────────────────────────────────────────── */}
+      {/* Always in the DOM so the CSS slide transition animates; visibility is
+          controlled by the .open class. */}
+      <AddCourtSheet
+        isOpen={showAddCourt}
+        onClose={() => setShowAddCourt(false)}
+        user={user}
+      />
 
       {/* ── Post from map modal ───────────────────────────────────────────── */}
       {showPostModal && selectedPark && (

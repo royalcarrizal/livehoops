@@ -18,6 +18,7 @@
 import { useState, useEffect } from 'react';
 import { Trash2 } from 'lucide-react';
 import Avatar from './Avatar';
+import WhosHere from './WhosHere';
 import CourtMeetups from './CourtMeetups';
 import CourtRoyalty from './CourtRoyalty';
 import { useCourtReviews } from '../hooks/useCourtReviews';
@@ -169,38 +170,12 @@ export default function CourtDetailSheet({
         {/* court.checkins comes from the get_court_active_players RPC via     */}
         {/* useCourts. The player count above can be higher — the difference   */}
         {/* is players who've hidden themselves, noted anonymously below.      */}
-        {(court.checkins ?? []).length > 0 && (
-          <div className="whos-here">
-            <div className="whos-here-label">Playing now</div>
-            <div className="whos-here-row">
-              {court.checkins.slice(0, 6).map(player => (
-                <button
-                  key={player.userId}
-                  className="whos-here-player"
-                  onClick={() => onViewProfile?.(player.userId)}
-                  aria-label={`View ${player.username}'s profile`}
-                >
-                  <Avatar
-                    avatarUrl={player.avatarUrl}
-                    initials={player.initials}
-                    size={34}
-                  />
-                  <span className="whos-here-name">
-                    {player.userId === user?.id ? 'You' : player.username.split('_')[0]}
-                  </span>
-                </button>
-              ))}
-              {court.checkins.length > 6 && (
-                <span className="whos-here-more">+{court.checkins.length - 6}</span>
-              )}
-            </div>
-            {court.players > court.checkins.length && (
-              <div className="whos-here-hidden">
-                +{court.players - court.checkins.length} more playing
-              </div>
-            )}
-          </div>
-        )}
+        <WhosHere
+          checkins={court.checkins ?? []}
+          players={court.players}
+          currentUserId={user?.id}
+          onViewProfile={onViewProfile}
+        />
 
         {/* ── King of the Court — the two reigning per-court leaders ─────────── */}
         <CourtRoyalty
