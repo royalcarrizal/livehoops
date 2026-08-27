@@ -1893,24 +1893,90 @@ textarea.field {
   margin: 12px 0 2px;
 }
 
+/* Uppercase eyebrow, the same treatment "SCHEDULED RUNS" uses on Home — a
+   quiet label for a subsection, rather than a second heading competing with
+   the card above it. */
 .whos-here-label {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
   color: var(--text-secondary);
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 }
 
+/* Sized so five faces AND the +N circle fit a 375px screen without scrolling:
+   6 x 48 + 5 x 6 = 318px inside a ~327px content box. At 56px the row measured
+   386px and the +N — the one element that says people are missing — was the
+   one scrolled out of sight. Still overflow-x:auto, so narrower phones
+   degrade to a swipe rather than clipping. */
 .whos-here-row {
   display: flex;
-  align-items: flex-start;
-  gap: 12px;
+  align-items: center;
+  gap: 6px;
   overflow-x: auto;
   padding-bottom: 2px;
   scrollbar-width: none;
 }
 .whos-here-row::-webkit-scrollbar { display: none; }
 
+/* Faces are the whole row now — the name that used to sit under each one is
+   gone. At 56px a face is recognisable on its own, and the name survives in
+   the button's aria-label for anyone not looking at it. */
 .whos-here-player {
+  display: flex;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+.whos-here-player:active { transform: scale(0.94); }
+
+/* "+N" — everyone not pictured, for either reason. Sized to match a face
+   exactly so the row reads as one run of circles, and outlined rather than
+   filled because it stands for people rather than being one. */
+.whos-here-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1px dashed var(--separator-strong);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+/* ── Meetup attendees ──────────────────────────────────────────────────────── */
+/* These borrowed the .whos-here classes until that row grew big nameless faces.
+   A list of who is COMING to a run wants names — you are reading it to decide
+   whether to join — so it keeps the smaller avatar-over-name treatment the
+   "Playing now" row used to have. */
+
+.meetup-section-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.meetup-attendee-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+.meetup-attendee-row::-webkit-scrollbar { display: none; }
+
+.meetup-attendee {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1923,33 +1989,13 @@ textarea.field {
   flex-shrink: 0;
 }
 
-.whos-here-name {
+.meetup-attendee-name {
   font-size: 11px;
   color: var(--text-secondary);
   max-width: 52px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-/* "+N" pill when more players are visible than we show avatars for */
-.whos-here-more {
-  align-self: center;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--text-secondary);
-  background: var(--bg-elevated);
-  border-radius: var(--radius-full);
-  padding: 6px 10px;
-  flex-shrink: 0;
-}
-
-/* Anonymous remainder: players counted at this court who've hidden        */
-/* themselves (show_location off / private profile)                        */
-.whos-here-hidden {
-  font-size: 11px;
-  color: var(--text-tertiary);
-  margin-top: 6px;
 }
 
 /* ── King of the Court ─────────────────────────────────────────────────── */
@@ -3150,8 +3196,18 @@ textarea.field {
   line-height: 1.2;
 }
 
-.crew-chip-court.active  { color: var(--accent); }
-.crew-chip-court.offline { color: var(--text-secondary); }
+/* Green, not accent. "On the court" states that a friend is playing RIGHT NOW,
+   which is the one thing green means in this app — and the Friends screen has
+   always drawn the same fact green (.friend-status.active). Two colours for one
+   fact, in one app. Same rule-4 slip already fixed on ParkCard's Live badge,
+   the map marker and the session card. */
+.crew-chip-court.active {
+  color: var(--green);
+}
+
+.crew-chip-court.offline {
+  color: var(--text-secondary);
+}
 
 /* Friend card */
 .friend-card {

@@ -5,7 +5,10 @@
 // court with RSVP controls, and a "Schedule a Run" button that opens
 // ScheduleMeetupSheet bound to this court.
 //
-// Attendee avatars reuse the `.whos-here` classes from the "Playing now" row;
+// Attendee avatars have their own `.meetup-attendee*` classes. They used to
+// borrow the `.whos-here` ones from the "Playing now" row, until that row grew
+// big nameless 56px faces and these stayed small with names under them — a
+// borrow only works while both sides want the same thing.
 // anonymous joiners arrive pre-masked as "Baller" from get_meetup_attendees.
 //
 // Props:
@@ -84,17 +87,17 @@ function MeetupRow({ meetup, user, onJoin, onLeave, onCancel, fetchAttendees, on
       </button>
 
       {expanded && attendees && attendees.length > 0 && (
-        <div className="whos-here-row" style={{ marginTop: 8 }}>
+        <div className="meetup-attendee-row">
           {attendees.slice(0, 8).map((a, i) => (
             <button
               key={a.userId ?? `baller-${i}`}
-              className="whos-here-player"
+              className="meetup-attendee"
               onClick={() => a.userId && onViewProfile?.(a.userId)}
               disabled={!a.userId}
               aria-label={a.userId ? `View ${a.username}'s profile` : 'Anonymous baller'}
             >
               <Avatar avatarUrl={a.avatarUrl} initials={a.initials} size={34} />
-              <span className="whos-here-name">
+              <span className="meetup-attendee-name">
                 {a.userId === user?.id ? 'You' : a.username.split('_')[0]}
               </span>
             </button>
@@ -155,7 +158,7 @@ export default function CourtMeetups({
 
   return (
     <div className="court-meetups">
-      <div className="whos-here-label">Upcoming runs</div>
+      <div className="meetup-section-label">Upcoming runs</div>
 
       {meetups.length === 0 ? (
         <div className="meetup-empty">No runs scheduled yet — start one 👇</div>

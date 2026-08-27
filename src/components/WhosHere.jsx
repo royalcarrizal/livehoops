@@ -6,24 +6,37 @@
 // CourtDetailSheet — before the Check screen needed it a third time. One
 // component now serves all three.
 //
-// The player list is privacy-filtered: `checkins` comes from the
-// get_court_active_players RPC, which omits anyone who has hidden their
-// location or made their profile private. `players` is the raw count from the
-// courts table and can therefore be HIGHER. That difference is not a bug to
-// paper over — it is reported honestly as "+N more playing", so the court's
-// count adds up without naming anyone who chose not to be named.
+// ── The +N circle ───────────────────────────────────────────────────────────
+// A player can be missing from this row for two unrelated reasons:
+//
+//   1. there are more of them than the row shows faces for, or
+//   2. they hid themselves — `checkins` comes from the get_court_active_players
+//      RPC, which omits anyone with their location off or their profile private,
+//      while `players` is the raw count from the courts table
+//
+// Those used to be rendered separately: a "+N" pill for the first and a
+// "+N more playing" line for the second. They are now one circle, counting
+// everyone not pictured whatever the reason.
+//
+// That is the design, and it is also better arithmetic: faces + N always equals
+// the court's player count, so the row reconciles with the "Players here" stat
+// sitting above it. The privacy nuance survives in the aria-label rather than
+// being dropped — nobody hidden is named, but nobody is silently uncounted
+// either.
 //
 // Props:
 //   checkins      — [{ userId, username, avatarUrl, initials }]
 //   players       — the court's total player count (may exceed checkins.length)
-//   currentUserId — so the viewer reads as "You" rather than their own username
+//   currentUserId — so the viewer's own face can be labelled "You"
 //   label         — section heading; defaults to the court-sheet wording
 //   onViewProfile — tapping a player opens their profile
 
 import Avatar from './Avatar';
 
-// How many faces before the rest collapse into a "+N" pill.
-const MAX_FACES = 6;
+// How many faces before the rest collapse into the +N circle. Five faces plus
+// the circle is six 48px circles, which is what fits a 375px screen — see the
+// sizing note on .whos-here-row in index.css.
+const MAX_FACES = 5;
 
 export default function WhosHere({
   checkins = [],
@@ -36,41 +49,47 @@ export default function WhosHere({
   // does not have to guard this itself.
   if (checkins.length === 0) return null;
 
-  const hidden = players - checkins.length;
+  const faces = checkins.slice(0, MAX_FACES);
+
+  // Everyone not pictured: the overflow and the hidden players, together.
+  // Math.max guards the case where the two numbers disagree for a moment —
+  // they come from different sources and refresh independently, and "+-2" must
+  // never be a thing.
+  const notShown = Math.max(0, players - faces.length);
 
   return (
     <div className="whos-here">
       <div className="whos-here-label">{label}</div>
       <div className="whos-here-row">
-        {checkins.slice(0, MAX_FACES).map(player => (
+        {faces.map(player => (
           <button
             key={player.userId}
             type="button"
             className="whos-here-player"
             onClick={() => onViewProfile?.(player.userId)}
-            aria-label={`View ${player.username}'s profile`}
+            aria-label={
+              player.userId === currentUserId
+                ? 'View your profile'
+                : `View ${player.username ?? 'this player'}'s profile`
+            }
           >
             <Avatar
               avatarUrl={player.avatarUrl}
               initials={player.initials}
-              size={34}
+              size={48}
             />
-            <span className="whos-here-name">
-              {player.userId === currentUserId
-                ? 'You'
-                : (player.username ?? 'Player').split('_')[0]}
-            </span>
           </button>
         ))}
-        {checkins.length > MAX_FACES && (
-          <span className="whos-here-more">+{checkins.length - MAX_FACES}</span>
+
+        {notShown > 0 && (
+          <span
+            className="whos-here-more"
+            aria-label={`${notShown} more playing`}
+          >
+            +{notShown}
+          </span>
         )}
       </div>
-      {hidden > 0 && (
-        <div className="whos-here-hidden">
-          +{hidden} more playing
-        </div>
-      )}
     </div>
   );
 }
