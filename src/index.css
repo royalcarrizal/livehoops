@@ -1424,9 +1424,9 @@ textarea.field {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  background: rgba(48, 209, 88, 0.12);
-  color: #30D158;
-  border: 1px solid rgba(48, 209, 88, 0.25);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  border: 1px solid var(--separator-strong);
   border-radius: var(--radius-full);
   padding: 6px 12px;
   font-size: 12px;
@@ -1434,10 +1434,10 @@ textarea.field {
   margin-bottom: 12px;
 }
 
-/* Green pill shown when players are live */
+/* Live pill shown when players are at this court */
 .map-sheet-live-badge {
-  background: rgba(48, 209, 88, 0.15);
-  color: #30D158;
+  background: var(--green-dim);
+  color: var(--green);
   font-size: 12px;
   font-weight: 700;
   padding: 4px 10px;
@@ -1639,23 +1639,28 @@ textarea.field {
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
 }
 
-/* Orange background + glow when players are live at this court */
+/* Green when players are live at this court. This was the accent, with
+   "visited" wearing the green — rule 4 exactly inverted, and on the one
+   surface where both states appear on the same marker at once. */
 .mb-marker.live {
-  background: var(--accent);
-  border-color: var(--accent);
-  box-shadow: 0 4px 14px rgb(var(--accent-rgb) / 0.55);
+  background: var(--green);
+  border-color: var(--green);
+  box-shadow: 0 4px 14px rgb(var(--green-rgb) / 0.55);
 }
 
-/* Teal ring on courts the logged-in user has visited before */
+/* Visited is a passive historical fact, not a live signal and not an action,
+   so it reads as neutral. It no longer competes with the live marker beside
+   it, and green is left meaning exactly one thing on this map. */
 .mb-marker.visited {
-  border-color: #30D158;
-  box-shadow: 0 2px 10px rgba(48, 209, 88, 0.4);
+  border-color: var(--text-secondary);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
 }
 
-/* Live overrides visited ring — orange takes priority */
+/* A court can be both. Live wins the ring — it is the fact that changes and
+   the one you would act on. The visited checkmark still shows in the corner. */
 .mb-marker.live.visited {
-  border-color: var(--accent);
-  box-shadow: 0 4px 14px rgb(var(--accent-rgb) / 0.55);
+  border-color: var(--green);
+  box-shadow: 0 4px 14px rgb(var(--green-rgb) / 0.55);
 }
 
 /* Gold star badge on bottom-left corner of favorited court markers */
@@ -1676,7 +1681,8 @@ textarea.field {
   pointer-events: none;
 }
 
-/* Small teal checkmark dot on bottom-left corner of visited markers */
+/* Small checkmark dot on the bottom-left corner of visited markers. Neutral,
+   for the same reason as the ring above. */
 .mb-visited-dot {
   position: absolute;
   bottom: 0;
@@ -1684,7 +1690,7 @@ textarea.field {
   width: 13px;
   height: 13px;
   border-radius: 50%;
-  background: #30D158;
+  background: var(--text-secondary);
   border: 2px solid #000;
   display: flex;
   align-items: center;
@@ -1712,7 +1718,7 @@ textarea.field {
   width: 13px;
   height: 13px;
   border-radius: 50%;
-  background: #30D158;
+  background: var(--green);
   border: 2px solid #000;
 }
 
@@ -1722,7 +1728,7 @@ textarea.field {
   position: absolute;
   inset: -3px;
   border-radius: 50%;
-  border: 2px solid #30D158;
+  border: 2px solid var(--green);
   animation: pulse 1.5s ease-in-out infinite;
   opacity: 0.6;
 }
@@ -1989,7 +1995,7 @@ textarea.field {
 }
 
 .map-court-chip.visited {
-  border-color: rgba(48, 209, 88, 0.4);
+  border-color: var(--separator-strong);
 }
 
 /* Orange left accent on a favorited chip */
@@ -2008,7 +2014,7 @@ textarea.field {
   margin-left: 6px;
   font-size: 10px;
   font-weight: 600;
-  color: #30D158;
+  color: var(--text-secondary);
   letter-spacing: 0.2px;
 }
 
@@ -3520,12 +3526,12 @@ textarea.field {
   color: var(--text-primary);
 }
 
-/* Small orange pulsing dot next to the header text */
+/* Small pulsing live dot next to the header text */
 .active-friends-live-dot-header {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--accent);
+  background: var(--green);
   flex-shrink: 0;
   animation: pulse 1.5s ease-in-out infinite;
 }
@@ -3578,7 +3584,7 @@ textarea.field {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: var(--accent);
+  background: var(--green);
   border: 2px solid var(--bg-card);
   animation: pulse 1.5s ease-in-out infinite;
 }
@@ -3766,7 +3772,7 @@ textarea.field {
   margin-top: 8px;
 }
 
-.meetup-row-joined { font-size: 13px; font-weight: 600; color: var(--green, #30D158); }
+.meetup-row-joined { font-size: 13px; font-weight: 600; color: var(--green); }
 
 /* "Go as Baller" anonymity checkbox */
 .meetup-anon-check {
@@ -5245,10 +5251,10 @@ textarea.field {
 /* Green success message (e.g. "Check your email for a reset link") */
 .auth-success {
   font-size: 13px;
-  color: #30D158;
+  color: var(--green);
   text-align: center;
   padding: 8px 12px;
-  background: rgba(48, 209, 88, 0.1);
+  background: var(--green-dim);
   border-radius: var(--radius-sm);
   line-height: 1.4;
 }

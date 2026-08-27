@@ -7,10 +7,13 @@
 // differ while the accent stays whatever it is. That distinction was already
 // documented in Avatar.jsx and still holds.
 //
-// What changed is where the colours come from. Until now they were the last six
-// pre-redesign iOS system colours left anywhere in the app (#FF6B1A, #30D158,
-// #0A84FF, #BF5AF2, #FF375F, #FFD60A) — never tokenised, never contrast-checked,
-// and visibly a half-step off everything the redesign put next to them. They are
+// What changed is where the colours come from. Until now they were six
+// pre-redesign iOS system colours (#FF6B1A, #30D158, #0A84FF, #BF5AF2, #FF375F,
+// #FFD60A) — never tokenised, never contrast-checked, and visibly a half-step
+// off everything the redesign put next to them. (An earlier version of this
+// comment called them the last such colours "anywhere in the app". That was
+// wrong: #30D158 was still hardcoded nine times in index.css, and only the
+// live-colour sweep actually finished the job.) They are
 // now derived from the accent palette: same hues, same contrast guarantees
 // (accents.test.js already asserts every `darkOn` clears 3:1 on its `dark`), and
 // one list to maintain instead of two that drift.

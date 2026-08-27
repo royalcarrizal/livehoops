@@ -7,7 +7,7 @@
 // empty space, no placeholder. It simply disappears.
 //
 // Each checked-in friend appears as a small card showing:
-//   • Their avatar with an orange pulsing live dot
+//   • Their avatar with a pulsing green live dot
 //   • A 📍 map pin icon
 //   • The court name (up to 2 lines)
 //   • Their username (1 line, truncated)
@@ -93,7 +93,7 @@ export default function ActiveFriendsRow({ friends = [], setActiveTab }) {
                 initials={friend.initials}
                 size={36}
               />
-              {/* Small orange pulsing dot in the bottom-right corner of the avatar */}
+              {/* Small green pulsing dot in the bottom-right corner of the avatar */}
               <div className="active-friend-live-dot" />
             </div>
 
