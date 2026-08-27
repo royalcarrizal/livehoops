@@ -2,7 +2,7 @@
 // `now` is injected so every case is deterministic.
 
 import { describe, it, expect } from 'vitest';
-import { formatMeetupTime, formatRunLength } from '../datetime';
+import { formatMeetupTime, formatRunLength, formatClockShort } from '../datetime';
 
 // Fixed reference point: Wed Jul 15 2026, 2:00 PM local time.
 const NOW = new Date('2026-07-15T14:00:00');
@@ -89,5 +89,35 @@ describe('formatRunLength', () => {
 
   it('accepts a numeric string, as Supabase may return', () => {
     expect(formatRunLength('120')).toBe('2h');
+  });
+});
+
+// ── formatClockShort ────────────────────────────────────────────────────────
+// The compact time on a run card, sitting next to its length ("6:30p · 2h").
+// Built from local-time components, so the fixtures are local-time strings.
+
+describe('formatClockShort', () => {
+  it('returns empty string for missing/invalid input', () => {
+    expect(formatClockShort(null)).toBe('');
+    expect(formatClockShort('not-a-date')).toBe('');
+  });
+
+  it('formats afternoon times with a p suffix', () => {
+    expect(formatClockShort('2026-07-17T18:30:00')).toBe('6:30p');
+  });
+
+  it('formats morning times with an a suffix', () => {
+    expect(formatClockShort('2026-07-18T10:00:00')).toBe('10:00a');
+  });
+
+  it('pads minutes', () => {
+    expect(formatClockShort('2026-07-18T09:05:00')).toBe('9:05a');
+  });
+
+  it('handles both noon and midnight as 12, not 0', () => {
+    // The classic off-by-twelve: hours % 12 is 0 for both, which would print
+    // "0:00p" and "0:00a".
+    expect(formatClockShort('2026-07-18T12:00:00')).toBe('12:00p');
+    expect(formatClockShort('2026-07-18T00:00:00')).toBe('12:00a');
   });
 });

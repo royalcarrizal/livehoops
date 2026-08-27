@@ -523,9 +523,26 @@ body {
 
 .park-card-photo {
   width: 100%;
-  height: 140px;
+  height: 160px;
   object-fit: cover;
   display: block;
+}
+
+/* Courts with no photo. The block still renders — the live markers sit on it,
+   so it has to exist whether or not there is an image. Deliberately quiet: a
+   dim glyph on the elevated surface reads as "no photo yet" rather than as a
+   failed image load. Less than half a real photo's height on purpose: most
+   courts have no photo, and at full height a list of fifteen of them is a very
+   long scroll of grey. Still tall enough for the Live and running pills, which
+   sit on this block and need somewhere to land. */
+.park-card-media-empty {
+  width: 100%;
+  height: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-elevated);
+  color: var(--text-tertiary);
 }
 
 /* The live marker, laid over the photo as a glass pill (canvas:97). The blur
@@ -557,6 +574,26 @@ body {
 
 .park-card-overlay .live-text {
   color: #2FE08A;
+}
+
+/* "N running", opposite the Live marker. Same glass treatment and the same
+   deliberate theme-independence as .park-card-overlay: it sits on a photograph,
+   and a photo does not get lighter in light mode. Text is plain white rather
+   than green — the Live pill beside it already carries that signal, and two
+   green things on one image is noise. */
+.park-card-running {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(11, 11, 14, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: var(--radius-full);
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #F4F4F6;
+  pointer-events: none;
 }
 
 .park-card:active {
@@ -3643,77 +3680,217 @@ textarea.field {
   to   { opacity: 1; transform: translateX(0); }
 }
 
-/* ══ Scheduled Meetups ("Runs") ══════════════════════════════════════════════ */
+/* ══ Live court strip ════════════════════════════════════════════════════════ */
+/* The row of courts with players on them, between the header and the tabs.
+   Same snap-scroll mechanics as .active-friends-scroll — a swipeable row of
+   fixed-width cards — but wider cards, because a court name needs more room
+   than a first name does. */
 
-/* Small calendar icon in the "Upcoming runs" row header */
-.meetup-cal-icon { font-size: 12px; line-height: 1; }
-
-/* ── Home "Upcoming Runs" card (clones .active-friend-card) ─────────────────── */
-.meetup-card {
-  width: 108px;
-  flex-shrink: 0;
-  background: var(--bg-card);
-  border-radius: var(--radius-md);
-  border: 0.5px solid var(--separator);
-  padding: 10px 8px;
+.live-court-strip {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 0 16px 4px;
+  margin-bottom: 14px;
+  scrollbar-width: none;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+.live-court-strip::-webkit-scrollbar { display: none; }
+
+.live-court-card {
+  width: 168px;
+  flex-shrink: 0;
+  text-align: left;
+  background: var(--bg-card);
+  border: 1px solid var(--separator-strong);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
   cursor: pointer;
+  font-family: var(--font);
   transition: transform 0.15s;
   scroll-snap-align: start;
   animation: slideInFromRight 0.3s ease both;
 }
-.meetup-card:active { transform: scale(0.96); }
+.live-court-card:active { transform: scale(0.97); }
 
-.meetup-card-avatar-wrap { position: relative; width: 36px; height: 36px; }
-
-/* Orange calendar badge on the host avatar */
-.meetup-card-badge {
-  position: absolute;
-  bottom: -2px;
-  right: -4px;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: var(--bg-card);
-  border: 1.5px solid var(--accent);
+/* "N running" — green, because it states that play is happening right now,
+   which is the one thing green means in this app. */
+.live-court-card-status {
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-size: 8px;
-  line-height: 1;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--green);
+  margin-bottom: 8px;
 }
 
-.meetup-card-time {
-  font-size: 12px;
-  font-weight: 800;
-  color: var(--accent);
-  text-align: center;
+/* One line, clipped. Court names run long ("Cadman Plaza Courts") and a card
+   that grows to fit the longest name in the row would break the rhythm. */
+.live-court-card-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.3px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  width: 100%;
+  margin-bottom: 3px;
 }
 
-.meetup-card-court {
-  font-size: 10px;
-  color: var(--text-primary);
-  text-align: center;
-  line-height: 1.3;
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  width: 100%;
-}
-
-.meetup-card-going {
-  font-size: 10px;
+.live-court-card-distance {
+  font-size: 12px;
   color: var(--text-secondary);
-  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
+
+/* ══ Section eyebrow ═════════════════════════════════════════════════════════ */
+/* The small uppercase section label ("SCHEDULED RUNS"), as opposed to
+   .section-title's larger sentence-case heading. A quieter label for a
+   subsection sitting inside a tab, where a second 18px heading would compete
+   with the tab bar above it. */
+
+.section-header--eyebrow {
+  padding-top: 20px;
+}
+
+.section-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+/* ══ Scheduled runs ══════════════════════════════════════════════════════════ */
+
+.scheduled-run-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 16px;
+}
+
+.scheduled-run {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  text-align: left;
+  background: var(--bg-card);
+  border: 1px solid var(--separator-strong);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  cursor: pointer;
+  font-family: var(--font);
+  transition: transform 0.15s;
+  animation: slideUp 0.3s ease both;
+}
+.scheduled-run:active { transform: scale(0.99); }
+
+/* Date block. Fixed width so every row's text starts at the same x, which is
+   what makes a stack of these scan as a list rather than a pile of cards. */
+.scheduled-run-date {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 38px;
+  flex-shrink: 0;
+}
+
+.scheduled-run-weekday {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.scheduled-run-day {
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--text-primary);
+  letter-spacing: -0.5px;
+}
+
+/* min-width:0 lets the long court name below actually shrink — without it a
+   flex child refuses to go below its content width and pushes the chevron
+   off the card. */
+.scheduled-run-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.scheduled-run-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 3px;
+}
+
+.scheduled-run-court {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.scheduled-run-when {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.scheduled-run-who {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.scheduled-run-going {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.scheduled-run-chevron {
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+/* Run badges. "Yours" takes the accent because it is about you; "Going" takes
+   green because it says a run you are part of is on. */
+.run-badge {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 3px 7px;
+  border-radius: var(--radius-full);
+}
+
+.run-badge--host {
+  color: var(--accent);
+  background: var(--accent-dim);
+  border: 1px solid var(--accent-border);
+}
+
+.run-badge--going {
+  color: var(--green);
+  background: var(--green-dim);
+  border: 1px solid var(--green-border);
+}
+
+/* ══ Scheduled Meetups ("Runs") ══════════════════════════════════════════════ */
 
 /* ── "Run scheduled" pills on the map sheet + chips ─────────────────────────── */
 .map-sheet-meetup-badge {

@@ -1,24 +1,31 @@
 // src/screens/HomeScreen.jsx
 //
-// The main home feed screen. Shows:
-//   - A horizontal "stories" row of friends' avatars
-//   - A text box to write and post status updates
-//   - A "Following" tab (posts from friends only) and "Nearby" tab (all posts)
-//   - A "Your Crew" section showing accepted friends
+// The home screen, in two tabs:
 //
-// It does NOT list courts, despite what this comment said for a long time —
-// courts live on the Map and Check screens. The stale line sent one scoping
-// pass looking for a courts list that had not been here in months.
+//   Following — the social feed: friends currently on a court, a composer, and
+//               posts from people you follow, ending in "Your Crew".
+//   Nearby    — where to play: every nearby court, and the runs scheduled at
+//               them over the next week.
 //
-// Data is now loaded from Supabase using the useFriends and usePosts hooks.
-// Mock data is no longer used.
+// Above both sits the live-court strip, so "somebody is hooping right now" is
+// visible whichever tab you are on.
+//
+// Courts DID once live only on the Map and Check screens. As of the redesign
+// they are here too — this screen is now the app's front door for both halves
+// of the question "where is there a game?".
+//
+// The old "Nearby = every post in the world" feed is gone; Nearby now means
+// courts. Removing it took usePosts.fetchAllFeed with it, which had no other
+// caller.
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { MapPin, Bell, Search } from 'lucide-react';
 import Avatar from '../components/Avatar';
 import FeedPost from '../components/FeedPost';
 import ActiveFriendsRow from '../components/ActiveFriendsRow';
-import UpcomingMeetupsRow from '../components/UpcomingMeetupsRow';
+import LiveCourtStrip from '../components/LiveCourtStrip';
+import ScheduledRunsList from '../components/ScheduledRunsList';
+import ParkCard from '../components/ParkCard';
 import PostComposer from '../components/PostComposer';
 import Tabs from '../components/Tabs';
 import PhotoViewer from '../components/PhotoViewer';
@@ -34,12 +41,17 @@ import { usePosts } from '../hooks/usePosts';
 import { usePullToRefresh } from '../hooks/usePullToRefresh';
 import CourtLines from '../components/CourtLines';
 import { supabase } from '../lib/supabase';
+import { sortByDistance } from '../hooks/useCourts';
+
+// How far out "Nearby" reaches. Unchanged from the radius the old all-posts
+// feed used, so the word keeps meaning the same distance it always did.
+const NEARBY_RADIUS_MILES = 50;
 
 // Props:
 //   setActiveTab — lets this screen switch to another tab (e.g. Friends tab)
 //   user         — the logged-in Supabase user object (has .id)
 //   profile      — the user's profile row from Supabase (username, avatar_url, etc.)
-export default function HomeScreen({ setActiveTab, user, profile, parks, onViewProfile, onCheckIn, activeCheckIn, checkOut, cityLabel = 'Nearby', isCheckingIn = false, upcomingMeetups = [], meetupActions, blockUser }) {
+export default function HomeScreen({ setActiveTab, user, profile, parks, onViewProfile, onCheckIn, activeCheckIn, checkOut, cityLabel = 'Nearby', isCheckingIn = false, upcomingMeetups = [], meetupActions, blockUser, refreshCounts }) {
   const [feedTab, setFeedTab]           = useState('following');
   const [photoUrl, setPhotoUrl]         = useState(null);
   const [showPanel, setShowPanel]       = useState(false);
@@ -50,15 +62,27 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
   const [tappedCourtId, setTappedCourtId] = useState(null);
   const tappedCourt = (parks ?? []).find(p => p.id === tappedCourtId) ?? null;
 
-  // Holds posts for the Nearby tab (fetched separately from the Following feed)
-  const [nearbyFeed, setNearbyFeed] = useState([]);
-  // Nearby pagination: raw-row offset for the next page + whether more exist
-  const [nearbyOffset, setNearbyOffset]           = useState(0);
-  const [nearbyHasMore, setNearbyHasMore]         = useState(false);
-  const [nearbyLoadingMore, setNearbyLoadingMore] = useState(false);
-
   // Courts with at least one player on them right now.
   const liveCourtCount = (parks ?? []).filter(p => p.players > 0).length;
+
+  // ── Which courts the Nearby tab lists ─────────────────────────────────────
+  // Live courts first, then the rest, each group nearest first. The question
+  // the tab answers is "where can I play now", so a court with people on it
+  // outranks an empty one that happens to be closer.
+  //
+  // distanceMi is null when GPS is denied. Those are kept, not filtered out —
+  // sortByDistance already sinks them below the courts we can locate, and
+  // dropping them would empty the tab entirely for anyone who declined the
+  // location prompt.
+  const nearbyCourts = useMemo(() => {
+    const withinRange = (parks ?? []).filter(p =>
+      !Number.isFinite(p.distanceMi) || p.distanceMi <= NEARBY_RADIUS_MILES
+    );
+    return [
+      ...sortByDistance(withinRange.filter(p => p.players > 0)),
+      ...sortByDistance(withinRange.filter(p => p.players === 0)),
+    ];
+  }, [parks]);
 
   const { toast, showToast } = useToast();
 
@@ -84,7 +108,6 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
     loadingMore,
     loadMoreFriendsFeed,
     fetchFriendsFeed,
-    fetchAllFeed,
     createPost,
     createRepost,
     likePost,
@@ -92,25 +115,6 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
     deletePost,
     subscribeToNewPosts,
   } = usePosts();
-
-  // ── Nearby distance filter ────────────────────────────────────────────────
-  // "Nearby" now means it: posts tagged with a court more than 50 miles away
-  // are dropped. Untagged posts (no location to judge) and posts whose court
-  // distance is unknown (GPS denied → parks show "—") are kept, so the tab
-  // never goes empty just because location is unavailable.
-  const NEARBY_RADIUS_MILES = 50;
-  const applyNearbyFilter = useCallback((posts) => {
-    return (posts ?? []).filter(post => {
-      if (!post.courtId) return true;
-      const park = (parks ?? []).find(p => p.id === post.courtId);
-      // distanceMi is null when GPS is unavailable or the court has no
-      // coordinates — keep those posts rather than hiding the tab's contents.
-      // (This used to parse the "0.3 mi" / "< 0.1 mi" display string back into
-      // a number; normalizeCourt now carries the raw value alongside it.)
-      if (!park || !Number.isFinite(park.distanceMi)) return true;
-      return park.distanceMi <= NEARBY_RADIUS_MILES;
-    });
-  }, [parks]);
 
   // ── Load the Following feed when friends list is ready ──────────────────
   // We wait until we know who the friends are, then fetch their posts.
@@ -122,19 +126,6 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
     const friendIds = friends.map(f => f.userId);
     fetchFriendsFeed(user.id, friendIds);
   }, [friends, friendsLoading, user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // ── Load the Nearby feed when the user switches to that tab ────────────
-  // friendIds let the feed include friends-only posts from your friends.
-  useEffect(() => {
-    if (feedTab === 'nearby' && nearbyFeed.length === 0) {
-      const friendIds = friends.map(f => f.userId);
-      fetchAllFeed(user?.id, friendIds).then(({ posts, rawCount, hasMore }) => {
-        setNearbyFeed(applyNearbyFilter(posts));
-        setNearbyOffset(rawCount);
-        setNearbyHasMore(hasMore);
-      });
-    }
-  }, [feedTab, user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Real-time subscription for new posts ────────────────────────────────
   // Listens for INSERT events on the posts table. When a new post arrives
@@ -154,36 +145,21 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
   }, [friends, friendsLoading, user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Pull-to-refresh ────────────────────────────────────────────────────
+  // Pulling down refreshes whichever tab you are on: the feed on Following,
+  // the live player counts on Nearby.
   const handleRefresh = useCallback(async () => {
-    const friendIds = friends.map(f => f.userId);
-    if (feedTab === 'following') {
-      await fetchFriendsFeed(user?.id, friendIds);
-    } else {
-      const { posts, rawCount, hasMore } = await fetchAllFeed(user?.id, friendIds);
-      setNearbyFeed(applyNearbyFilter(posts));
-      setNearbyOffset(rawCount);
-      setNearbyHasMore(hasMore);
-    }
-  }, [feedTab, friends, user, fetchFriendsFeed, fetchAllFeed, applyNearbyFilter]);
-
-  // ── Load more (both tabs) ─────────────────────────────────────────────────
-  const handleLoadMore = async () => {
-    if (feedTab === 'following') {
-      await loadMoreFriendsFeed();
+    if (feedTab === 'nearby') {
+      await refreshCounts?.();
       return;
     }
-    if (nearbyLoadingMore) return;
-    setNearbyLoadingMore(true);
     const friendIds = friends.map(f => f.userId);
-    const { posts, rawCount, hasMore } = await fetchAllFeed(user?.id, friendIds, nearbyOffset);
-    setNearbyOffset(prev => prev + rawCount);
-    setNearbyHasMore(hasMore);
-    setNearbyFeed(prev => [
-      ...prev,
-      ...applyNearbyFilter(posts).filter(p => !prev.some(q => q.id === p.id)),
-    ]);
-    setNearbyLoadingMore(false);
-  };
+    await fetchFriendsFeed(user?.id, friendIds);
+  }, [feedTab, friends, user, fetchFriendsFeed, refreshCounts]);
+
+  // ── Load more ─────────────────────────────────────────────────────────────
+  // Only the Following feed paginates — Nearby lists courts, which arrive in
+  // one go from useCourts.
+  const handleLoadMore = () => loadMoreFriendsFeed();
 
   const { containerRef, pullDistance, refreshing } = usePullToRefresh(handleRefresh);
 
@@ -204,40 +180,18 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
     await createPost(user.id, content, type, image_url, court_id, court_name, profile);
   };
 
-  const patchNearbyPostLike = (postId, next) => {
-    if (!next) return;
-    setNearbyFeed(prev => prev.map(post =>
-      post.id === postId
-        ? { ...post, likes: next.likes, isLiked: next.isLiked }
-        : post
-    ));
-  };
-
-  const handleLikePost = async (postId, prevLikes) => {
-    const next = await likePost(postId, user.id, prevLikes);
-    patchNearbyPostLike(postId, next);
-    return next;
-  };
-
-  const handleUnlikePost = async (postId, prevLikes) => {
-    const next = await unlikePost(postId, user.id, prevLikes);
-    patchNearbyPostLike(postId, next);
-    return next;
-  };
-
-  const handleRepost = async (postId) => {
-    return createRepost(postId, user.id);
-  };
+  // The like handlers used to patch a second copy of the post held by the
+  // all-posts feed. With that feed gone, usePosts owns the only copy.
+  const handleLikePost   = (postId, prevLikes) => likePost(postId, user.id, prevLikes);
+  const handleUnlikePost = (postId, prevLikes) => unlikePost(postId, user.id, prevLikes);
+  const handleRepost     = (postId) => createRepost(postId, user.id);
 
   // Build the user's real initials and avatar for PostComposer + StoriesRow
   const userInitials  = (profile?.username ?? 'PL').slice(0, 2).toUpperCase();
   const userAvatarUrl = profile?.avatar_url ?? null;
 
-  // Which posts to render depends on the active tab
-  const currentFeed = feedTab === 'following' ? followingFeed : nearbyFeed;
-
   // True while we're still fetching (show skeletons instead of an empty state)
-  const isLoading = feedLoading || (feedTab === 'following' && friendsLoading);
+  const isLoading = feedLoading || friendsLoading;
 
   return (
     <div className="screen-content" ref={containerRef}>
@@ -304,30 +258,12 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
       {/* Only renders when permission hasn't been decided and isn't dismissed. */}
       <NotificationPrompt permission={permission} onEnable={enablePush} />
 
-      {/* ── Active Friends row ──────────────────────────────────────────────── */}
-      {/* Shows friends currently checked in at a court. Hidden when none are. */}
-      <ActiveFriendsRow friends={friends} setActiveTab={setActiveTab} />
+      {/* ── Live courts ─────────────────────────────────────────────────────── */}
+      {/* Above the tabs deliberately: a game happening right now is worth       */}
+      {/* seeing whichever tab you are reading. Hidden when nothing is running.  */}
+      <LiveCourtStrip parks={parks} setActiveTab={setActiveTab} />
 
-      {/* ── Upcoming Runs row ───────────────────────────────────────────────── */}
-      {/* Scheduled meetups at courts. Tapping one flies the Map to that court. */}
-      {/* Hidden when there are none. */}
-      <UpcomingMeetupsRow meetups={upcomingMeetups} setActiveTab={setActiveTab} />
-
-      {/* ── Post composer ────────────────────────────────────────────────────── */}
-      {/* Pass the user's real initials and avatar */}
-      <PostComposer
-        onPost={handlePost}
-        onToast={showToast}
-        userId={user?.id}
-        userInitials={userInitials}
-        userAvatarUrl={userAvatarUrl}
-        courts={parks ?? []}
-        activeCheckIn={activeCheckIn}
-        onCheckIn={onCheckIn}
-        isCheckingIn={isCheckingIn}
-      />
-
-      {/* ── Feed tab toggle ──────────────────────────────────────────────────── */}
+      {/* ── Tab toggle ───────────────────────────────────────────────────────── */}
       <Tabs
         className="tabs--flush"
         value={feedTab}
@@ -354,121 +290,169 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
         </button>
       )}
 
-      {/* ── Feed area ────────────────────────────────────────────────────────── */}
+      {/* ══ FOLLOWING TAB ═══════════════════════════════════════════════════ */}
+      {feedTab === 'following' && (
+        <>
+          {/* Friends currently checked in at a court. Hidden when none are. */}
+          <ActiveFriendsRow friends={friends} setActiveTab={setActiveTab} />
 
-      {/* Loading state: show 3 pulsing skeleton cards while data arrives */}
-      {isLoading && (
-        <div className="feed-skeleton">
-          <div className="feed-skeleton-card" />
-          <div className="feed-skeleton-card" />
-          <div className="feed-skeleton-card" />
-        </div>
-      )}
+          <PostComposer
+            onPost={handlePost}
+            onToast={showToast}
+            userId={user?.id}
+            userInitials={userInitials}
+            userAvatarUrl={userAvatarUrl}
+            courts={parks ?? []}
+            activeCheckIn={activeCheckIn}
+            onCheckIn={onCheckIn}
+            isCheckingIn={isCheckingIn}
+          />
 
-      {/* Empty state for Following tab */}
-      {!isLoading && feedTab === 'following' && currentFeed.length === 0 && (
-        friends.length === 0 ? (
-          // No friends yet — onboarding prompt
-          <div className="feed-empty">
-            <div style={{ fontSize: 48 }}>🏀</div>
-            <div className="feed-empty-title">Welcome to LiveHoops!</div>
-            <div className="feed-empty-sub">
-              Connect with players to see their check-ins and posts here
+          {/* Loading: pulsing skeletons rather than a premature empty state */}
+          {isLoading && (
+            <div className="feed-skeleton">
+              <div className="feed-skeleton-card" />
+              <div className="feed-skeleton-card" />
+              <div className="feed-skeleton-card" />
             </div>
-            <div className="feed-empty-steps">
-              <div className="feed-empty-step">
-                <span className="feed-empty-step-num">1</span>
-                <span>Find players by username</span>
+          )}
+
+          {!isLoading && followingFeed.length === 0 && (
+            friends.length === 0 ? (
+              // No friends yet — onboarding prompt
+              <div className="feed-empty">
+                <div style={{ fontSize: 48 }}>🏀</div>
+                <div className="feed-empty-title">Welcome to LiveHoops!</div>
+                <div className="feed-empty-sub">
+                  Connect with players to see their check-ins and posts here
+                </div>
+                <div className="feed-empty-steps">
+                  <div className="feed-empty-step">
+                    <span className="feed-empty-step-num">1</span>
+                    <span>Find players by username</span>
+                  </div>
+                  <div className="feed-empty-step">
+                    <span className="feed-empty-step-num">2</span>
+                    <span>Send a friend request</span>
+                  </div>
+                  <div className="feed-empty-step">
+                    <span className="feed-empty-step-num">3</span>
+                    <span>See their courts &amp; posts</span>
+                  </div>
+                </div>
+                <button
+                  className="btn btn--primary"
+                  style={{ marginTop: 20 }}
+                  onClick={() => setActiveTab('friends')}
+                >
+                  Find Players
+                </button>
               </div>
-              <div className="feed-empty-step">
-                <span className="feed-empty-step-num">2</span>
-                <span>Send a friend request</span>
+            ) : (
+              // Has friends but they haven't posted yet
+              <div className="feed-empty">
+                <div style={{ fontSize: 48 }}>🏀</div>
+                <div className="feed-empty-title">Nothing posted yet</div>
+                <div className="feed-empty-sub">
+                  Your crew hasn't posted anything — be the first!
+                </div>
               </div>
-              <div className="feed-empty-step">
-                <span className="feed-empty-step-num">3</span>
-                <span>See their courts &amp; posts</span>
-              </div>
+            )
+          )}
+
+          {!isLoading && followingFeed.length > 0 && (
+            <div className="feed-list">
+              {followingFeed.map(post => (
+                <FeedPost
+                  key={post.id}
+                  post={post}
+                  onPhotoTap={setPhotoUrl}
+                  onToast={showToast}
+                  currentUser={{
+                    id:        user?.id,
+                    username:  profile?.username ?? '',
+                    avatarUrl: profile?.avatar_url ?? null,
+                  }}
+                  onViewProfile={onViewProfile}
+                  onCourtTap={setTappedCourtId}
+                  onLike={handleLikePost}
+                  onUnlike={handleUnlikePost}
+                  onRepost={handleRepost}
+                  onDelete={deletePost}
+                  onReport={async (postId) => {
+                    try {
+                      await supabase.from('post_reports').insert({ post_id: postId, reported_by: user.id });
+                    } catch { /* silent — toast shown by FeedPost */ }
+                  }}
+                  onBlock={blockUser}
+                />
+              ))}
             </div>
+          )}
+
+          {/* Shown when the last fetched page was full — more posts may exist */}
+          {!isLoading && followingFeed.length > 0 && feedHasMore && (
             <button
-              className="btn btn--primary"
-              style={{ marginTop: 20 }}
-              onClick={() => setActiveTab('friends')}
+              className="feed-load-more"
+              onClick={handleLoadMore}
+              disabled={loadingMore}
             >
-              Find Players
+              {loadingMore ? 'Loading…' : 'Load more posts'}
             </button>
-          </div>
-        ) : (
-          // Has friends but they haven't posted yet
-          <div className="feed-empty">
-            <div style={{ fontSize: 48 }}>🏀</div>
-            <div className="feed-empty-title">Nothing posted yet</div>
-            <div className="feed-empty-sub">
-              Your crew hasn't posted anything — be the first!
+          )}
+        </>
+      )}
+
+      {/* ══ NEARBY TAB ══════════════════════════════════════════════════════ */}
+      {feedTab === 'nearby' && (
+        <>
+          {nearbyCourts.length === 0 ? (
+            // No courts within range at all. Distinct from "none are busy" —
+            // this means there is nothing to check into, so the useful action
+            // is adding a court, not waiting for one to fill up.
+            <div className="feed-empty">
+              <div style={{ fontSize: 48 }}>📍</div>
+              <div className="feed-empty-title">No courts nearby</div>
+              <div className="feed-empty-sub">
+                Nothing within {NEARBY_RADIUS_MILES} miles yet — know a court that
+                is missing?
+              </div>
+              <button
+                className="btn btn--primary"
+                style={{ marginTop: 20 }}
+                onClick={() => setActiveTab('checkin')}
+              >
+                Add a Court
+              </button>
             </div>
-          </div>
-        )
-      )}
+          ) : (
+            <div className="park-list">
+              {nearbyCourts.map(court => (
+                <ParkCard
+                  key={court.id}
+                  park={court}
+                  isCheckedIn={activeCheckIn?.courtId === court.id}
+                  onCheckIn={onCheckIn}
+                />
+              ))}
+            </div>
+          )}
 
-      {/* Empty state for Nearby tab */}
-      {!isLoading && feedTab === 'nearby' && currentFeed.length === 0 && (
-        <div className="feed-empty">
-          <div style={{ fontSize: 48 }}>🏀</div>
-          <div className="feed-empty-title">No posts yet</div>
-          <div className="feed-empty-sub">
-            Be the first to post something from the court
-          </div>
-        </div>
-      )}
-
-      {/* Actual feed posts — only rendered when not loading and there are posts */}
-      {!isLoading && currentFeed.length > 0 && (
-        <div className="feed-list">
-          {currentFeed.map(post => (
-            <FeedPost
-              key={post.id}
-              post={post}
-              onPhotoTap={setPhotoUrl}
-              onToast={showToast}
-              currentUser={{
-                id:        user?.id,
-                username:  profile?.username ?? '',
-                avatarUrl: profile?.avatar_url ?? null,
-              }}
-              onViewProfile={onViewProfile}
-              onCourtTap={setTappedCourtId}
-              onLike={handleLikePost}
-              onUnlike={handleUnlikePost}
-              onRepost={handleRepost}
-              onDelete={deletePost}
-              onReport={async (postId) => {
-                try {
-                  await supabase.from('post_reports').insert({ post_id: postId, reported_by: user.id });
-                } catch { /* silent — toast shown by FeedPost */ }
-              }}
-              onBlock={blockUser}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* ── Load more posts ──────────────────────────────────────────────────── */}
-      {/* Shown when the last fetched page was full — more posts may exist */}
-      {!isLoading && currentFeed.length > 0 &&
-        (feedTab === 'following' ? feedHasMore : nearbyHasMore) && (
-        <button
-          className="feed-load-more"
-          onClick={handleLoadMore}
-          disabled={feedTab === 'following' ? loadingMore : nearbyLoadingMore}
-        >
-          {(feedTab === 'following' ? loadingMore : nearbyLoadingMore)
-            ? 'Loading…'
-            : 'Load more posts'}
-        </button>
+          {/* Runs scheduled at these courts over the next week. Renders
+              nothing when there are none. */}
+          <ScheduledRunsList
+            meetups={upcomingMeetups}
+            userId={user?.id}
+            setActiveTab={setActiveTab}
+          />
+        </>
       )}
 
       {/* ── Your Crew ────────────────────────────────────────────────────────── */}
-      {/* Shows up to 5 accepted friends as tappable chips */}
-      {friends.length > 0 && (
+      {/* Shows up to 5 accepted friends as tappable chips. Following-only —
+          Nearby is about places, and a row of people at the end of it reads as
+          a leftover from the other tab. */}
+      {feedTab === 'following' && friends.length > 0 && (
         <>
           <div className="section-header" style={{ marginTop: 8 }}>
             <span className="section-title">Your Crew</span>
