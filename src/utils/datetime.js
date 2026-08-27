@@ -99,3 +99,26 @@ export function formatRunLength(minutes) {
   if (whole < 120)  return `${whole}m`;
   return `${hours}h ${rest}m`;
 }
+
+// ── formatClockShort(iso) ───────────────────────────────────────────────────
+// The compact clock label on a run card: "6:30p", "10:00a", "12:00p".
+//
+// Deliberately shorter than formatMeetupTime's "6:00 PM". A run card already
+// carries the weekday and day-of-month in its date block, so the time sits
+// beside a length ("6:30p · 2h") where the full form is too wide on a phone.
+//
+// Returns '' for invalid input, so a malformed timestamp renders as nothing
+// rather than "Invalid Datep".
+export function formatClockShort(iso) {
+  if (!iso) return '';
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+
+  let hours = date.getHours();
+  const suffix = hours >= 12 ? 'p' : 'a';
+  // 0 → 12am, 13 → 1pm.
+  hours = hours % 12 || 12;
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+
+  return `${hours}:${minutes}${suffix}`;
+}

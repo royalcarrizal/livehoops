@@ -1,16 +1,16 @@
 /** @vitest-environment jsdom */
 //
-// ParkCard (Phase C, Check screen).
+// ParkCard — the app's one court card, shared by Home's Nearby tab and Check.
 //
-// The rule worth pinning here is rule 4: green means live/active and nothing
-// else. This card's "Live" badge was drawn in var(--accent) — a badge that
-// literally reads "Live" rendered in the brand colour, which is the exact thing
-// the rule exists to prevent. It is the same class of bug the avatar's check-in
-// ring had before #28, found in a different component.
+// Two rules are pinned here.
 //
-// The other thing worth pinning is that the live marker has somewhere to live
-// whether or not the court has a photo. The canvas always has one; most real
-// courts do not.
+// Rule 4: green means live/active and nothing else. This card's "Live" badge
+// was once drawn in var(--accent) — a badge that literally reads "Live" in the
+// brand colour, the exact thing the rule exists to prevent.
+//
+// And: the card must survive the states real data actually produces. Most
+// courts have no photo, many have no reviews, and every court's distance is
+// unknown when the user denies the location prompt.
 
 import { describe, it, expect, afterEach } from 'vitest';
 import { render, cleanup } from '@testing-library/react';
@@ -25,6 +25,7 @@ const park = (o = {}) => ({
   distance: '0.3 mi',
   courts: 4,
   surface: 'Asphalt',
+  lighting: false,
   players: 0,
   checkins: [],
   reviewCount: 0,
@@ -35,35 +36,53 @@ const park = (o = {}) => ({
 
 const noop = () => {};
 
-describe('ParkCard live marker', () => {
+describe('ParkCard live markers', () => {
   it('shows no live badge when the court is empty', () => {
     const { container } = render(<ParkCard park={park()} isCheckedIn={false} onCheckIn={noop} />);
     expect(container.querySelector('.live-badge')).toBeNull();
+    expect(container.querySelector('.park-card-running')).toBeNull();
   });
 
-  it('shows the live badge when players are there', () => {
+  it('shows the live badge and the running count when players are there', () => {
     const { container } = render(
-      <ParkCard park={park({ players: 6 })} isCheckedIn={false} onCheckIn={noop} />
+      <ParkCard park={park({ players: 8 })} isCheckedIn={false} onCheckIn={noop} />
     );
     expect(container.querySelector('.live-badge')).not.toBeNull();
+    expect(container.querySelector('.park-card-running').textContent).toContain('8 running');
   });
 
-  it('lays the badge over the photo when there is one', () => {
-    const { container } = render(
+  it('renders the markers exactly once, photo or not', () => {
+    // They used to move between the photo overlay and the name row depending
+    // on whether a photo existed, which is how a card can end up showing two.
+    const withPhoto = render(
       <ParkCard park={park({ players: 6, photoUrl: 'x.png' })} isCheckedIn={false} onCheckIn={noop} />
     );
-    expect(container.querySelector('.park-card-media .park-card-overlay')).not.toBeNull();
-    // and not also inline, which would render it twice
-    expect(container.querySelectorAll('.live-badge').length).toBe(1);
-  });
+    expect(withPhoto.container.querySelectorAll('.live-badge').length).toBe(1);
+    cleanup();
 
-  it('keeps the badge inline when there is no photo', () => {
-    // Most real courts have no photo. The marker must not vanish with it.
-    const { container } = render(
+    const without = render(
       <ParkCard park={park({ players: 6, photoUrl: null })} isCheckedIn={false} onCheckIn={noop} />
     );
-    expect(container.querySelector('.park-card-media')).toBeNull();
-    expect(container.querySelector('.park-name-row .live-badge')).not.toBeNull();
+    expect(without.container.querySelectorAll('.live-badge').length).toBe(1);
+  });
+});
+
+describe('ParkCard photo block', () => {
+  it('shows the photo when the court has one', () => {
+    const { container } = render(
+      <ParkCard park={park({ photoUrl: 'x.png' })} isCheckedIn={false} onCheckIn={noop} />
+    );
+    expect(container.querySelector('.park-card-photo')).not.toBeNull();
+    expect(container.querySelector('.park-card-media-empty')).toBeNull();
+  });
+
+  it('falls back to an empty block when it has none', () => {
+    // Most real courts have no photo, and the live markers sit on this block —
+    // so it must exist either way.
+    const { container } = render(<ParkCard park={park()} isCheckedIn={false} onCheckIn={noop} />);
+    expect(container.querySelector('.park-card-media')).not.toBeNull();
+    expect(container.querySelector('.park-card-photo')).toBeNull();
+    expect(container.querySelector('.park-card-media-empty')).not.toBeNull();
   });
 });
 
@@ -85,11 +104,29 @@ describe('ParkCard content', () => {
     expect(container.querySelector('.park-address').textContent.trim()).toBe('Cadman Plaza W');
   });
 
-  it('renders court count and surface as chips', () => {
+  it('drops the distance when location was denied', () => {
+    // normalizeCourt writes the em dash, not null, when GPS is unavailable —
+    // and that string is truthy. Without an explicit check every card in the
+    // list reads "Simsbrook Dr, Houston · " with nothing after the separator.
+    const { container } = render(
+      <ParkCard park={park({ distance: '—', distanceMi: null })} isCheckedIn={false} onCheckIn={noop} />
+    );
+    expect(container.querySelector('.park-distance')).toBeNull();
+    expect(container.querySelector('.park-address').textContent.trim()).toBe('Cadman Plaza W');
+  });
+
+  it('renders the court count as a chip', () => {
     const { container } = render(<ParkCard park={park()} isCheckedIn={false} onCheckIn={noop} />);
     const chips = [...container.querySelectorAll('.park-chip')].map(c => c.textContent);
     expect(chips.some(t => t.includes('4 courts'))).toBe(true);
-    expect(chips.some(t => t.includes('Asphalt'))).toBe(true);
+  });
+
+  it('says "courts", not "hoops"', () => {
+    // The design says "4 hoops", but this number is what AddCourtSheet collects
+    // under "Number of courts". Labelling it hoops would make the card state
+    // something the data does not say.
+    const { container } = render(<ParkCard park={park()} isCheckedIn={false} onCheckIn={noop} />);
+    expect(container.textContent).not.toMatch(/hoop/i);
   });
 
   it('singularises a one-court park', () => {
@@ -98,6 +135,14 @@ describe('ParkCard content', () => {
     );
     const chips = [...container.querySelectorAll('.park-chip')].map(c => c.textContent);
     expect(chips.some(t => t.includes('1 court') && !t.includes('courts'))).toBe(true);
+  });
+
+  it('shows a Lights chip only when the court has lights', () => {
+    const dark = render(<ParkCard park={park({ lighting: false })} isCheckedIn={false} onCheckIn={noop} />);
+    expect(dark.container.textContent).not.toContain('Lights');
+    cleanup();
+    const lit = render(<ParkCard park={park({ lighting: true })} isCheckedIn={false} onCheckIn={noop} />);
+    expect(lit.container.textContent).toContain('Lights');
   });
 
   it('shows a rating chip only once anyone has reviewed', () => {
@@ -110,22 +155,11 @@ describe('ParkCard content', () => {
     expect(some.container.querySelector('.park-chip--rating').textContent).toContain('4.6');
   });
 
-  it('keeps the avatar stack the canvas omits', () => {
-    // The mockup has no equivalent. That is it being thinner than the app, not
-    // a cue to delete who is actually on the court.
-    const { container } = render(
-      <ParkCard
-        park={park({ players: 2, checkins: [{ id: 'a', initials: 'KM' }, { id: 'b', initials: 'DR' }] })}
-        isCheckedIn={false}
-        onCheckIn={noop}
-      />
-    );
-    expect(container.querySelector('.park-card-bottom')).not.toBeNull();
-    expect(container.querySelector('.player-count-badge').textContent).toContain('2');
-  });
-
-  it('says so when nobody is there', () => {
-    const { getByText } = render(<ParkCard park={park()} isCheckedIn={false} onCheckIn={noop} />);
-    expect(getByText(/Be the first/)).toBeTruthy();
+  it('reflects whether you are already checked in here', () => {
+    const out = render(<ParkCard park={park()} isCheckedIn={false} onCheckIn={noop} />);
+    expect(out.container.querySelector('.park-chip-action').textContent).toContain('Check in');
+    cleanup();
+    const inside = render(<ParkCard park={park()} isCheckedIn onCheckIn={noop} />);
+    expect(inside.container.querySelector('.park-chip-action').textContent).toContain('Checked In');
   });
 });

@@ -11,7 +11,6 @@
 //   feed              — array of post objects in FeedPost component format
 //   loading           — true while feed is loading from Supabase
 //   fetchFriendsFeed  — loads posts from you + your accepted friends
-//   fetchAllFeed      — loads all posts (used for the Nearby tab)
 //   createPost        — saves a new post to Supabase
 //   createRepost      — reposts another post to the current user's feed
 //   likePost          — increments like count and marks as liked
@@ -351,57 +350,6 @@ export function usePosts() {
     setLoadingMore(false);
   }, []);
 
-  // ── Fetch the Nearby (all posts) feed ──────────────────────────────────
-  // Shows posts from everyone — used for the Nearby tab.
-  //
-  // Returns { posts, rawCount, hasMore }:
-  //   posts    — normalized posts (after privacy filtering)
-  //   rawCount — how many RAW rows this page consumed; the caller adds this
-  //              to its offset for the next page (filtering can drop rows,
-  //              so posts.length alone would skip data)
-  //   hasMore  — the page came back full, so another page may exist
-  //
-  // Privacy: posts by users whose Profile Visibility is 'friends' or
-  // 'private' only appear to their friends (friendIds) and to themselves.
-  // The real enforcement is the posts_select_visible RLS policy
-  // (supabase/privacy_enforcement.sql) — hidden posts never leave the
-  // database. The client-side filter below is kept as defense in depth.
-  const fetchAllFeed = useCallback(async (userId, friendIds = [], offset = 0) => {
-    const { data, error } = await supabase
-      .from('posts')
-      .select(POST_SELECT)
-      .order('created_at', { ascending: false })
-      .range(offset, offset + PAGE_SIZE - 1);
-
-    if (error) {
-      console.error('fetchAllFeed error:', error);
-      return { posts: [], rawCount: 0, hasMore: false };
-    }
-
-    const rawCount = (data ?? []).length;
-    const hasMore  = rawCount === PAGE_SIZE;
-
-    // Attach author profiles first — the privacy filter below needs to read
-    // each author's profile_visibility, which comes from the profiles table.
-    // The liked-IDs lookup runs alongside rather than after: it's keyed on the
-    // unfiltered page, so it covers a few posts the privacy filter then drops.
-    // Harmless — likedIds is only ever consulted per surviving row.
-    const [hydrated, likedIds] = await Promise.all([
-      attachOriginalPosts(data ?? []).then(attachProfiles),
-      fetchLikedIds(userId, (data ?? []).map(r => r.id)),
-    ]);
-
-    // Drop posts from non-public authors the viewer isn't friends with
-    const friendSet = new Set(friendIds ?? []);
-    const rows = hydrated.filter(row => {
-      const visibility = row.profiles?.profile_visibility ?? 'public';
-      if (visibility === 'public') return true;
-      return row.user_id === userId || friendSet.has(row.user_id);
-    });
-
-    return { posts: rows.map(row => normPost(row, likedIds)), rawCount, hasMore };
-  }, []);
-
   // ── Fetch posts by a specific user (for profile pages) ──────────────────
   // Returns the posts array directly (doesn't set the shared feed state)
   // so the caller can store them in their own local state.
@@ -667,7 +615,6 @@ export function usePosts() {
     loadingMore,
     loadMoreFriendsFeed,
     fetchFriendsFeed,
-    fetchAllFeed,
     fetchUserPosts,
     fetchPostById,
     createPost,
