@@ -1207,6 +1207,31 @@ textarea.field {
   z-index: 10;
 }
 
+/* Field and locate button sit side by side, per the design. */
+.map-search-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Wraps the input so the magnifier can be positioned inside it. The icon used
+   to be an emoji baked into the placeholder text, which meant it slid around
+   with the placeholder and disappeared the moment anyone typed. */
+.map-search-field {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.map-search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary);
+  pointer-events: none;
+}
+
 /* The search text input */
 .map-search-input {
 /* Floats over the map, so it takes the translucent overlay ground and a blur
@@ -1214,6 +1239,38 @@ textarea.field {
   background: var(--bg-overlay);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+  /* Room for the icon above. */
+  padding-left: 42px;
+  width: 100%;
+}
+
+/* Recenter button. Mapbox's own GeolocateControl still does the work and still
+   draws the blue user dot — only its default button is hidden (below), so this
+   one can carry the design. */
+.map-locate-btn {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  background: var(--bg-overlay);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--separator-strong);
+  color: var(--accent);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+.map-locate-btn:active { transform: scale(0.92); }
+
+/* Mapbox's built-in geolocate button. Hidden rather than removed: the control
+   itself is what renders the blue user-location dot and does the tracking, so
+   it has to stay on the map — .map-locate-btn just triggers it. */
+.mapboxgl-ctrl-group:has(.mapboxgl-ctrl-geolocate),
+.mapboxgl-ctrl-geolocate {
+  display: none !important;
 }
 
 .map-search-input::placeholder { color: var(--text-secondary); }
@@ -1666,184 +1723,148 @@ textarea.field {
   cursor: default;
 }
 
-/* ── Custom Mapbox court markers ── */
-/* Orange circle with a basketball emoji — one per court on the map */
-.mb-marker {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: var(--bg-elevated);
-  border: 2px solid var(--separator-strong);
+/* ── Map court pins ────────────────────────────────────────────────────────── */
+/* One pill per court, built by createMarkerEl in src/utils/mapMarker.js.
+   It says one thing: is anyone on this court, and how many.
+
+   It used to say six things at once — a basketball emoji, a live dot, two
+   player avatars plus a "+N", a favourite star, a visited checkmark and a
+   scheduled-run badge, all on a 44px circle. Every one of those is still
+   reachable in the court's detail sheet, where there is room to read them. */
+
+.mb-pin {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
   cursor: pointer;
-  position: relative;
   transition: transform 0.15s ease;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
 }
+.mb-pin:active { transform: scale(0.9); }
 
-/* Green when players are live at this court. This was the accent, with
-   "visited" wearing the green — rule 4 exactly inverted, and on the one
-   surface where both states appear on the same marker at once. */
-.mb-marker.live {
-  background: var(--green);
-  border-color: var(--green);
-  box-shadow: 0 4px 14px rgb(var(--green-rgb) / 0.55);
-}
-
-/* Visited is a passive historical fact, not a live signal and not an action,
-   so it reads as neutral. It no longer competes with the live marker beside
-   it, and green is left meaning exactly one thing on this map. */
-.mb-marker.visited {
-  border-color: var(--text-secondary);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
-}
-
-/* A court can be both. Live wins the ring — it is the fact that changes and
-   the one you would act on. The visited checkmark still shows in the corner. */
-.mb-marker.live.visited {
-  border-color: var(--green);
-  box-shadow: 0 4px 14px rgb(var(--green-rgb) / 0.55);
-}
-
-/* Gold star badge on bottom-left corner of favorited court markers */
-.mb-fav-star {
-  position: absolute;
-  bottom: -3px;
-  left: -3px;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: #FFD700;
-  border: 1.5px solid #000;
-  font-size: 8px;
+/* Empty courts keep the full pill rather than shrinking to a dot: checking
+   into an empty court is how a run starts, so it stays an easy tap target. */
+.mb-pin-bubble {
   display: flex;
   align-items: center;
-  justify-content: center;
-  color: #000;
-  pointer-events: none;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: var(--radius-full);
+  background: var(--bg-elevated);
+  border: 1px solid var(--separator-strong);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
 }
 
-/* Small checkmark dot on the bottom-left corner of visited markers. Neutral,
-   for the same reason as the ring above. */
-.mb-visited-dot {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 13px;
-  height: 13px;
+.mb-pin-dot {
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
-  background: var(--text-secondary);
-  border: 2px solid #000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 7px;
-  color: #000;
-  font-weight: 900;
+  background: var(--text-tertiary);
 }
 
-.mb-marker:active { transform: scale(0.88); }
-
-/* Basketball emoji centered inside the marker */
-.mb-marker-emoji {
-  font-size: 20px;
-  line-height: 1;
-  pointer-events: none;
-}
-
-/* Green pulsing dot on the top-right corner of the marker */
-/* Only rendered when park.players > 0 */
-.mb-live-dot {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 13px;
-  height: 13px;
-  border-radius: 50%;
+/* Green, and green only when someone is actually on the court. */
+.mb-pin.is-live .mb-pin-bubble {
   background: var(--green);
-  border: 2px solid #000;
+  border-color: var(--green);
+  box-shadow: 0 4px 14px rgb(var(--green-rgb) / 0.5);
 }
 
-/* Expanding ring that pulses outward from the green dot */
-.mb-live-dot::after {
-  content: '';
-  position: absolute;
-  inset: -3px;
-  border-radius: 50%;
-  border: 2px solid var(--green);
+/* Dark-on-green, the same contrast token every filled green surface uses. */
+.mb-pin.is-live .mb-pin-dot {
+  background: var(--green-contrast);
   animation: pulse 1.5s ease-in-out infinite;
-  opacity: 0.6;
 }
 
-/* Calendar badge on a court marker when a run is scheduled there. Sits at the
-   bottom-right so it never overlaps the live dot (top-right). */
-.mb-meetup-dot {
-  position: absolute;
-  bottom: -4px;
-  right: -4px;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: var(--bg-elevated);
-  border: 1.5px solid var(--accent);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 9px;
+.mb-pin-count {
+  font-size: 13px;
+  font-weight: 800;
   line-height: 1;
+  color: var(--green-contrast);
+  letter-spacing: -0.2px;
 }
 
-/* ── Checked-in player avatars floating above a court marker ─────────────── */
-/* Rendered by createMarkerEl in MapScreen.jsx (plain DOM — Mapbox owns the  */
-/* marker element). Up to 2 overlapping faces plus a "+N" overflow pill.     */
-.mb-marker-avatars {
-  position: absolute;
-  bottom: calc(100% + 3px);
-  left: 50%;
-  transform: translateX(-50%);
+/* The stem that points at the actual coordinate. This is why the marker is
+   placed with anchor:'bottom' — see the marker sync effect in MapScreen. */
+.mb-pin-stem {
+  width: 2px;
+  height: 10px;
+  background: var(--separator-strong);
+}
+
+.mb-pin.is-live .mb-pin-stem {
+  background: var(--green);
+}
+
+/* ── Map court list rows ───────────────────────────────────────────────────── */
+
+.map-court-row {
   display: flex;
   align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 10px 4px;
+  cursor: pointer;
+  font-family: var(--font);
+  border-radius: var(--radius-sm);
+  transition: background 0.15s ease;
 }
+.map-court-row:active { background: var(--bg-elevated); }
 
-.mb-marker-avatar {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  border: 2px solid var(--bg-elevated);
-  object-fit: cover;
-  background: var(--bg-elevated);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+.map-court-row-glyph {
   flex-shrink: 0;
-}
-
-/* Overlap every avatar after the first, like a mini stack */
-.mb-marker-avatar + .mb-marker-avatar {
-  margin-left: -7px;
-}
-
-/* Initials fallback when the player has no profile photo */
-.mb-marker-avatar-initials {
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--accent);
-  color: var(--accent-contrast);
-  font-size: 8px;
-  font-weight: 800;
-  letter-spacing: 0.3px;
-}
-
-/* "+N" pill when more than 2 players are checked in */
-.mb-marker-avatar-more {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  border-radius: var(--radius-sm);
   background: var(--bg-elevated);
+  color: var(--text-tertiary);
+}
+
+/* min-width:0 lets the name below actually shrink — without it a flex child
+   refuses to go under its content width and pushes the live pill off the row. */
+.map-court-row-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.map-court-row-name {
+  font-size: 15px;
+  font-weight: 700;
   color: var(--text-primary);
-  font-size: 8px;
-  font-weight: 800;
+  letter-spacing: -0.3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.map-court-row-facts {
+  font-size: 13px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+
+/* "8 live" — green, because it states that play is happening right now. */
+.map-court-row-live {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--green-contrast);
+  background: var(--green);
+  padding: 5px 11px;
+  border-radius: var(--radius-full);
+}
+
+.map-court-list-empty {
+  padding: 16px 4px 24px;
+  font-size: 14px;
+  color: var(--text-secondary);
 }
 
 /* ── "Playing now" row in the court bottom sheets ────────────────────────── */
@@ -1993,7 +2014,12 @@ textarea.field {
   background: var(--bg-card);
   border-top: 1px solid var(--separator-strong);
   padding: 12px 16px 0;
-  max-height: 220px;
+  /* Taller than the old chip strip because the list now runs vertically and a
+     row is worth more than a chip. Still capped so the map keeps most of the
+     screen — the map is the point of this tab. */
+  max-height: 300px;
+  display: flex;
+  flex-direction: column;
 }
 
 .sheet-handle-row {
@@ -2001,6 +2027,15 @@ textarea.field {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 12px;
+}
+
+/* "4 courts nearby" — what the list IS. The right half says how it is ordered,
+   which until this change was a claim the code did not honour. */
+.map-courts-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.3px;
 }
 
 .sheet-handle {
@@ -2013,68 +2048,16 @@ textarea.field {
 
 .map-court-list {
   display: flex;
-  gap: 10px;
-  overflow-x: auto;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
   padding-bottom: 16px;
   scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
 }
 
 .map-court-list::-webkit-scrollbar {
   display: none;
-}
-
-.map-court-chip {
-  flex-shrink: 0;
-  background: var(--bg-elevated);
-  border-radius: var(--radius-md);
-  padding: 10px 14px;
-  border: 1px solid var(--separator-strong);
-  cursor: pointer;
-  min-width: 140px;
-  transition: border-color 0.15s ease;
-}
-
-.map-court-chip.has-players {
-  border-color: var(--accent-border);
-}
-
-.map-court-chip.visited {
-  border-color: var(--separator-strong);
-}
-
-/* Orange left accent on a favorited chip */
-.map-court-chip.is-favorite {
-  border-left: 3px solid var(--accent);
-}
-
-/* Orange heart prefix inside a favorited chip's name */
-.chip-fav-badge {
-  color: var(--accent);
-  font-size: 11px;
-}
-
-/* "✓ Visited" label next to the court name in chips */
-.map-court-visited-badge {
-  margin-left: 6px;
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  letter-spacing: 0.2px;
-}
-
-.map-court-chip-name {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin-bottom: 4px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.map-court-chip-info {
-  font-size: 12px;
-  color: var(--text-secondary);
 }
 
 /* ── Check In Screen ── */
@@ -3906,7 +3889,6 @@ textarea.field {
   white-space: nowrap;
 }
 
-.map-court-chip-meetup { color: var(--accent); margin-left: 4px; white-space: nowrap; }
 
 /* ── CourtMeetups section (inside a court bottom sheet) ─────────────────────── */
 .court-meetups {

@@ -5,12 +5,13 @@
 //
 // How it works:
 //   1. Mapbox renders a real dark-themed street map into a <div> element
-//   2. We place a custom orange basketball marker at each court's GPS coordinates
-//   3. Tapping a marker (or a chip at the bottom) opens a detail sheet
-//   4. The geolocate button lets users find themselves on the map
-//   5. A search bar filters the chip row below the map
+//   2. We place a pill marker at each court's GPS coordinates — green with a
+//      player count when anyone is on it, muted grey when nobody is
+//   3. Tapping a marker (or a row at the bottom) opens a detail sheet
+//   4. A locate button recenters the map on the user
+//   5. A search bar filters the court list below the map, nearest first
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import mapboxgl from 'mapbox-gl';
 import { supabase } from '../lib/supabase';
 import { usePosts } from '../hooks/usePosts';
@@ -24,6 +25,10 @@ import { useToast } from '../hooks/useToast';
 import { useCourtKing } from '../hooks/useCourtKing';
 import { formatMeetupTime } from '../utils/datetime';
 import MapCourtGround from '../components/MapCourtGround';
+import CourtListRow from '../components/CourtListRow';
+import { createMarkerEl } from '../utils/mapMarker';
+import { sortByDistance } from '../hooks/useCourts';
+import { Search, LocateFixed } from 'lucide-react';
 
 import 'mapbox-gl/dist/mapbox-gl.css';
 
@@ -45,6 +50,9 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
   const mapRef = useRef(null);
   // All marker instances — stored so we can remove them on cleanup
   const markersRef = useRef([]);
+  // Mapbox's GeolocateControl. Its own button is hidden in CSS — it is kept for
+  // the blue user dot and the location tracking, and driven by our own button.
+  const geolocateRef = useRef(null);
 
   // ── State (these DO trigger re-renders) ───────────────────────────────────
   const [mapLoaded,       setMapLoaded]       = useState(false);
@@ -131,6 +139,7 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
       showUserHeading: true,     // Show the direction you're facing
     });
     map.addControl(geolocate, 'top-right');
+    geolocateRef.current = geolocate;
 
     // ── Wait for map tiles to load before placing markers ─────────────────
     map.on('load', () => {
@@ -155,6 +164,7 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
       markersRef.current = [];
       map.remove();
       mapRef.current = null;
+      geolocateRef.current = null;
     };
     // userPos is intentionally omitted: the map is created ONCE on mount and
     // must not be torn down/rebuilt when GPS arrives later — the geolocate
@@ -173,19 +183,26 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
     parks.forEach(park => {
       if (park.lng == null || park.lat == null) return;
 
-      const el = createMarkerEl(park, !!visitMap[park.id], favoriteIds.has(park.id));
+      const el = createMarkerEl(park);
       el.addEventListener('click', () => setSelectedPark(park));
 
       // Place the marker at the court's real GPS coordinates
       // Mapbox uses [lng, lat] order — notice longitude comes first
-      const marker = new mapboxgl.Marker({ element: el, anchor: 'center' })
+      //
+      // anchor 'bottom', not 'center': the pin hangs a stem below the pill and
+      // the stem's tip is what points at the coordinate. At 'center' every
+      // court would sit half a marker north of where it actually is.
+      const marker = new mapboxgl.Marker({ element: el, anchor: 'bottom' })
         .setLngLat([park.lng, park.lat])
         .addTo(mapRef.current);
 
       // Keep a reference so we can clean it up later
       markersRef.current.push(marker);
     });
-  }, [mapLoaded, parks, visitMap, favoriteIds]);
+    // visitMap and favoriteIds are deliberately NOT dependencies any more: the
+    // pin shows live players and nothing else, so a favourite toggle no longer
+    // tears down and rebuilds every marker on the map.
+  }, [mapLoaded, parks]);
 
   // ── Handle navigation from the Active Friends row ────────────────────────
   // When a user taps a friend's card on the Home screen, that court's ID is
@@ -212,11 +229,21 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
     flyToPark(park);
   }, [flyToPark, mapLoaded, parks]);
 
-  // ── Filter the chip row by whatever the user typed ────────────────────────
-  // No API calls needed — we just filter the local array
-  const filteredParks = parks
-    .filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
-    .sort((a, b) => (favoriteIds.has(b.id) ? 1 : 0) - (favoriteIds.has(a.id) ? 1 : 0));
+  // ── Filter the court list by whatever the user typed ──────────────────────
+  // No API calls needed — we just filter the local array.
+  //
+  // Then sort it by distance, which the panel's header has always claimed and
+  // the code has never done: it used to sort favourites to the top, over a
+  // `parks` array that arrives ordered by created_at. sortByDistance also sinks
+  // courts with an unknown distance to the bottom, so a denied location prompt
+  // leaves the list in a sane order rather than a misleading one.
+  const filteredParks = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    const matching = query
+      ? parks.filter(p => p.name.toLowerCase().includes(query))
+      : parks;
+    return sortByDistance(matching);
+  }, [parks, searchQuery]);
 
   // selectedPark is a snapshot from when the marker was tapped — look up the
   // live court object so the player count and checked-in avatars in the
@@ -237,15 +264,35 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
         {/* The map container — MUST be empty. Mapbox owns everything inside here. */}
         <div ref={mapContainerRef} className="mapbox-container" />
 
-        {/* Floating search bar — absolutely positioned over the map */}
+        {/* Floating search row — absolutely positioned over the map */}
         <div className="map-search-bar">
-          <input
-            type="text"
-            placeholder="🔍  Search courts near you"
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            className="field field--sm map-search-input"
-          />
+          <div className="map-search-row">
+            <div className="map-search-field">
+              {/* A real icon, not an emoji baked into the placeholder — that
+                  version shifted with the text and vanished the moment the
+                  user typed. */}
+              <Search size={18} strokeWidth={2} className="map-search-icon" />
+              <input
+                type="text"
+                placeholder="Search courts near you"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="field field--sm map-search-input"
+              />
+            </div>
+
+            {/* Recenter. Mapbox's GeolocateControl still does the work — it
+                owns the blue user dot and the tracking — but its default
+                button is hidden in CSS so this one can carry the design. */}
+            <button
+              type="button"
+              className="map-locate-btn"
+              onClick={() => geolocateRef.current?.trigger()}
+              aria-label="Center map on my location"
+            >
+              <LocateFixed size={20} strokeWidth={2} />
+            </button>
+          </div>
           {/* Dropdown results — shown while the user is typing so results
               appear above the keyboard instead of in the hidden bottom panel */}
           {searchQuery.trim().length > 0 && (
@@ -490,45 +537,34 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
         </>
       )}
 
-      {/* ── Scrollable court chips ─────────────────────────────────────────── */}
-      {/* Always visible at the bottom. Filtered by the search bar. */}
+      {/* ── Court list ─────────────────────────────────────────────────────── */}
+      {/* Always visible at the bottom. Filtered by the search bar, nearest
+          first. The header's two halves say what the list IS and how it is
+          ordered — the order half used to be a claim the code did not honour. */}
       <div className="map-courts-sheet">
         <div className="sheet-handle" />
         <div className="sheet-handle-row">
-          <span className="section-title" style={{ fontSize: 15 }}>Sorted by distance</span>
-          <span className="section-count">{filteredParks.length} courts</span>
+          <span className="map-courts-title">
+            {filteredParks.length} {filteredParks.length === 1 ? 'court' : 'courts'} nearby
+          </span>
+          <span className="section-count">Sorted by distance</span>
         </div>
         <div className="map-court-list">
-          {filteredParks.map(park => (
-            <div
-              key={park.id}
-              className={`map-court-chip${park.players > 0 ? ' has-players' : ''}${visitMap[park.id] ? ' visited' : ''}${favoriteIds.has(park.id) ? ' is-favorite' : ''}`}
-              onClick={() => flyToPark(park)}
-            >
-              <div className="map-court-chip-name">
-                {favoriteIds.has(park.id) && <span className="chip-fav-badge">♥ </span>}
-                {park.name}
-                {visitMap[park.id] > 0 && (
-                  <span className="map-court-visited-badge">✓ Visited</span>
-                )}
-              </div>
-              <div className="map-court-chip-info">
-                {park.players > 0
-                  ? `🏀 ${park.players} players · ${park.distance}`
-                  : `Empty · ${park.distance}`}
-                {park.reviewCount > 0 && (
-                  <span style={{ color: 'var(--accent)', marginLeft: 4 }}>
-                    · ★ {Number(park.avgRating).toFixed(1)}
-                  </span>
-                )}
-                {park.nextMeetup && (
-                  <span className="map-court-chip-meetup">
-                    · 📅 {formatMeetupTime(park.nextMeetup.scheduledAt)}
-                  </span>
-                )}
-              </div>
+          {filteredParks.length === 0 ? (
+            <div className="map-court-list-empty">
+              {searchQuery.trim()
+                ? `No courts matching "${searchQuery.trim()}"`
+                : 'No courts yet'}
             </div>
-          ))}
+          ) : (
+            filteredParks.map(park => (
+              <CourtListRow
+                key={park.id}
+                court={park}
+                onClick={() => flyToPark(park)}
+              />
+            ))
+          )}
         </div>
       </div>
 
@@ -568,93 +604,4 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
 
     </div>
   );
-}
-
-// ── Custom marker element factory ─────────────────────────────────────────────
-// Builds the DOM element for each court marker.
-// Mapbox lets you supply your own HTML instead of using its default pin shape.
-//
-// The marker is an orange circle when the court is live (has players),
-// or a darker circle when it's empty. A green pulsing dot appears on
-// top-right to signal "live" status, and the avatars of checked-in players
-// (privacy-filtered by the get_court_active_players RPC) float above it.
-function createMarkerEl(park, visited = false, isFavorited = false) {
-  const el = document.createElement('div');
-  el.className = [
-    'mb-marker',
-    park.players > 0 ? 'live' : '',
-    visited ? 'visited' : '',
-  ].filter(Boolean).join(' ');
-
-  const emoji = document.createElement('span');
-  emoji.className = 'mb-marker-emoji';
-  emoji.textContent = '🏀';
-  el.appendChild(emoji);
-
-  if (park.players > 0) {
-    const dot = document.createElement('div');
-    dot.className = 'mb-live-dot';
-    el.appendChild(dot);
-  }
-
-  // Calendar badge (bottom-right) when a run is scheduled at this court —
-  // built like the live dot, so a court can show both "live now" and "run
-  // coming up" at once.
-  if (park.nextMeetup) {
-    const cal = document.createElement('div');
-    cal.className = 'mb-meetup-dot';
-    cal.textContent = '📅';
-    el.appendChild(cal);
-  }
-
-  // ── Checked-in player avatars, floating above the marker ────────────────
-  // Up to 2 faces plus a "+N" pill. Built with plain DOM (not React) because
-  // Mapbox owns this element. Tapping them opens the court sheet like the
-  // marker itself — profile taps live in the sheet's "Playing now" row.
-  const players = park.checkins ?? [];
-  if (players.length > 0) {
-    const stack = document.createElement('div');
-    stack.className = 'mb-marker-avatars';
-
-    players.slice(0, 2).forEach(player => {
-      if (player.avatarUrl) {
-        const img = document.createElement('img');
-        img.className = 'mb-marker-avatar';
-        img.src = player.avatarUrl;
-        img.alt = player.username;
-        stack.appendChild(img);
-      } else {
-        const fallback = document.createElement('div');
-        fallback.className = 'mb-marker-avatar mb-marker-avatar-initials';
-        fallback.textContent = player.initials;
-        stack.appendChild(fallback);
-      }
-    });
-
-    if (players.length > 2) {
-      const more = document.createElement('div');
-      more.className = 'mb-marker-avatar mb-marker-avatar-more';
-      more.textContent = `+${players.length - 2}`;
-      stack.appendChild(more);
-    }
-
-    el.appendChild(stack);
-  }
-
-  // Checkmark badge for courts the user has visited
-  if (visited) {
-    const check = document.createElement('div');
-    check.className = 'mb-visited-dot';
-    el.appendChild(check);
-  }
-
-  // Gold star badge for favorited courts (bottom-left corner)
-  if (isFavorited) {
-    const star = document.createElement('div');
-    star.className = 'mb-fav-star';
-    star.textContent = '★';
-    el.appendChild(star);
-  }
-
-  return el;
 }

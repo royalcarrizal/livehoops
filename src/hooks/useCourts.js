@@ -43,6 +43,18 @@ export function normalizeLighting(value) {
   return false;
 }
 
+// ── Is this a real distance, or the "we don't know" placeholder? ─────────────
+// normalizeCourt writes the em dash into `distance` when GPS is unavailable —
+// and '—' is a truthy string, so a plain `court.distance && …` renders a
+// dangling separator ("Simsbrook Dr, Houston · ") on every card and row.
+//
+// That exact bug shipped on the Home court cards and was caught only by loading
+// the screen with the location prompt refused. It lives here, beside the code
+// that writes the placeholder, so the two can't drift apart.
+export function hasRealDistance(distance) {
+  return !!distance && distance !== '—';
+}
+
 // ── Raw distance in miles, or null when it can't be known ────────────────────
 // The companion to the `distance` display string below. Callers that need to
 // COMPARE a distance (is this court close enough to offer a check-in? is this

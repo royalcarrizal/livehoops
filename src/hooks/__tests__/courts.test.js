@@ -2,7 +2,7 @@
 // lighting normalization, and the DB-row → UI-shape transforms.
 
 import { describe, it, expect } from 'vitest';
-import { haversine, formatMiles, normalizeLighting, normalizeCourt, groupPlayersByCourt, sortByDistance } from '../useCourts';
+import { haversine, formatMiles, normalizeLighting, normalizeCourt, groupPlayersByCourt, sortByDistance, hasRealDistance } from '../useCourts';
 
 describe('haversine', () => {
   it('returns 0 for identical points', () => {
@@ -174,5 +174,37 @@ describe('sortByDistance', () => {
     // to the bottom.
     const here = { id: 'here', distanceMi: 0 };
     expect(sortByDistance([far, here]).map(c => c.id)).toEqual(['here', 'b']);
+  });
+});
+
+// ── hasRealDistance ─────────────────────────────────────────────────────────
+// normalizeCourt writes '—' into `distance` when GPS is unavailable, and that
+// string is truthy. A plain `court.distance && …` therefore renders a dangling
+// separator — which is exactly what shipped on the Home court cards and was
+// caught only by loading the screen with the location prompt refused.
+
+describe('hasRealDistance', () => {
+  it('accepts a real formatted distance', () => {
+    expect(hasRealDistance('0.3 mi')).toBe(true);
+    expect(hasRealDistance('< 0.1 mi')).toBe(true);
+    expect(hasRealDistance('12.4 mi')).toBe(true);
+  });
+
+  it('rejects the em-dash placeholder normalizeCourt writes', () => {
+    expect(hasRealDistance('—')).toBe(false);
+  });
+
+  it('rejects missing values', () => {
+    expect(hasRealDistance(null)).toBe(false);
+    expect(hasRealDistance(undefined)).toBe(false);
+    expect(hasRealDistance('')).toBe(false);
+  });
+
+  it('agrees with what normalizeCourt actually produces', () => {
+    // The guard and the code that writes the placeholder must not drift apart,
+    // so this asserts against the real output rather than a literal.
+    const row = { id: 'c1', name: 'X', address: 'A', city: 'B', lat: 29.7, lng: -95.3 };
+    expect(hasRealDistance(normalizeCourt(row, null).distance)).toBe(false);
+    expect(hasRealDistance(normalizeCourt(row, { lat: 29.8, lng: -95.4 }).distance)).toBe(true);
   });
 });

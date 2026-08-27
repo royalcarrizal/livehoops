@@ -34,8 +34,9 @@ const LIVE_SELECTORS = [
   '.live-badge',
   '.live-dot',
   '.live-text',
-  '.mb-marker.live',
-  '.mb-live-dot',
+  '.mb-pin.is-live .mb-pin-bubble',
+  '.mb-pin.is-live .mb-pin-stem',
+  '.map-court-row-live',
   '.active-friend-live-dot',
   '.active-friends-live-dot-header',
 ];
@@ -77,17 +78,20 @@ describe('the pre-redesign iOS green is gone', () => {
 });
 
 describe('visited is not a live signal', () => {
-  it('the visited map marker does not use green', () => {
-    // A court can be visited AND live at once, on one marker. If both are green
-    // the marker says two things in one colour and neither reads.
-    const body = ruleBody('.mb-marker.visited');
+  // The map marker used to carry "visited" alongside "live", and the risk was a
+  // single marker saying two things in one colour. The redesigned pin carries
+  // the live count and nothing else, so that collision is now structurally
+  // impossible — but the visited signal still exists, in the court detail
+  // sheet, and the rule follows it there.
+  it('the visited badge in the court sheet does not use green', () => {
+    const body = ruleBody('.map-sheet-visited');
     expect(body).not.toBeNull();
     expect(body).not.toMatch(/var\(--green/);
   });
 
-  it('the visited corner dot does not use green', () => {
-    const body = ruleBody('.mb-visited-dot');
-    expect(body).not.toBeNull();
-    expect(body).not.toMatch(/var\(--green/);
+  it('the map pin carries no visited state at all', () => {
+    // If a visited variant ever comes back to the pin, it must not be green,
+    // and this test should grow a case rather than be deleted.
+    expect(CSS).not.toMatch(/\.mb-pin[^{]*\.visited/);
   });
 });
