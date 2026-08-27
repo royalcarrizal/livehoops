@@ -7,18 +7,22 @@
 // module rather than inside MapScreen.jsx so it can be unit tested without
 // standing up mapbox-gl.
 //
-// The pin is one signal and one only: is anyone on this court, and how many.
+// The pin carries a basketball and, when anyone is playing, a count. Colour is
+// what says whether a game is on: green when it is, muted grey when it is not.
+// The ball is the same drawing the court list rows use — see utils/courtGlyph.js.
 // It used to carry six at once — a basketball emoji, a live dot, up to two
 // player avatars plus a "+N", a favourite star, a visited checkmark and a
 // scheduled-run badge — stacked on a 44px circle. All of those are still
 // reachable; they live in the court's detail sheet, one tap away, where there
 // is room to read them.
 
+import { createBallSvg } from './courtGlyph';
+
 // ── createMarkerEl(park) ────────────────────────────────────────────────────
 // Returns the marker element for one court.
 //
-//   live  → green pill, a pulsing dot and the player count
-//   empty → the same pill in muted grey, with NO number
+//   live  → green pill, a basketball and the player count
+//   empty → the same pill in muted grey, a basketball and NO number
 //
 // Empty courts deliberately keep the full pill shape rather than shrinking to a
 // dot: they need to stay an easy tap target, because checking into an empty
@@ -37,9 +41,14 @@ export function createMarkerEl(park) {
   const bubble = document.createElement('div');
   bubble.className = 'mb-pin-bubble';
 
-  const dot = document.createElement('span');
-  dot.className = 'mb-pin-dot';
-  bubble.appendChild(dot);
+  // The ball replaces the plain dot this pin used to carry. It is deliberately
+  // NOT animated: a dot can pulse and read as a heartbeat, but a basketball
+  // scaling in and out reads as a rendering glitch. Green and the count already
+  // say the court is live.
+  const ball = document.createElement('span');
+  ball.className = 'mb-pin-ball';
+  ball.appendChild(createBallSvg(13, 1.8));
+  bubble.appendChild(ball);
 
   // The count is the whole point of the pill, so an empty court shows no
   // number at all rather than a "0" — which reads as a broken live count.
