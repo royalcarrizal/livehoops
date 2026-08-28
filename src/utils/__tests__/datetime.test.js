@@ -2,7 +2,7 @@
 // `now` is injected so every case is deterministic.
 
 import { describe, it, expect } from 'vitest';
-import { formatMeetupTime, formatRunLength, formatClockShort } from '../datetime';
+import { formatMeetupTime, formatRunLength, formatClockShort, formatElapsed } from '../datetime';
 
 // Fixed reference point: Wed Jul 15 2026, 2:00 PM local time.
 const NOW = new Date('2026-07-15T14:00:00');
@@ -119,5 +119,51 @@ describe('formatClockShort', () => {
     // "0:00p" and "0:00a".
     expect(formatClockShort('2026-07-18T12:00:00')).toBe('12:00p');
     expect(formatClockShort('2026-07-18T00:00:00')).toBe('12:00a');
+  });
+});
+
+// ── formatElapsed ───────────────────────────────────────────────────────────
+// How long a session has been running. `now` is injected so every case is
+// deterministic.
+
+describe('formatElapsed', () => {
+  const NOW = 1_700_000_000_000;
+  const agoMin = (m) => NOW - m * 60000;
+
+  it('returns empty string for missing or invalid input', () => {
+    // A friend who has never checked in has no timestamp at all — the row must
+    // render nothing rather than "NaNm".
+    expect(formatElapsed(null, NOW)).toBe('');
+    expect(formatElapsed(undefined, NOW)).toBe('');
+    expect(formatElapsed('not-a-date', NOW)).toBe('');
+  });
+
+  it('says "Just now" under a minute', () => {
+    expect(formatElapsed(NOW, NOW)).toBe('Just now');
+    expect(formatElapsed(agoMin(0.5), NOW)).toBe('Just now');
+  });
+
+  it('counts minutes under an hour', () => {
+    expect(formatElapsed(agoMin(1), NOW)).toBe('1m');
+    expect(formatElapsed(agoMin(40), NOW)).toBe('40m');
+    expect(formatElapsed(agoMin(59), NOW)).toBe('59m');
+  });
+
+  it('switches to hours and minutes past an hour', () => {
+    expect(formatElapsed(agoMin(60), NOW)).toBe('1h');
+    expect(formatElapsed(agoMin(72), NOW)).toBe('1h 12m');
+    expect(formatElapsed(agoMin(180), NOW)).toBe('3h');
+  });
+
+  it('accepts an ISO string, as Supabase returns', () => {
+    // The RPC hands back timestamptz, which arrives as a string.
+    const iso = new Date(agoMin(40)).toISOString();
+    expect(formatElapsed(iso, NOW)).toBe('40m');
+  });
+
+  it('returns empty rather than a negative duration for a future timestamp', () => {
+    // Clock skew between the device and the server is real, and "-3m" on a
+    // crew row would be worse than showing nothing.
+    expect(formatElapsed(NOW + 180000, NOW)).toBe('');
   });
 });

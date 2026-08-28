@@ -49,6 +49,11 @@ export default function FriendsScreen({ user, profile, onViewProfile, onUnreadDM
   // ── Which view is active ──────────────────────────────────────────────────
   const [activeView, setActiveView] = useState('friends'); // 'friends' | 'messages'
 
+  // How many friends are checked in somewhere right now. Drives the header
+  // line; isActive is set only when the activity RPC returns a live court, so
+  // this counts people actually out, not people who have played before.
+  const outCount = friends.filter(f => f.isActive).length;
+
   // ── Load total unread count on mount ─────────────────────────────────────
   useEffect(() => {
     if (!user?.id) return;
@@ -177,16 +182,27 @@ export default function FriendsScreen({ user, profile, onViewProfile, onUnreadDM
             <UserPlus size={18} strokeWidth={2} />
           </button>
         </div>
+        {/* How many of your crew are out playing right now — the one thing on
+            this screen that changes minute to minute. The dot and the count are
+            green because they report live activity.
+
+            The unread-message badge that used to sit here is gone: the Messages
+            tab below carries the same number, and saying it twice in adjacent
+            rows made neither read. */}
         <div className="crew-summary">
-          <div className="crew-summary-dot" />
+          <div className={`crew-summary-dot${outCount > 0 ? ' is-live' : ''}`} />
           <span className="crew-summary-text">
-            {friends.length} {friends.length === 1 ? 'player' : 'players'} in your crew
+            {friends.length === 0 ? (
+              'No one in your crew yet'
+            ) : outCount > 0 ? (
+              <>
+                <span className="crew-summary-count">{outCount} of {friends.length}</span>
+                {' '}in your crew are out
+              </>
+            ) : (
+              `${friends.length} in your crew · nobody out right now`
+            )}
           </span>
-          {unreadCount > 0 && (
-            <span className="crew-unread-badge">
-              {unreadCount > 9 ? '9+' : unreadCount} new {unreadCount === 1 ? 'message' : 'messages'}
-            </span>
-          )}
         </div>
       </div>
 
@@ -219,74 +235,75 @@ export default function FriendsScreen({ user, profile, onViewProfile, onUnreadDM
             </div>
           )}
 
-          {/* Pending friend requests */}
-          {!loading && pendingRequests.length > 0 && (
-            <>
-              <div className="section-header">
-                <span className="section-title">Requests</span>
-                <span className="section-count">{pendingRequests.length}</span>
-              </div>
-              <div style={{ margin: '0 20px 8px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {pendingRequests.map((req) => (
-                  <div key={req.friendshipId} className="friend-request-card">
-                    <Avatar avatarUrl={req.avatarUrl} initials={req.initials} size="medium" />
-                    <div className="friend-request-info">
-                      <div className="friend-name">{req.username}</div>
-                      <div className="friend-location">Wants to join your crew</div>
+          {/* Pending friend requests. Each card leads with what you have in
+              common, because "we have both played Cadman Plaza" is more use
+              than a username you may not recognise. */}
+          {!loading && pendingRequests.map((req) => {
+            const busy = pendingActions.has(req.friendshipId);
+            return (
+              <div key={req.friendshipId} className="friend-request">
+                <div className="friend-request-eyebrow">Request</div>
+
+                <div className="friend-request-head">
+                  <Avatar avatarUrl={req.avatarUrl} initials={req.initials} size={56} />
+                  <div className="friend-request-body">
+                    <div className="friend-row-name">
+                      {req.username}
+                      {req.jerseyNumber != null && (
+                        <span className="friend-row-jersey">#{req.jerseyNumber}</span>
+                      )}
                     </div>
-                    <div className="friend-request-actions">
-                      <button
-                        className="btn btn--live-filled btn--sm"
-                        onClick={() => handleAccept(req.friendshipId)}
-                        disabled={pendingActions.has(req.friendshipId)}
-                      >
-                        {pendingActions.has(req.friendshipId) ? '...' : 'Accept'}
-                      </button>
-                      <button
-                        className="btn btn--secondary btn--sm"
-                        onClick={() => handleDecline(req.friendshipId)}
-                        disabled={pendingActions.has(req.friendshipId)}
-                      >
-                        {pendingActions.has(req.friendshipId) ? '...' : 'Decline'}
-                      </button>
+                    <div className="friend-request-sub">
+                      {req.mutualCount > 0
+                        ? `${req.mutualCount} mutual ${req.mutualCount === 1 ? 'court' : 'courts'}${req.mutualCourt ? ` · ${req.mutualCourt}` : ''}`
+                        : 'Wants to join your crew'}
                     </div>
                   </div>
-                ))}
+                </div>
+
+                <div className="friend-request-actions">
+                  <button
+                    className="btn btn--primary btn--grow"
+                    onClick={() => handleAccept(req.friendshipId)}
+                    disabled={busy}
+                  >
+                    {busy ? '…' : 'Accept'}
+                  </button>
+                  <button
+                    className="btn btn--secondary btn--grow"
+                    onClick={() => handleDecline(req.friendshipId)}
+                    disabled={busy}
+                  >
+                    {busy ? '…' : 'Decline'}
+                  </button>
+                </div>
               </div>
-            </>
-          )}
+            );
+          })}
 
           {/* Friends list */}
           {!loading && (
             <>
-              <div className="section-header" style={{ marginTop: 8 }}>
-                <span className="section-title">Your Friends</span>
+              <div className="section-header section-header--eyebrow">
+                <span className="section-eyebrow">Your crew</span>
                 {friends.length > 0 && <span className="section-count">{friends.length}</span>}
               </div>
 
               {friends.length === 0 ? (
-                <div style={{
-                  margin: '0 20px 24px',
-                  padding: '24px 16px',
-                  background: 'var(--bg-card)',
-                  borderRadius: 14,
-                  border: '1px solid var(--separator-strong)',
-                  textAlign: 'center',
-                }}>
-                  <div style={{ fontSize: 32, marginBottom: 8 }}>🏀</div>
-                  <div style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                <div className="crew-empty">
+                  <div className="crew-empty-icon">🏀</div>
+                  <div className="crew-empty-text">
                     No friends yet — search for players to connect with
                   </div>
                   <button
                     className="btn btn--primary"
-                    style={{ marginTop: 16 }}
                     onClick={() => setShowModal(true)}
                   >
                     Find Players
                   </button>
                 </div>
               ) : (
-                <div style={{ margin: '0 20px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div className="crew-list">
                   {friends.map((friend) => (
                     <FriendCard
                       key={friend.userId}
@@ -295,12 +312,13 @@ export default function FriendsScreen({ user, profile, onViewProfile, onUnreadDM
                         avatarUrl:     friend.avatarUrl,
                         initials:      friend.initials,
                         name:          friend.username,
+                        jerseyNumber:  friend.jerseyNumber,
                         isActive:      friend.isActive,
                         currentCourt:  friend.currentCourt,
-                        location:      'LiveHoops player',
-                        checkinCount:  friend.checkinCount,
-                        courtsVisited: friend.courtsVisited,
-                        hoursOnCourt:  friend.hoursOnCourt,
+                        // Drive "· 40m" and "Last run 2d ago". The lifetime
+                        // stats the row used to carry live on the profile now.
+                        activeSince:   friend.activeSince,
+                        lastCheckinAt: friend.lastCheckinAt,
                       }}
                       onViewProfile={onViewProfile}
                       onMessage={(f) => openThread(f)}

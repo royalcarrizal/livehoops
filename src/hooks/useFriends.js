@@ -78,29 +78,42 @@ export function useFriends(userId) {
     const [profilesRes, checkinsRes] = await Promise.all([
       supabase
         .from('profiles')
-        .select('id, username, avatar_url, checkin_count, hours_played, courts_visited')
+        .select('id, username, avatar_url, checkin_count, hours_played, courts_visited, jersey_number')
         .in('id', friendIds),
-      supabase.rpc('get_friends_active_checkins', { p_friend_ids: friendIds }),
+      // get_friends_activity supersedes get_friends_active_checkins: it returns
+      // a row per friend whether or not they are out, so the screen can also
+      // say when someone last played. Both friendship and show_location are
+      // enforced inside it — see supabase/friend_activity_rpc.sql.
+      supabase.rpc('get_friends_activity', { p_friend_ids: friendIds }),
     ]);
 
     if (profilesRes.error) return [];
 
-    // Build a lookup of active check-ins keyed by user ID
-    const activeMap = {};
+    // Build a lookup of court activity keyed by user ID. A friend can be absent
+    // from this map entirely — they hid their location, or the RPC is not
+    // deployed yet — in which case they simply read as offline with no history,
+    // which is the safe direction to fail in for location data.
+    const activityMap = {};
     if (checkinsRes.error) {
-      console.error('fetchFriends: checkins query failed, online status unavailable:', checkinsRes.error);
+      console.error('fetchFriends: activity query failed, court status unavailable:', checkinsRes.error);
     } else {
-      (checkinsRes.data ?? []).forEach(c => {
-        activeMap[c.user_id] = {
-          courtId:   c.court_id,
-          courtName: c.court_name ?? null,
+      (checkinsRes.data ?? []).forEach(a => {
+        activityMap[a.user_id] = {
+          courtId:       a.active_court_id   ?? null,
+          courtName:     a.active_court_name ?? null,
+          activeSince:   a.active_since      ?? null,
+          lastCheckinAt: a.last_checkin_at   ?? null,
         };
       });
     }
 
     // Combine friendship + profile + check-in status into one clean object
     return (profilesRes.data ?? []).map(prof => {
-      const active = activeMap[prof.id];
+      const activity = activityMap[prof.id] ?? {};
+      // "Out" means checked in RIGHT NOW, which is what the court id proves.
+      // A last-run timestamp says they played at some point, not that they are
+      // there — conflating the two would light up the whole crew as live.
+      const isOut = !!activity.courtId;
       return {
         friendshipId:   friendshipMap[prof.id],
         userId:         prof.id,
@@ -111,10 +124,19 @@ export function useFriends(userId) {
         checkinCount:   prof.checkin_count   ?? 0,
         courtsVisited:  prof.courts_visited  ?? 0,
         hoursOnCourt:   prof.hours_played    ?? 0,
+        // Shirt number, shown beside the name. The column has always existed;
+        // this select simply never asked for it.
+        jerseyNumber:   prof.jersey_number ?? null,
         // Real "playing now" status from checkins table
-        isActive:       !!active,
-        currentCourt:   active?.courtName ?? '',
-        currentCourtId: active?.courtId   ?? null,
+        isActive:       isOut,
+        currentCourt:   activity.courtName ?? '',
+        currentCourtId: activity.courtId   ?? null,
+        // When the current session started — drives "· 40m". Null when not out.
+        activeSince:    activity.activeSince ?? null,
+        // When they last played at all — drives "Last run 2d ago". Null when
+        // they have never checked in anywhere, which the UI must not render as
+        // a date.
+        lastCheckinAt:  activity.lastCheckinAt ?? null,
       };
     });
   }, [userId]);
@@ -138,7 +160,7 @@ export function useFriends(userId) {
 
     const { data: profiles, error: profError } = await supabase
       .from('profiles')
-      .select('id, username, avatar_url')
+      .select('id, username, avatar_url, jersey_number')
       .in('id', requesterIds);
 
     if (profError) return [];
@@ -147,14 +169,40 @@ export function useFriends(userId) {
     const profileMap = {};
     (profiles ?? []).forEach(p => { profileMap[p.id] = p; });
 
+    // Courts you and the requester have both played. "We've both been to
+    // Cadman Plaza" is the most useful thing to know when deciding whether to
+    // accept someone you may not recognise by username.
+    //
+    // One call per request, because get_mutual_courts takes a single user. You
+    // rarely have more than a handful of pending requests, and they are fetched
+    // together rather than in series. Each failure is swallowed to an empty
+    // list: a request must still be actionable if this lookup breaks.
+    const mutualLists = await Promise.all(
+      requesterIds.map(async (id) => {
+        const { data, error } = await supabase.rpc('get_mutual_courts', { p_other_user_id: id });
+        if (error) {
+          console.info('[LiveHoops] mutual courts unavailable:', error.message);
+          return [id, []];
+        }
+        return [id, data ?? []];
+      })
+    );
+    const mutualMap = Object.fromEntries(mutualLists);
+
     return rows.map(row => {
-      const prof = profileMap[row.requester_id] ?? {};
+      const prof   = profileMap[row.requester_id] ?? {};
+      const mutual = mutualMap[row.requester_id] ?? [];
       return {
-        friendshipId: row.id,
-        userId:       row.requester_id,
-        username:     prof.username ?? 'Player',
-        avatarUrl:    prof.avatar_url ?? null,
-        initials:     toInitials(prof.username),
+        friendshipId:  row.id,
+        userId:        row.requester_id,
+        username:      prof.username ?? 'Player',
+        avatarUrl:     prof.avatar_url ?? null,
+        initials:      toInitials(prof.username),
+        jerseyNumber:  prof.jersey_number ?? null,
+        // Count plus one example name — enough for "2 mutual courts · Cadman
+        // Plaza" without shipping the whole list to the screen.
+        mutualCount:   mutual.length,
+        mutualCourt:   mutual[0]?.court_name ?? null,
       };
     });
   }, [userId]);
