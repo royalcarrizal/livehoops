@@ -208,3 +208,24 @@ describe('hasRealDistance', () => {
     expect(hasRealDistance(normalizeCourt(row, { lat: 29.8, lng: -95.4 }).distance)).toBe(true);
   });
 });
+
+// ── normalizeCourt exposes the city ─────────────────────────────────────────
+// The Profile header uses it as the player's location. It was always read to
+// build shortAddress; it just was not kept.
+
+describe('normalizeCourt city', () => {
+  const row = { id: 'c1', name: 'Cadman Plaza', address: 'Cadman Plaza W', city: 'Brooklyn' };
+
+  it('keeps the city on its own as well as inside shortAddress', () => {
+    const court = normalizeCourt(row, null);
+    expect(court.city).toBe('Brooklyn');
+    expect(court.shortAddress).toContain('Brooklyn');
+  });
+
+  it('is null when the row has no city', () => {
+    // The Profile header drops the location half of its line rather than
+    // rendering "undefined · joined Mar 2024".
+    expect(normalizeCourt({ ...row, city: null }, null).city).toBeNull();
+    expect(normalizeCourt({ id: 'c2', name: 'X', address: 'Y' }, null).city).toBeNull();
+  });
+});

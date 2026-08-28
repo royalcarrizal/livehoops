@@ -2,7 +2,7 @@
 // `now` is injected so every case is deterministic.
 
 import { describe, it, expect } from 'vitest';
-import { formatMeetupTime, formatRunLength, formatClockShort, formatElapsed } from '../datetime';
+import { formatMeetupTime, formatRunLength, formatClockShort, formatElapsed, formatJoinMonth } from '../datetime';
 
 // Fixed reference point: Wed Jul 15 2026, 2:00 PM local time.
 const NOW = new Date('2026-07-15T14:00:00');
@@ -165,5 +165,40 @@ describe('formatElapsed', () => {
     // Clock skew between the device and the server is real, and "-3m" on a
     // crew row would be worse than showing nothing.
     expect(formatElapsed(NOW + 180000, NOW)).toBe('');
+  });
+});
+
+// ── formatJoinMonth ─────────────────────────────────────────────────────────
+// "joined Mar 2024" on the Profile header.
+
+describe('formatJoinMonth', () => {
+  it('returns empty string rather than a date for missing input', () => {
+    // A profile row without created_at would otherwise render "joined Invalid
+    // Date" — the same failure formatElapsed had with a never-checked-in friend.
+    expect(formatJoinMonth(null)).toBe('');
+    expect(formatJoinMonth(undefined)).toBe('');
+    expect(formatJoinMonth('')).toBe('');
+  });
+
+  it('returns empty string for an unparseable value', () => {
+    expect(formatJoinMonth('not-a-date')).toBe('');
+  });
+
+  it('formats a real timestamp as month and year', () => {
+    expect(formatJoinMonth('2024-03-18T09:30:00Z')).toBe('Mar 2024');
+  });
+
+  it('accepts the timestamptz Supabase actually returns', () => {
+    // The shape from profiles.created_at, offset and microseconds included.
+    expect(formatJoinMonth('2026-04-12T23:18:13.014123+00:00')).toBe('Apr 2026');
+  });
+
+  it('says nothing more precise than the month', () => {
+    // Not "12 Apr 2026" — an exact join date is personal data with no upside
+    // on a profile, and two people joining the same month should read alike.
+    // Exactly "Mon YYYY" and nothing else — which is what rules out a day of
+    // the month. (A bare /\d{1,2}/ would not: it matches inside "2026".)
+    expect(formatJoinMonth('2026-04-12T23:18:13Z')).toBe('Apr 2026');
+    expect(formatJoinMonth('2026-04-12T23:18:13Z')).toMatch(/^[A-Z][a-z]{2} \d{4}$/);
   });
 });
