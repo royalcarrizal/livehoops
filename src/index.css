@@ -3443,12 +3443,6 @@ textarea.field {
   margin-top: 1px;
 }
 
-.friend-request-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  flex-shrink: 0;
-}
 
 
 
