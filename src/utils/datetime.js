@@ -155,3 +155,22 @@ export function formatElapsed(sinceMs, now = Date.now()) {
   const mins  = minutes % 60;
   return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
 }
+
+// ── formatJoinMonth(iso) ────────────────────────────────────────────────────
+// When someone joined, as the Profile header says it: "Mar 2024".
+//
+// Deliberately month-and-year rather than a full date. "joined 12 Apr 2026" is
+// a precision nobody asked for on a profile, and month granularity is also the
+// kinder default — an exact join date is a small piece of personal data with no
+// upside here.
+//
+// Returns '' for missing or unparseable input, so the header line collapses
+// instead of rendering "joined Invalid Date" — the same trap formatElapsed hit
+// on the Friends screen when a friend had never checked in.
+export function formatJoinMonth(iso) {
+  if (!iso) return '';
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+
+  return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+}

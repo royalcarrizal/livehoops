@@ -100,6 +100,11 @@ export function normalizeCourt(row, userPos = null) {
     // Combine address + city into a single display string.
     // No hardcoded state — courts can exist outside Texas.
     shortAddress: `${row.address}, ${row.city}`,
+    // The city on its own, as well as folded into shortAddress above. The
+    // Profile header uses it as the player's location ("Brooklyn · joined Mar
+    // 2024") — profiles have no location column of their own, so where you
+    // play stands in for where you are.
+    city:         row.city ?? null,
     courts:       row.courts    ?? 1,
     // player_count from the DB becomes "players" in the UI
     players:      row.player_count ?? 0,

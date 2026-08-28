@@ -17,7 +17,7 @@
 //   6. Settings sheet     — owner only, full settings slide-up
 
 import { useState, useRef, useEffect } from 'react';
-import { Settings, X, ChevronLeft, Map, UserX, ChevronDown, MapPin } from 'lucide-react';
+import { SlidersHorizontal, X, ChevronLeft, Map, UserX, ChevronDown, MapPin } from 'lucide-react';
 import { useFriends } from '../hooks/useFriends';
 import AchievementsSection from '../components/AchievementsSection';
 import Avatar from '../components/Avatar';
@@ -25,6 +25,7 @@ import FeedPost from '../components/FeedPost';
 import PhotoViewer from '../components/PhotoViewer';
 import Toast from '../components/Toast';
 import { BIO_MAX_LENGTH, bioLength, clampBio, normalizeBio } from '../utils/bio';
+import { formatJoinMonth } from '../utils/datetime';
 import { profileHasColumn, pickSupportedUpdates } from '../utils/profileSchema';
 import { POSITIONS, togglePosition, normalizePositions, formatPositions } from '../utils/positions';
 import CourtPickerSheet from '../components/CourtPickerSheet';
@@ -76,7 +77,23 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
     homeCourt:     profile?.home_court_id
       ? courts.find(c => c.id === profile.home_court_id) ?? null
       : null,
+    joinedLabel:   formatJoinMonth(profile?.created_at),
   };
+
+  // "Brooklyn · joined Mar 2024".
+  //
+  // Profiles have no location column, so where you PLAY stands in for where
+  // you are: the city of your home court. Someone who has not picked one shows
+  // only the join date.
+  //
+  // Built by collecting the parts that can be stated and joining them, rather
+  // than concatenating with separators — writing it the other way produced a
+  // dangling "· " twice already in this redesign, on the Home court cards and
+  // the Map rows.
+  const identityLine = [
+    displayUser.homeCourt?.city,
+    displayUser.joinedLabel && `joined ${displayUser.joinedLabel}`,
+  ].filter(Boolean).join(' · ');
 
   // Whether supabase/profile_bio.sql has been applied yet. Migrations here are
   // run by hand, so the deployed app can be ahead of the database. Rather than
@@ -463,7 +480,6 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
             aria-label="Go back"
           >
             <ChevronLeft size={22} strokeWidth={2.5} />
-            <span>Back</span>
           </button>
         )}
 
@@ -474,7 +490,7 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
             onClick={() => setShowSettings(true)}
             aria-label="Settings"
           >
-            <Settings size={20} strokeWidth={2} />
+            <SlidersHorizontal size={19} strokeWidth={2} />
           </button>
         )}
 
@@ -496,6 +512,14 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
             <span className="jersey-number">#{displayUser.jerseyNumber}</span>
           )}
         </div>
+
+        {/* Where they play and when they joined. Omitted entirely when neither
+            can be stated, so a brand-new profile with no home court gains no
+            empty row. Not gated on canViewContent: a city and a join month are
+            the same order of public fact as the username itself. */}
+        {identityLine && (
+          <p className="profile-identity-line">{identityLine}</p>
+        )}
 
         {/* Bio — the one place a player describes themselves in their own
             words. Omitted entirely when unset so the header gains no dead
@@ -707,8 +731,12 @@ export default function ProfileScreen({ signOut, profile, updateProfile, user, o
             <div className="feed-empty">
               <div style={{ fontSize: 48 }}>🏀</div>
               <div className="feed-empty-title">No posts yet</div>
+              {/* The visitor copy used to repeat the title verbatim, so the
+                  empty state read "No posts yet / No posts yet". */}
               <div className="feed-empty-sub">
-                {isOwner ? 'Your posts will appear here' : 'No posts yet'}
+                {isOwner
+                  ? 'Your posts will appear here'
+                  : `${displayUser.name} hasn't posted anything yet`}
               </div>
             </div>
           )}

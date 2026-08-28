@@ -2458,36 +2458,38 @@ textarea.field {
 .profile-stats-row {
   display: flex;
   width: 100%;
-  gap: 9px;
+  gap: 10px;
   justify-content: center;
-  margin: 18px 0 0;
+  margin: 20px 0 0;
 }
 
-/* Individual stat pill */
+/* Individual stat card. Taller and quieter than the pill it replaces — the
+   number is the thing being read, so it gets the room. */
 .profile-stat-pill {
   flex: 1 1 0%;
   min-width: 0;
   background: var(--bg-card);
   border-radius: var(--radius-md);
-  padding: 10px 8px;
+  padding: 16px 8px;
   text-align: center;
   border: 1px solid var(--separator-strong);
 }
 
-/* Stat number (orange) */
+/* Stat number, in the accent */
 .profile-stat-value {
-  font-size: 19px;
-  font-weight: 700;
+  font-size: 24px;
+  font-weight: 800;
   color: var(--accent);
   line-height: 1;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
+  letter-spacing: -0.5px;
   font-variant-numeric: tabular-nums;
 }
 
 /* Stat label text */
 .profile-stat-label {
-  font-size: 10.5px;
-  color: var(--text-tertiary);
+  font-size: 12px;
+  color: var(--text-secondary);
   font-weight: 500;
 }
 
@@ -2735,35 +2737,41 @@ textarea.field {
 }
 
 /* Gear icon button — sits in the top-right of the profile header */
-.profile-back-btn {
-  position: absolute;
-  top: 16px;
-  left: 16px;
-  background: none;
-  border: none;
-  color: var(--accent);
-  cursor: pointer;
-  padding: 4px;
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  font-size: 15px;
-  font-weight: 600;
-  font-family: var(--font);
-}
-
+/* Both header buttons are the same circle, mirrored left and right — the
+   treatment the Map's locate button and the Home header icons already use, so
+   a round button means the same thing on every screen. The back button dropped
+   its "Back" label with the shape: an arrow in a circle in the top-left corner
+   needs no caption, and the label made the two corners asymmetric. */
+.profile-back-btn,
 .gear-btn {
   position: absolute;
   top: 16px;
-  right: 16px;
-  background: none;
-  border: none;
-  color: var(--text-secondary);
-  cursor: pointer;
-  padding: 4px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  border: 1px solid var(--separator-strong);
+  cursor: pointer;
+  font-family: var(--font);
+  transition: transform 0.15s ease;
+  z-index: 1;
+}
+
+.profile-back-btn { left: 16px;  color: var(--text-primary); }
+.gear-btn         { right: 16px; color: var(--text-secondary); }
+
+.profile-back-btn:active,
+.gear-btn:active { transform: scale(0.92); }
+
+/* "Brooklyn · joined Mar 2024" — where they play and when they arrived. */
+.profile-identity-line {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-top: 6px;
+  text-align: center;
 }
 
 /* ── Settings Sheet ── */
