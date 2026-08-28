@@ -16,18 +16,12 @@ import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { usePosts } from '../hooks/usePosts';
 import { remainingMs } from '../utils/autoCheckout';
+import { formatElapsed } from '../utils/datetime';
 
 // ── Time display helpers ────────────────────────────────────────────────────
-
-// How long the session has been running: "Just now", "42m", "1h 12m".
-function formatElapsed(checkInTime) {
-  const minutes = Math.floor((Date.now() - checkInTime) / 60000);
-  if (minutes < 1) return 'Just now';
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  const mins  = minutes % 60;
-  return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
-}
+// formatElapsed now lives in utils/datetime.js — the Friends screen needs the
+// same wording for "At Cadman Plaza · 40m", and two copies of a duration format
+// is how "1h 12m" and "1h12m" end up on the same screen.
 
 // How long is left before the session expires on its own: "1h 47m".
 //

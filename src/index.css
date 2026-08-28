@@ -3127,6 +3127,176 @@ textarea.field {
   font-weight: 500;
 }
 
+/* Green only when someone is actually out. A grey dot beside "nobody out right
+   now" is the honest version — a permanently green dot would claim activity
+   the screen is simultaneously denying. */
+.crew-summary-dot.is-live {
+  background: var(--green);
+}
+
+.crew-summary-count {
+  color: var(--green);
+  font-weight: 700;
+}
+
+/* ── Friend request card ───────────────────────────────────────────────────── */
+
+.friend-request {
+  margin: 0 20px 12px;
+  padding: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius-md);
+  /* Accent-tinted, because a request is an action waiting on you rather than a
+     status. The crew rows below it are green-or-nothing; this one asks. */
+  background-image: linear-gradient(135deg, rgb(var(--accent-rgb) / 0.10), rgb(var(--accent-rgb) / 0.02));
+}
+
+.friend-request-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+
+.friend-request-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.friend-request-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.friend-request-sub {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.friend-request-actions {
+  display: flex;
+  gap: 10px;
+}
+
+/* ── Crew rows ─────────────────────────────────────────────────────────────── */
+
+.crew-list {
+  display: flex;
+  flex-direction: column;
+  padding: 0 20px;
+}
+
+.friend-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  /* A hairline between rows rather than a card each: the design reads the crew
+     as one list, and eleven bordered cards is eleven boxes to parse. */
+  border-bottom: 1px solid var(--separator);
+}
+.friend-row:last-child { border-bottom: none; }
+
+.friend-row-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
+  font-family: var(--font);
+  cursor: pointer;
+}
+.friend-row-main:active { opacity: 0.7; }
+
+.friend-row-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.friend-row-name {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.3px;
+  min-width: 0;
+}
+
+/* Shirt number. Accent, not green — it is who they are, not what they are
+   doing. */
+.friend-row-jersey {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.friend-row-status {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Out on a court right now — the one live fact in this row. */
+.friend-row-status.is-live {
+  color: var(--green);
+}
+
+.friend-row-message {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  border: 1px solid var(--separator-strong);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+.friend-row-message:active { transform: scale(0.92); }
+
+.crew-empty {
+  margin: 0 20px 24px;
+  padding: 24px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--separator-strong);
+  border-radius: var(--radius-md);
+  text-align: center;
+}
+
+.crew-empty-icon {
+  font-size: 32px;
+  margin-bottom: 8px;
+}
+
+.crew-empty-text {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
 .section-action {
   font-size: 13px;
   font-weight: 600;
@@ -3210,99 +3380,23 @@ textarea.field {
 }
 
 /* Friend card */
-.friend-card {
-  background: var(--bg-card);
-  border: 1px solid var(--separator-strong);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  box-shadow: var(--card-shadow);
-  display: flex;
-  align-items: center;
-  padding-right: 14px;
-}
 
-.friend-card-main {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  flex: 1;
-  min-width: 0;
-}
-.friend-card-main:active { opacity: 0.75; }
 
-.friend-avatar-wrap {
-  position: relative;
-  flex-shrink: 0;
-}
 
-.friend-avatar {
-  width: 46px;
-  height: 46px;
-  font-size: 15px;
-}
 
-.friend-info {
-  flex: 1;
-  min-width: 0;
-}
 
-.friend-name {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin-bottom: 2px;
-}
 
-.friend-status {
-  font-size: 12px;
-  font-weight: 500;
-  margin-bottom: 2px;
-}
 
-.friend-status.active {
-  color: var(--green);
-}
 
-.friend-status.offline {
-  color: var(--text-secondary);
-}
 
-.friend-location {
-  font-size: 11px;
-  color: var(--text-secondary);
-}
 
 /* Compact inline stats row shown on every friend card */
-.friend-stats-inline {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-top: 4px;
-  font-size: 11px;
-  color: var(--accent);
-  font-weight: 600;
-  flex-wrap: wrap;
-}
 
-.friend-stats-dot {
-  color: var(--text-secondary);
-  font-weight: 400;
-}
 
 
 
 /* Expanded stats inside FriendCard */
-.friend-expanded {
-  border-top: 1px solid var(--separator-strong);
-  padding: 12px 14px;
-}
 
-.friend-stats-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-around;
-}
 
 .friend-stat {
   flex: 1;
@@ -3341,20 +3435,7 @@ textarea.field {
 }
 
 /* Friend request card */
-.friend-request-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background: var(--bg-card);
-  border: 1px solid var(--separator-strong);
-  border-radius: var(--radius-md);
-  padding: 12px 14px;
-}
 
-.friend-request-info {
-  flex: 1;
-  min-width: 0;
-}
 
 .friend-mutual {
   font-size: 11px;
@@ -6606,27 +6687,11 @@ textarea.field {
 /* ── Direct Messaging ──────────────────────────────────────────────────────── */
 
 /* Friend card action buttons (Message + Profile side by side) */
-.friend-card-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  flex-shrink: 0;
-}
 
 /* Message button on FriendCard */
 
 
 /* Unread DM count shown in the Friends screen header */
-.crew-unread-badge {
-  margin-left: 8px;
-  background: var(--accent);
-  color: var(--accent-contrast);
-  font-size: 11px;
-  font-weight: 700;
-  border-radius: var(--radius-full);
-  padding: 2px 8px;
-  font-family: var(--font);
-}
 
 /* ── BottomNav unread badge ─────────────────────────────────────────────── */
 .nav-unread-badge {

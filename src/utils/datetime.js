@@ -122,3 +122,36 @@ export function formatClockShort(iso) {
 
   return `${hours}:${minutes}${suffix}`;
 }
+
+// ── formatElapsed(sinceMs, now?) ────────────────────────────────────────────
+// How long something has been running: "Just now", "42m", "1h 12m", "3h".
+//
+// Used by the Check screen's "Checked in" stat and by the Friends screen's
+// "At Cadman Plaza · 40m". It lived privately inside CheckInScreen until the
+// second caller turned up; two copies of a duration format is how "1h 12m" and
+// "1h12m" end up on the same screen.
+//
+// Distinct from formatRunLength above, which formats a PLANNED length where 90
+// minutes is said as "90m". This formats ELAPSED time, where the clock reading
+// "1h 30m" is what a person expects.
+//
+// Returns '' for missing/invalid input so a friend who has never checked in
+// renders nothing rather than "NaNm".
+export function formatElapsed(sinceMs, now = Date.now()) {
+  // Reject null/undefined BEFORE Number(), which turns null into 0 — a
+  // perfectly finite timestamp meaning 1 Jan 1970. Without this, a friend who
+  // has never checked in reads "472222h 13m" rather than nothing.
+  if (sinceMs == null || sinceMs === '') return '';
+
+  const start = typeof sinceMs === 'string' ? new Date(sinceMs).getTime() : Number(sinceMs);
+  if (!Number.isFinite(start)) return '';
+
+  const minutes = Math.floor((now - start) / 60000);
+  if (minutes < 0)  return '';
+  if (minutes < 1)  return 'Just now';
+  if (minutes < 60) return `${minutes}m`;
+
+  const hours = Math.floor(minutes / 60);
+  const mins  = minutes % 60;
+  return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+}

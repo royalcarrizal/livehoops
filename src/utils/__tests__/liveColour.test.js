@@ -44,8 +44,11 @@ const LIVE_SELECTORS = [
   // Two ways of saying the same thing — a friend is on a court right now. The
   // Friends screen always drew it green; the Home crew chip drew it in the
   // accent for months, because neither was listed here.
-  '.friend-status.active',
+  // The Friends screen's crew rows. Renamed from .friend-status.active in the
+  // Friends redesign — the selector moved, the rule did not.
+  '.friend-row-status.is-live',
   '.crew-chip-court.active',
+  '.crew-summary-dot.is-live',
 ];
 
 describe('rule 4 — green means live/active', () => {
