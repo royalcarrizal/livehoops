@@ -1,5 +1,14 @@
 -- LiveHoops atomic check-in/check-out RPCs.
 -- Run this manually in the Supabase SQL editor before deploying the matching app code.
+-- Safe to re-run: both functions are `create or replace` with unchanged
+-- signatures, and the grants are re-asserted at the bottom.
+--
+-- Two corrections live in here, both explained at the line they affect:
+--   • the returned court_address no longer appends a hardcoded " TX"
+--   • hours_played now accumulates the MARGINAL hours a session adds, instead
+--     of rounding each session in isolation and losing every remainder
+-- Neither changes a signature or a column, so no client change is needed and
+-- cached PWA bundles keep working. See the verification notes at the bottom.
 
 create or replace function public.livehoops_check_out(p_checkin_id uuid)
 returns jsonb
@@ -12,6 +21,7 @@ declare
   v_checkin record;
   v_duration_minutes int;
   v_prior_visits int;
+  v_prior_minutes int;
   v_hours_to_add int;
   v_courts_to_add int;
 begin
@@ -59,7 +69,38 @@ begin
     and is_active = false
     and id <> v_checkin.id;
 
-  v_hours_to_add := round(v_duration_minutes::numeric / 60)::int;
+  -- Every completed session this player has, at ANY court, excluding the one
+  -- just closed above. Same exclusion as v_prior_visits, different row set:
+  -- that one is per-court (for courts_visited), this one is lifetime.
+  select coalesce(sum(duration_minutes), 0)::int
+  into v_prior_minutes
+  from public.checkins
+  where user_id = v_uid
+    and is_active = false
+    and id <> v_checkin.id;
+
+  -- The hours this session ADDS to the player's true running total — not the
+  -- rounded value of the session on its own.
+  --
+  -- This line used to be `round(v_duration_minutes / 60)`, applied per session,
+  -- which threw away every session's remainder independently: ten 20-minute
+  -- runs added ZERO hours, while a single 45-minute run added a whole one.
+  -- Nothing errored. The number was simply wrong, and grew wronger the more
+  -- someone played — the silent, cumulative failure mode utils/autoCheckout.js
+  -- warns about at length for the sibling arithmetic in this same function.
+  --
+  -- Taking the difference between the total before and after is what makes it
+  -- correct going forward WITHOUT rewriting history: whatever hours_played
+  -- already holds is preserved exactly, so no existing profile is touched and
+  -- nobody's number drops. From here on it tracks real time played.
+  --
+  -- livehoops_expire_stale_checkins() computes this identically, and must keep
+  -- doing so — the two paths close the same sessions and cannot disagree about
+  -- how long they lasted.
+  v_hours_to_add :=
+      round((v_prior_minutes + v_duration_minutes)::numeric / 60)::int
+    - round(v_prior_minutes::numeric / 60)::int;
+
   v_courts_to_add := case when coalesce(v_prior_visits, 0) = 0 then 1 else 0 end;
 
   update public.profiles
@@ -133,7 +174,15 @@ begin
     'checkin_id', v_new_checkin.id,
     'court_id', v_new_checkin.court_id,
     'court_name', coalesce(v_court.name, 'Unknown Court'),
-    'court_address', concat_ws(', ', v_court.address, v_court.city || ' TX'),
+    -- Address and city, and no hardcoded state. normalizeCourt
+    -- (src/hooks/useCourts.js) deliberately dropped the state for the reason
+    -- its comment gives — "courts can exist outside Texas" — and builds
+    -- `${address}, ${city}`. This string has to match it exactly, because it
+    -- is the fallback CheckInScreen shows while the courts list is still
+    -- loading; when they disagree the address visibly rewrites itself under
+    -- the user a second after check-in. A court in Brooklyn read
+    -- "Cadman Plaza, Brooklyn TX" until the real data arrived.
+    'court_address', concat_ws(', ', v_court.address, v_court.city),
     'checked_in_at', v_new_checkin.checked_in_at,
     'previous_court_id', v_previous_court_id
   );
@@ -145,3 +194,43 @@ revoke execute on function public.livehoops_check_out(uuid) from public;
 
 grant execute on function public.livehoops_check_in(uuid) to authenticated;
 grant execute on function public.livehoops_check_out(uuid) to authenticated;
+
+
+-- ── Verifying this after applying it ────────────────────────────────────────
+--
+-- Both changes are the quiet kind: nothing throws either way, so the only way
+-- to know they worked is to look at the values.
+--
+-- a) THE ADDRESS — check in at a court whose city is not in Texas.
+--
+--      select (public.livehoops_check_in('<court-uuid>'))->>'court_address';
+--
+--    Expect "<street>, <city>" with no " TX". In the app, the Check screen's
+--    address must also stay identical when the courts list finishes loading —
+--    that flicker was the visible symptom.
+--
+-- b) THE HOURS, short sessions — the case that used to add nothing at all.
+--    Note a player's current total first:
+--
+--      select hours_played from public.profiles where id = '<user-uuid>';
+--
+--    Then complete three roughly 20-minute check-ins as that player. Expect
+--    the total to rise by 1 across the three (60 minutes crossed once), where
+--    before it rose by 0. Sessions do not have to be at the same court.
+--
+-- c) THE HOURS, existing totals — the starting value from (b) must be
+--    unchanged by applying this file itself. Nothing here rewrites history:
+--    apply it, re-run the select, expect the same number as before.
+--
+-- d) THE HOURS, both paths agree — let a session run past the player's auto
+--    check-out limit so the pg_cron job closes it instead
+--    (supabase/configurable_auto_checkout.sql). It must add the same marginal
+--    hours a manual check-out would for the same duration. If these two ever
+--    disagree, a player's total depends on HOW their session ended, which is
+--    exactly the class of silent, cumulative error utils/autoCheckout.js was
+--    written to prevent.
+--
+-- e) NOTHING ELSE MOVED — check in, switch courts, check out. Confirm
+--    player_count still rises and falls correctly, checkin_count increments by
+--    one per completed session, and courts_visited only increments the first
+--    time you play somewhere.

@@ -75,6 +75,7 @@ declare
   v_limit_hours int;
   v_duration_minutes int;
   v_prior_visits int;
+  v_prior_minutes int;
   v_hours_to_add int;
   v_courts_to_add int;
 begin
@@ -126,7 +127,28 @@ begin
       and is_active = false
       and id <> v_checkin.id;
 
-    v_hours_to_add := round(v_duration_minutes::numeric / 60)::int;
+    -- Lifetime completed minutes, excluding the session just expired above.
+    select coalesce(sum(duration_minutes), 0)::int
+    into v_prior_minutes
+    from public.checkins
+    where user_id = v_checkin.user_id
+      and is_active = false
+      and id <> v_checkin.id;
+
+    -- The MARGINAL hours this session adds to the player's true total, which
+    -- must match what livehoops_check_out() computes for the same session —
+    -- these two functions close the same kind of session by different routes
+    -- and cannot disagree about how long it lasted.
+    --
+    -- Was round(v_duration_minutes / 60) per session, which discarded each
+    -- session's remainder in isolation. Here that was the more visible half of
+    -- the bug: an expired session is always a whole number of hours (the
+    -- player's own limit), so it rounded cleanly and looked right — while every
+    -- manual check-out beside it was quietly losing minutes.
+    v_hours_to_add :=
+        round((v_prior_minutes + v_duration_minutes)::numeric / 60)::int
+      - round(v_prior_minutes::numeric / 60)::int;
+
     v_courts_to_add := case when coalesce(v_prior_visits, 0) = 0 then 1 else 0 end;
 
     -- No-ops harmlessly when the profile row is gone, which is what we want.
