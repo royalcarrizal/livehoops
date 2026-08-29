@@ -2,7 +2,7 @@
 // lighting normalization, and the DB-row → UI-shape transforms.
 
 import { describe, it, expect } from 'vitest';
-import { haversine, formatMiles, normalizeLighting, normalizeCourt, groupPlayersByCourt, sortByDistance, hasRealDistance } from '../useCourts';
+import { haversine, formatMiles, normalizeLighting, normalizeCourt, groupPlayersByCourt, sortByDistance, hasRealDistance, courtSetting } from '../useCourts';
 
 describe('haversine', () => {
   it('returns 0 for identical points', () => {
@@ -227,5 +227,37 @@ describe('normalizeCourt city', () => {
     // rendering "undefined · joined Mar 2024".
     expect(normalizeCourt({ ...row, city: null }, null).city).toBeNull();
     expect(normalizeCourt({ id: 'c2', name: 'X', address: 'Y' }, null).city).toBeNull();
+  });
+});
+
+// ── courtSetting ────────────────────────────────────────────────────────────
+// The court sheet's "Outdoor" chip. AddCourtSheet stores one of four
+// court_type values; only the indoor/outdoor half of that is worth showing.
+
+describe('courtSetting', () => {
+  it('reads the outdoor types', () => {
+    expect(courtSetting('outdoor_park')).toBe('Outdoor');
+    expect(courtSetting('outdoor_facility')).toBe('Outdoor');
+  });
+
+  it('reads the indoor types', () => {
+    expect(courtSetting('indoor_gym')).toBe('Indoor');
+    expect(courtSetting('indoor_facility')).toBe('Indoor');
+  });
+
+  it('returns null rather than guessing', () => {
+    // A court is not outdoor just because the value could not be read. The
+    // chip is omitted instead.
+    expect(courtSetting(null)).toBeNull();
+    expect(courtSetting(undefined)).toBeNull();
+    expect(courtSetting('')).toBeNull();
+    expect(courtSetting('something_else')).toBeNull();
+    expect(courtSetting(42)).toBeNull();
+  });
+
+  it('is carried onto the normalized court', () => {
+    const row = { id: 'c1', name: 'X', address: 'A', city: 'B', court_type: 'outdoor_park' };
+    expect(normalizeCourt(row, null).setting).toBe('Outdoor');
+    expect(normalizeCourt({ ...row, court_type: null }, null).setting).toBeNull();
   });
 });

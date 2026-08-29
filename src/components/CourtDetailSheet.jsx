@@ -198,8 +198,9 @@ export default function CourtDetailSheet({
         {/* "courts", not "hoops": that number is what AddCourtSheet collects
             under "Number of courts", and Home and the Map both say courts.
             "Lights", not "Lights until 11p": there is no closing time stored
-            anywhere. Surface stands in for the design's "Outdoor" — the data
-            is Concrete/Asphalt/Hardwood, not indoor/outdoor. */}
+            anywhere, and that is the one thing here the data genuinely cannot
+            answer. "Outdoor" comes from court_type, which has always been
+            populated — normalizeCourt just never read it. */}
         <div className="map-sheet-meta">
           {court.reviewCount > 0 && (
             <span className="map-sheet-meta-item map-sheet-meta-item--rating">
@@ -211,8 +212,8 @@ export default function CourtDetailSheet({
             {court.courts} {court.courts === 1 ? 'court' : 'courts'}
           </span>
           {court.lighting && <span className="map-sheet-meta-item">Lights</span>}
-          {court.surface && court.surface !== 'Unknown' && (
-            <span className="map-sheet-meta-item">{court.surface}</span>
+          {court.setting && (
+            <span className="map-sheet-meta-item">{court.setting}</span>
           )}
         </div>
 

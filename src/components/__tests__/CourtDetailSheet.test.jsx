@@ -42,6 +42,7 @@ const court = (o = {}) => ({
   courts: 4,
   lighting: true,
   surface: 'Asphalt',
+  setting: 'Outdoor',
   players: 8,
   avgRating: 4.6,
   reviewCount: 38,
@@ -156,7 +157,7 @@ describe('CourtDetailSheet — the facts line and chips', () => {
     expect(chips.some(t => t.includes('4.6') && t.includes('38'))).toBe(true);
     expect(chips.some(t => t.includes('4 courts'))).toBe(true);
     expect(chips.some(t => t.includes('Lights'))).toBe(true);
-    expect(chips.some(t => t.includes('Asphalt'))).toBe(true);
+    expect(chips.some(t => t.includes('Outdoor'))).toBe(true);
   });
 
   it('says "courts", not "hoops"', () => {
@@ -167,7 +168,7 @@ describe('CourtDetailSheet — the facts line and chips', () => {
 
   it('omits every chip it cannot state', () => {
     const container = sheet({}, court({
-      reviewCount: 0, avgRating: 0, lighting: false, surface: 'Unknown', courts: 1,
+      reviewCount: 0, avgRating: 0, lighting: false, setting: null, courts: 1,
     }));
     const chips = [...container.querySelectorAll('.map-sheet-meta-item')].map(c => c.textContent);
     expect(chips).toEqual(['1 court']);

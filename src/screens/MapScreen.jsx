@@ -349,6 +349,49 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
         />
       )}
 
+      {/* ── Court list ─────────────────────────────────────────────────────── */}
+      {/* Always visible at the bottom. Filtered by the search bar, nearest
+          first. The header's two halves say what the list IS and how it is
+          ordered — the order half used to be a claim the code did not honour. */}
+      <div className="map-courts-sheet">
+        <div className="sheet-handle" />
+        <div className="sheet-handle-row">
+          <span className="map-courts-title">
+            {filteredParks.length} {filteredParks.length === 1 ? 'court' : 'courts'} nearby
+          </span>
+          <span className="section-count">Sorted by distance</span>
+        </div>
+        <div className="map-court-list">
+          {filteredParks.length === 0 ? (
+            <div className="map-court-list-empty">
+              {searchQuery.trim()
+                ? `No courts matching "${searchQuery.trim()}"`
+                : 'No courts yet'}
+            </div>
+          ) : (
+            filteredParks.map(park => (
+              <CourtListRow
+                key={park.id}
+                court={park}
+                onClick={() => flyToPark(park)}
+              />
+            ))
+          )}
+
+          {/* Adding a court used to live on the Check screen, which was the
+              only route to it in the whole app. It belongs here: you add a
+              court you know the location of, and this is where someone who
+              scrolled the list without finding theirs ends up. */}
+          <button
+            type="button"
+            className="map-add-court"
+            onClick={() => setShowAddCourt(true)}
+          >
+            Know a court that&apos;s missing? Add it →
+          </button>
+        </div>
+      </div>
+
       {/* ── Add a Court sheet ───────────────────────────────────────────────── */}
       {/* Always in the DOM so the CSS slide transition animates; visibility is
           controlled by the .open class. */}
