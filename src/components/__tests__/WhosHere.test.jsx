@@ -138,3 +138,85 @@ describe('WhosHere behaviour', () => {
     expect(container.querySelector('.whos-here-label').textContent).toBe("Who's here");
   });
 });
+
+// ── The names summary (court sheet variant) ─────────────────────────────────
+// "Kai, Dre and 6 others running". The privacy rule is the one to hold onto:
+// only RPC-visible players are ever NAMED; anyone who hid their location is
+// counted among the "others" and never identified.
+
+const summary = (c) => c.querySelector('.whos-here-summary')?.textContent ?? null;
+
+const named = (count) =>
+  Array.from({ length: count }, (_, i) => ({
+    userId: `u${i + 1}`,
+    username: ['kai', 'dre', 'jules', 'marc', 'ant', 'sam'][i] + '_player',
+    avatarUrl: null,
+    initials: 'XX',
+  }));
+
+describe('WhosHere names summary', () => {
+  it('names a single player', () => {
+    const { container } = render(
+      <WhosHere checkins={named(1)} players={1} namesSummary />
+    );
+    expect(summary(container)).toBe('kai running');
+  });
+
+  it('joins exactly two with "and"', () => {
+    const { container } = render(
+      <WhosHere checkins={named(2)} players={2} namesSummary />
+    );
+    expect(summary(container)).toBe('kai and dre running');
+  });
+
+  it('singularises a lone remaining player', () => {
+    const { container } = render(
+      <WhosHere checkins={named(3)} players={3} namesSummary />
+    );
+    expect(summary(container)).toBe('kai, dre and 1 other running');
+  });
+
+  it('counts the rest when there are many', () => {
+    const { container } = render(
+      <WhosHere checkins={named(5)} players={8} namesSummary />
+    );
+    expect(summary(container)).toBe('kai, dre and 6 others running');
+  });
+
+  it('counts players who hid themselves without naming them', () => {
+    // 8 on the court, 2 visible. The other 6 are not in `checkins` at all —
+    // they must be counted and must not appear by name.
+    const { container } = render(
+      <WhosHere checkins={named(2)} players={8} namesSummary />
+    );
+    const text = summary(container);
+    // Both visible players are named; the six who hid are counted, not named.
+    expect(text).toBe('kai, dre and 6 others running');
+    expect(text).not.toContain('jules');
+    expect(text).not.toContain('marc');
+  });
+
+  it('never reports a negative count', () => {
+    // The two numbers come from different sources and can briefly disagree.
+    const { container } = render(
+      <WhosHere checkins={named(4)} players={1} namesSummary />
+    );
+    expect(summary(container)).not.toMatch(/-\d/);
+  });
+
+  it('shows the summary INSTEAD of the +N circle', () => {
+    const { container } = render(
+      <WhosHere checkins={named(5)} players={9} namesSummary />
+    );
+    expect(container.querySelector('.whos-here-summary')).not.toBeNull();
+    expect(container.querySelector('.whos-here-more')).toBeNull();
+  });
+
+  it('leaves the Check screen variant alone', () => {
+    // Without the prop the circle is still what renders — this is the
+    // regression risk of adding a variant at all.
+    const { container } = render(<WhosHere checkins={named(5)} players={9} />);
+    expect(container.querySelector('.whos-here-more').textContent).toBe('+4');
+    expect(container.querySelector('.whos-here-summary')).toBeNull();
+  });
+});

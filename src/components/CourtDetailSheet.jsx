@@ -1,8 +1,15 @@
 // src/components/CourtDetailSheet.jsx
 //
-// Reusable court detail bottom sheet — used when a user taps a tagged court
-// in the feed or on the map. Shows court info, check-in controls, and a
-// collapsible Ratings & Reviews section.
+// THE court detail bottom sheet — what opens when you tap a court, from the
+// Home feed or from the Map.
+//
+// It used to be two. MapScreen carried its own ~200-line copy of this markup,
+// and the two drifted: the Map's copy had favouriting, a visited badge, a
+// next-run badge and post-to-feed, while this one had ratings and reviews.
+// Neither gap was deliberate — you simply could not read a court review from
+// the Map, or favourite a court from Home. One sheet now serves both, and the
+// four Map-only features are optional props: pass them and they render, omit
+// them and they do not.
 //
 // Props:
 //   court        — court object from useCourts (name, shortAddress, players,
@@ -14,6 +21,12 @@
 //   user         — logged-in Supabase user object
 //   isCheckingIn — true while the check-in Supabase call is in progress
 //   onViewProfile — optional (userId) => void — opens a checked-in player's profile
+//
+// Optional, supplied by the Map only:
+//   isFavorite       — bool; shows the heart filled
+//   onToggleFavorite — () => void; omit and no heart renders
+//   visitCount       — how many times you have played here
+//   onPostToFeed     — () => void; opens the composer tagged to this court
 
 import { useState, useEffect } from 'react';
 import { Trash2 } from 'lucide-react';
@@ -22,6 +35,9 @@ import WhosHere from './WhosHere';
 import CourtMeetups from './CourtMeetups';
 import CourtRoyalty from './CourtRoyalty';
 import { useCourtReviews } from '../hooks/useCourtReviews';
+import { hasRealDistance } from '../hooks/useCourts';
+import { formatMeetupTime } from '../utils/datetime';
+import { Image as ImageIcon, Heart, Navigation, CalendarDays } from 'lucide-react';
 import { useCourtKing } from '../hooks/useCourtKing';
 
 // ── Renders 1–5 filled/empty star characters ─────────────────────────────────
@@ -48,6 +64,10 @@ export default function CourtDetailSheet({
   onViewProfile,
   meetupActions,
   onToast,
+  isFavorite = false,
+  onToggleFavorite,
+  visitCount = 0,
+  onPostToFeed,
 }) {
   // ── All hooks must be called before any conditional return ────────────────
   const [showReviews,  setShowReviews]  = useState(false);
@@ -115,56 +135,95 @@ export default function CourtDetailSheet({
       <div className="map-bottom-sheet map-bottom-sheet--scrollable">
         <div className="map-sheet-top-row">
           <div className="map-sheet-drag-handle" />
+          {/* Favourite — Map only. No prop, no heart, so the Home sheet is
+              unchanged rather than showing a button that does nothing. */}
+          {onToggleFavorite && (
+            <button
+              className={`map-sheet-favorite${isFavorite ? ' is-favorited' : ''}`}
+              onClick={onToggleFavorite}
+              aria-label={isFavorite ? 'Remove from favourites' : 'Add to favourites'}
+            >
+              <Heart size={18} strokeWidth={2} fill={isFavorite ? 'currentColor' : 'none'} />
+            </button>
+          )}
           <button className="map-sheet-close" onClick={onClose} aria-label="Close">✕</button>
         </div>
 
-        {/* ── Court photo hero ──────────────────────────────────────────────── */}
-        {court.photoUrl && (
-          <div className="court-detail-photo">
+        {/* ── Photo, carrying the live marker ───────────────────────────────── */}
+        {/* Always rendered so the LIVE pill has somewhere to sit — the same
+            decision ParkCard made, and for the same reason. Courts without a
+            photo get a quiet block, not a dashed upload target: the mockup's
+            "browse files" is its placeholder art. */}
+        <div className="court-detail-photo">
+          {court.photoUrl ? (
             <img
               src={court.photoUrl}
               alt={`${court.name} court`}
               className="court-detail-photo-img"
             />
+          ) : (
+            <div className="court-detail-photo-empty" aria-hidden="true">
+              <ImageIcon size={26} strokeWidth={1.5} />
+            </div>
+          )}
+
+          {court.players > 0 && (
+            <div className="court-detail-live">
+              <span className="live-dot" />
+              LIVE · {court.players}
+            </div>
+          )}
+        </div>
+
+        <div className="map-sheet-name">{court.name}</div>
+
+        {/* Address and distance on one line. Filtered then joined, because
+            distance is the em dash when GPS is unavailable — writing this as
+            `{addr}{dist && ` · ${dist}`}` is what left a dangling separator on
+            the Home cards and the Map rows. */}
+        <div className="map-sheet-address">
+          {[court.shortAddress, hasRealDistance(court.distance) ? court.distance : null]
+            .filter(Boolean)
+            .join(' · ')}
+        </div>
+
+        {/* You have been here before — Map only. */}
+        {visitCount > 0 && (
+          <div className="map-sheet-visited">
+            ✓ You&apos;ve played here {visitCount} {visitCount === 1 ? 'time' : 'times'}
           </div>
         )}
 
-        <div className="map-sheet-name">{court.name}</div>
-        <div className="map-sheet-address">{court.shortAddress}</div>
-
-        {/* ── Info pills ─────────────────────────────────────────────────────── */}
+        {/* ── Facts about the court ─────────────────────────────────────────── */}
+        {/* "courts", not "hoops": that number is what AddCourtSheet collects
+            under "Number of courts", and Home and the Map both say courts.
+            "Lights", not "Lights until 11p": there is no closing time stored
+            anywhere. Surface stands in for the design's "Outdoor" — the data
+            is Concrete/Asphalt/Hardwood, not indoor/outdoor. */}
         <div className="map-sheet-meta">
-          {court.players > 0 ? (
-            <span className="map-sheet-live-badge">🟢 {court.players} live</span>
-          ) : (
-            <span className="map-sheet-empty-badge">Empty</span>
+          {court.reviewCount > 0 && (
+            <span className="map-sheet-meta-item map-sheet-meta-item--rating">
+              ★ {Number(court.avgRating).toFixed(1)}
+              <span className="map-sheet-meta-count">({court.reviewCount})</span>
+            </span>
           )}
           <span className="map-sheet-meta-item">
             {court.courts} {court.courts === 1 ? 'court' : 'courts'}
           </span>
-          <span className="map-sheet-meta-item">{court.surface}</span>
-          <span className="map-sheet-meta-item">
-            {court.lighting ? '💡 Lit' : 'No lights'}
-          </span>
-          {court.distance && court.distance !== '—' && (
-            <span className="map-sheet-meta-item">📍 {court.distance}</span>
+          {court.lighting && <span className="map-sheet-meta-item">Lights</span>}
+          {court.surface && court.surface !== 'Unknown' && (
+            <span className="map-sheet-meta-item">{court.surface}</span>
           )}
         </div>
 
-        {/* ── Average rating summary ────────────────────────────────────────── */}
-        <div className="court-avg-rating">
-          {court.reviewCount > 0 ? (
-            <>
-              <StarRow rating={court.avgRating} size={15} />
-              <span className="court-avg-number">{Number(court.avgRating).toFixed(1)}</span>
-              <span className="court-avg-count">
-                ({court.reviewCount} {court.reviewCount === 1 ? 'rating' : 'ratings'})
-              </span>
-            </>
-          ) : (
-            <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>No ratings yet</span>
-          )}
-        </div>
+        {/* Next run here, when one is scheduled. court.nextMeetup is attached
+            to every court by App's parksWithMeetups, so this needs no prop. */}
+        {court.nextMeetup && (
+          <div className="map-sheet-meetup-badge">
+            <CalendarDays size={13} strokeWidth={2} />
+            Run {formatMeetupTime(court.nextMeetup.scheduledAt)}
+          </div>
+        )}
 
         {/* ── Who's here — checked-in players (privacy-filtered) ─────────────── */}
         {/* court.checkins comes from the get_court_active_players RPC via     */}
@@ -175,6 +234,7 @@ export default function CourtDetailSheet({
           players={court.players}
           currentUserId={user?.id}
           onViewProfile={onViewProfile}
+          namesSummary
         />
 
         {/* ── King of the Court — the two reigning per-court leaders ─────────── */}
@@ -184,9 +244,10 @@ export default function CourtDetailSheet({
           onViewProfile={onViewProfile}
         />
 
-        {/* ── Check-in / Directions buttons ─────────────────────────────────── */}
-        {/* Two buttons, so they share one row — unlike the map sheet, which
-            has a third action and splits across two rows. */}
+        {/* ── Actions ───────────────────────────────────────────────────────── */}
+        {/* The primary action and Directions share a row; anything else gets
+            its own full-width row below, because "Get Directions" alone needs
+            ~131px and a third of a 390px sheet is ~110px. */}
         <div className="map-sheet-buttons-row">
           {isCheckedInHere ? (
             <button
@@ -196,7 +257,7 @@ export default function CourtDetailSheet({
                 onClose();
               }}
             >
-              Checked In ✓ (Check Out)
+              Check out
             </button>
           ) : (
             <button
@@ -204,7 +265,7 @@ export default function CourtDetailSheet({
               onClick={() => { onCheckIn(court.id); onClose(); }}
               disabled={isCheckingIn}
             >
-              {isCheckingIn ? 'Checking in…' : (isCheckedInElsewhere ? 'Switch Courts' : 'Check In')}
+              {isCheckingIn ? 'Checking in…' : (isCheckedInElsewhere ? 'Switch courts' : 'Check in here')}
             </button>
           )}
 
@@ -214,9 +275,20 @@ export default function CourtDetailSheet({
             target="_blank"
             rel="noreferrer"
           >
-            Get Directions
+            <Navigation size={15} strokeWidth={2} />
+            Directions
           </a>
         </div>
+
+        {/* Post to feed — Map only, and only when there is a composer to open. */}
+        {onPostToFeed && (
+          <button
+            className="btn btn--secondary btn--block map-sheet-secondary-action"
+            onClick={onPostToFeed}
+          >
+            Post to feed from here
+          </button>
+        )}
 
         {/* ── Upcoming runs (scheduled meetups) ─────────────────────────────── */}
         {meetupActions && (
