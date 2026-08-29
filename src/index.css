@@ -7133,24 +7133,8 @@ textarea.field {
 }
 
 /* ── Average rating summary row ────────────────────────────── */
-.court-avg-rating {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 0 4px;
-}
 
-.court-avg-number {
-  font-size: 17px;
-  font-weight: 700;
-  color: var(--text-primary);
-  font-family: var(--font);
-}
 
-.court-avg-count {
-  font-size: 12px;
-  color: var(--text-secondary);
-}
 
 /* ── Section toggle header ─────────────────────────────────── */
 .reviews-section-header {
