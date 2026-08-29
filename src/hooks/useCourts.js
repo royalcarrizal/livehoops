@@ -35,6 +35,21 @@ export function formatMiles(miles) {
   return `${miles.toFixed(1)} mi`;
 }
 
+// ── Indoor or outdoor, from the court_type column ────────────────────────────
+// AddCourtSheet stores one of four values: outdoor_park, outdoor_facility,
+// indoor_gym, indoor_facility. Only the indoor/outdoor half of that is worth
+// showing — "Recreation Center" vs "Indoor Gym" is a distinction the person
+// adding the court cares about and nobody reading it does.
+//
+// Returns null for an unknown or missing value so the chip is omitted rather
+// than guessed. A court is not outdoor just because we failed to read it.
+export function courtSetting(courtType) {
+  if (typeof courtType !== 'string') return null;
+  if (courtType.startsWith('outdoor')) return 'Outdoor';
+  if (courtType.startsWith('indoor'))  return 'Indoor';
+  return null;
+}
+
 export function normalizeLighting(value) {
   if (typeof value === 'boolean') return value;
   if (typeof value === 'string') {
@@ -109,6 +124,9 @@ export function normalizeCourt(row, userPos = null) {
     // player_count from the DB becomes "players" in the UI
     players:      row.player_count ?? 0,
     surface:      row.surface   ?? 'Unknown',
+    // "Outdoor" / "Indoor" for the court sheet's chips. The column has always
+    // existed and been populated; normalizeCourt simply never read it.
+    setting:      courtSetting(row.court_type),
     lighting:     normalizeLighting(row.lighting),
     lat:          row.lat,
     lng:          row.lng,

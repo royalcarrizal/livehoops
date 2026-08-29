@@ -1536,6 +1536,102 @@ textarea.field {
 }
 
 /* Live pill shown when players are at this court */
+/* ── Court sheet photo, carrying the live marker ───────────────────────────── */
+/* Always rendered so the LIVE pill has somewhere to sit — the same call
+   ParkCard made. Courts without a photo get a quiet block rather than a dashed
+   upload target; the design's "browse files" is placeholder art. */
+
+.court-detail-photo {
+  position: relative;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+
+.court-detail-photo-img {
+  width: 100%;
+  height: 168px;
+  object-fit: cover;
+  display: block;
+}
+
+.court-detail-photo-empty {
+  width: 100%;
+  height: 104px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-elevated);
+  color: var(--text-tertiary);
+}
+
+/* "● LIVE · 8". Glass over a photograph, so deliberately theme-independent for
+   the same reason .park-card-overlay is: a photo does not get lighter in light
+   mode. Green because it reports play happening right now. */
+.court-detail-live {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: var(--radius-full);
+  background: rgba(11, 11, 14, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: #2FE08A;
+  pointer-events: none;
+}
+
+.court-detail-live .live-dot {
+  background: #2FE08A;
+}
+
+/* The rating chip in the facts row */
+.map-sheet-meta-item--rating {
+  color: var(--accent);
+}
+
+.map-sheet-meta-count {
+  color: var(--text-secondary);
+  font-weight: 500;
+  margin-left: 3px;
+}
+
+/* Full-width action below the primary row */
+.map-sheet-secondary-action {
+  margin-top: 10px;
+}
+
+/* "Kai, Dre and 6 others running", beside the faces on the court sheet.
+   min-width:0 so it truncates rather than pushing the faces off the row. */
+/* The summary variant's faces are smaller, so the row tightens with them. */
+.whos-here-row:has(.whos-here-summary) {
+  gap: 6px;
+}
+
+/* Wraps to a second line rather than truncating. Ellipsis was the first
+   instinct and it was wrong: "kai, dre and 6 others runni…" says nothing the
+   faces beside it don't, and real usernames are far longer than the mockup's.
+   Clamped at two lines so one very long name cannot push the buttons down. */
+.whos-here-summary {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--text-secondary);
+  margin-left: 4px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
 .map-sheet-live-badge {
   background: var(--green-dim);
   color: var(--green);
@@ -7037,24 +7133,8 @@ textarea.field {
 }
 
 /* ── Average rating summary row ────────────────────────────── */
-.court-avg-rating {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 0 4px;
-}
 
-.court-avg-number {
-  font-size: 17px;
-  font-weight: 700;
-  color: var(--text-primary);
-  font-family: var(--font);
-}
 
-.court-avg-count {
-  font-size: 12px;
-  color: var(--text-secondary);
-}
 
 /* ── Section toggle header ─────────────────────────────────── */
 .reviews-section-header {

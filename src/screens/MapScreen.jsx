@@ -17,13 +17,9 @@ import { supabase } from '../lib/supabase';
 import { usePosts } from '../hooks/usePosts';
 import { useCourtFavorites } from '../hooks/useCourtFavorites';
 import MapPostModal from '../components/MapPostModal';
-import CourtMeetups from '../components/CourtMeetups';
-import CourtRoyalty from '../components/CourtRoyalty';
+import CourtDetailSheet from '../components/CourtDetailSheet';
 import Toast from '../components/Toast';
-import WhosHere from '../components/WhosHere';
 import { useToast } from '../hooks/useToast';
-import { useCourtKing } from '../hooks/useCourtKing';
-import { formatMeetupTime } from '../utils/datetime';
 import MapCourtGround from '../components/MapCourtGround';
 import CourtListRow from '../components/CourtListRow';
 import AddCourtSheet from '../components/AddCourtSheet';
@@ -66,7 +62,6 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
   const { createPost } = usePosts();
   const { toast, showToast } = useToast();
   const { favoriteIds, toggleFavorite } = useCourtFavorites(user?.id);
-  const { kings, fetchKings } = useCourtKing();
 
   // ── Fetch this user's check-in history ───────────────────────────────────
   useEffect(() => {
@@ -84,11 +79,6 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
       });
   }, [user?.id]);
 
-  // ── Load the two "kings" whenever a court sheet opens ─────────────────────
-  // Lazy: only the opened court is aggregated, never the whole list.
-  useEffect(() => {
-    if (selectedPark?.id) fetchKings(selectedPark.id);
-  }, [selectedPark?.id, fetchKings]);
 
   // ── Fly the map camera to a specific court ────────────────────────────────
   // Called when the user taps a chip at the bottom or selects a court
@@ -334,181 +324,29 @@ export default function MapScreen({ parks, onCheckIn, activeCheckIn, checkOut, u
       </div>
 
       {/* ── Court detail bottom sheet ──────────────────────────────────────── */}
-      {/* Slides up when a marker or chip is tapped. Tap outside to close. */}
-      {selectedPark && (
-        <>
-          {/* Semi-transparent backdrop — tapping it closes the sheet */}
-          <div
-            className="map-sheet-overlay"
-            onClick={() => setSelectedPark(null)}
-          />
-
-          {/* The sliding sheet with court details */}
-          <div className="map-bottom-sheet">
-            {/* Drag handle row with favorite + close buttons */}
-            <div className="map-sheet-top-row">
-              <div className="map-sheet-drag-handle" />
-              <button
-                className={`map-sheet-favorite${favoriteIds.has(selectedPark.id) ? ' is-favorited' : ''}`}
-                onClick={() => toggleFavorite(selectedPark.id)}
-                aria-label={favoriteIds.has(selectedPark.id) ? 'Remove from favorites' : 'Add to favorites'}
-              >
-                ♥
-              </button>
-              <button
-                className="map-sheet-close"
-                onClick={() => setSelectedPark(null)}
-                aria-label="Close"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Court name */}
-            <div className="map-sheet-name">{selectedPark.name}</div>
-
-            {/* Address */}
-            <div className="map-sheet-address">{selectedPark.shortAddress}</div>
-
-            {/* Visited badge */}
-            {visitMap[selectedPark.id] > 0 && (
-              <div className="map-sheet-visited">
-                ✓ You've played here {visitMap[selectedPark.id]} {visitMap[selectedPark.id] === 1 ? 'time' : 'times'}
-              </div>
-            )}
-
-            {/* Info pills: live status + court details */}
-            <div className="map-sheet-meta">
-              {livePark.players > 0 ? (
-                <span className="map-sheet-live-badge">
-                  🟢 {livePark.players} live
-                </span>
-              ) : (
-                <span className="map-sheet-empty-badge">Empty</span>
-              )}
-              <span className="map-sheet-meta-item">
-                {selectedPark.courts} {selectedPark.courts === 1 ? 'court' : 'courts'}
-              </span>
-              <span className="map-sheet-meta-item">{selectedPark.surface}</span>
-              <span className="map-sheet-meta-item">
-                {selectedPark.lighting ? '💡 Lit' : 'No lights'}
-              </span>
-              {selectedPark.reviewCount > 0 && (
-                <span className="map-sheet-meta-item" style={{ color: 'var(--accent)' }}>
-                  ★ {Number(selectedPark.avgRating).toFixed(1)} ({selectedPark.reviewCount})
-                </span>
-              )}
-              {livePark.nextMeetup && (
-                <span className="map-sheet-meetup-badge">
-                  📅 Run {formatMeetupTime(livePark.nextMeetup.scheduledAt)}
-                </span>
-              )}
-            </div>
-
-            {/* ── Who's here — checked-in players (privacy-filtered) ────────── */}
-            {/* Only players who allow it appear (show_location + visibility,   */}
-            {/* enforced by the get_court_active_players RPC). The count badge  */}
-            {/* above can be higher — those extras are players who've hidden    */}
-            {/* themselves, so we note them anonymously.                        */}
-            <WhosHere
-              checkins={livePark.checkins}
-              players={livePark.players}
-              currentUserId={user?.id}
-              onViewProfile={onViewProfile}
-            />
-
-            {/* ── King of the Court — the two reigning per-court leaders ────── */}
-            <CourtRoyalty
-              kings={kings}
-              currentUserId={user?.id}
-              onViewProfile={onViewProfile}
-            />
-
-            {/* Action buttons */}
-            {/* The primary action takes its own full-width row, and the two
-                secondary actions share the row below. Previously all three
-                shared one row, which could not fit: "Get Directions" alone
-                needs ~131px and an even third of a 390px sheet is ~110px, so
-                the row wrapped and the buttons came out mismatched. */}
-            <div className="map-sheet-buttons">
-              {/* Three check-in states:
-                  1. Checked in HERE     → green "Checked In ✓" button that checks out
-                  2. Checked in ELSEWHERE → orange "Switch Courts" button
-                  3. Not checked in       → orange "Check In" button */}
-              {activeCheckIn?.courtId === selectedPark.id ? (
-                // Already at this court — tap to check out
-                <button
-                  className="btn btn--live-filled btn--block"
-                  onClick={async () => {
-                    await checkOut(activeCheckIn.checkinId, selectedPark.id, user?.id);
-                    setSelectedPark(null);
-                  }}
-                >
-                  Checked In ✓ (Check Out)
-                </button>
-              ) : activeCheckIn ? (
-                // Checked in at a different court — swap
-                <button
-                  className="btn btn--primary btn--block"
-                  onClick={() => {
-                    onCheckIn(selectedPark.id);
-                    setSelectedPark(null);
-                  }}
-                  disabled={isCheckingIn}
-                >
-                  {isCheckingIn ? 'Checking in…' : 'Switch Courts'}
-                </button>
-              ) : (
-                // Not checked in anywhere
-                <button
-                  className="btn btn--primary btn--block"
-                  onClick={() => {
-                    onCheckIn(selectedPark.id);
-                    setSelectedPark(null);
-                  }}
-                  disabled={isCheckingIn}
-                >
-                  {isCheckingIn ? 'Checking in…' : 'Check In'}
-                </button>
-              )}
-
-              <div className="map-sheet-buttons-row">
-                <a
-                  className="btn btn--secondary btn--grow"
-                  href={`https://maps.google.com/?q=${selectedPark.lat},${selectedPark.lng}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Get Directions
-                </a>
-
-                {/* Post tagged to this court */}
-                <button
-                  className="btn btn--secondary btn--grow"
-                  onClick={() => setShowPostModal(true)}
-                >
-                  ✏️ Post Here
-                </button>
-              </div>
-            </div>
-
-            {/* ── Upcoming runs (scheduled meetups) ─────────────────────────── */}
-            {meetupActions && (
-              <CourtMeetups
-                court={{ id: selectedPark.id, name: selectedPark.name }}
-                meetups={livePark.meetups ?? []}
-                user={user}
-                onSchedule={meetupActions.onSchedule}
-                onJoin={meetupActions.onJoin}
-                onLeave={meetupActions.onLeave}
-                onCancel={meetupActions.onCancel}
-                fetchAttendees={meetupActions.fetchAttendees}
-                onViewProfile={onViewProfile}
-                onToast={showToast}
-              />
-            )}
-          </div>
-        </>
+      {/* One shared component, not a copy. This screen used to carry ~200 lines
+          of its own near-identical markup, which is how the two drifted: the
+          Map's copy grew favouriting, a visited badge and post-to-feed, while
+          CourtDetailSheet grew ratings and reviews, and neither had the other's.
+          The four Map-only features are passed as props; everything else the
+          sheet does it now does identically from both screens. */}
+      {livePark && (
+        <CourtDetailSheet
+          court={livePark}
+          onClose={() => setSelectedPark(null)}
+          onCheckIn={onCheckIn}
+          activeCheckIn={activeCheckIn}
+          checkOut={checkOut}
+          user={user}
+          isCheckingIn={isCheckingIn}
+          onViewProfile={onViewProfile}
+          meetupActions={meetupActions}
+          onToast={showToast}
+          isFavorite={favoriteIds.has(livePark.id)}
+          onToggleFavorite={() => toggleFavorite(livePark.id)}
+          visitCount={visitMap[livePark.id] ?? 0}
+          onPostToFeed={() => setShowPostModal(true)}
+        />
       )}
 
       {/* ── Court list ─────────────────────────────────────────────────────── */}
