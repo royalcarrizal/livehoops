@@ -49,7 +49,7 @@ const ringWidthFor = (variant, dim) =>
  *                                  the screen itself, so the ring is free to be
  *                                  decorative rather than repeating it.
  *   cameraOverlay {bool}         — show 📷 overlay (profile edit tap target)
- *   ringColor     {string}       — border color for avatar-stack overlap (e.g. 'var(--bg-card)')
+ *   ringColor     {string}       — border color for overlapping avatars (e.g. 'var(--bg-card)')
  */
 export default function Avatar({
   avatarUrl,
