@@ -121,18 +121,38 @@ drop policy if exists "Users can update friendships they received" on public.fri
 -- row — including `verified`. Submit a court, set verified = true, and it is
 -- live on everyone's map without ever passing admin moderation.
 --
--- The policy is kept because AddCourtSheet needs it: after inserting a court it
--- uploads the photo and writes photo_url back. That is the only column the
--- client writes to this table — verified by grepping every from('courts') call
--- in src/. So a column grant closes the hole without touching the feature, the
--- same technique privacy_enforcement.sql uses for direct_messages.read_at.
+-- The first attempt at this granted UPDATE back on photo_url alone, on the
+-- grounds that AddCourtSheet writes it after uploading a court photo. Applying
+-- it failed:
 --
--- Nothing else is affected: admin_review_court() sets verified, the check-in
--- RPCs adjust player_count, and sync_court_rating() maintains the ratings —
--- all SECURITY DEFINER or trigger-owned, so they run as the owner and column
--- grants to `authenticated` do not apply to them.
+--     ERROR: 42703: column "photo_url" of relation "courts" does not exist
+--
+-- Which is a bug of its own, and a bigger one than the grant. AddCourtSheet
+-- (line 266) writes photo_url after uploading the image, and normalizeCourt
+-- reads row.photo_url — but the column has never existed, so COURT PHOTOS HAVE
+-- NEVER WORKED. The photo reaches Storage and the row update fails silently:
+-- that call's result is never checked, and `await supabase...update()` resolves
+-- with { error } rather than throwing, so the try/catch wrapped around it never
+-- fires.
+--
+-- So there is no column to grant, and the right move is the stronger one:
+-- revoke UPDATE on this table from authenticated entirely. No client code path
+-- legitimately updates courts — the only one that tried has been failing since
+-- it was written. Everything that DOES update courts is unaffected, because it
+-- runs as the owner rather than as the caller: admin_review_court() sets
+-- verified, the check-in RPCs adjust player_count, and sync_court_rating()
+-- maintains the ratings.
+--
+-- "Users can update their own submitted courts" is left in place but is now
+-- inert without the privilege behind it. If court photos are fixed later by
+-- adding the column, the feature needs exactly one line back:
+--
+--     grant update (photo_url) on public.courts to authenticated;
+--
+-- Adding the column is deliberately NOT done here. It is a schema change to
+-- make a broken feature work, which is its own piece of work with its own
+-- testing, not something to slip into a security cleanup.
 revoke update on public.courts from authenticated;
-grant  update (photo_url) on public.courts to authenticated;
 
 commit;
 
@@ -178,11 +198,13 @@ commit;
 --
 --    Expect: "permission denied for column verified".
 --
--- e) ALLOWED — the court photo write AddCourtSheet depends on:
+-- e) DENIED — any update to courts as a normal user, not just `verified`:
 --
---      update public.courts set photo_url = 'x' where submitted_by = auth.uid();
+--      update public.courts set name = 'x' where submitted_by = auth.uid();
 --
---    Expect: success.
+--    Expect: "permission denied for table courts". Nothing in the client
+--    legitimately updates this table — see section 3 for why the photo write
+--    that looked like it did has never worked.
 --
 -- f) ALLOWED, in the app — submit a court through Add a Court end to end,
 --    with a photo. It must report success, not "Submit failed". This is the
