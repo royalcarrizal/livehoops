@@ -9,6 +9,12 @@
 --     of rounding each session in isolation and losing every remainder
 -- Neither changes a signature or a column, so no client change is needed and
 -- cached PWA bundles keep working. See the verification notes at the bottom.
+--
+-- ROLLBACK
+-- The bottom of this file contains the two previous expressions verbatim.
+-- There is no staging project, so that block is the undo button.
+
+begin;
 
 create or replace function public.livehoops_check_out(p_checkin_id uuid)
 returns jsonb
@@ -195,6 +201,8 @@ revoke execute on function public.livehoops_check_out(uuid) from public;
 grant execute on function public.livehoops_check_in(uuid) to authenticated;
 grant execute on function public.livehoops_check_out(uuid) to authenticated;
 
+commit;
+
 
 -- ── Verifying this after applying it ────────────────────────────────────────
 --
@@ -234,3 +242,30 @@ grant execute on function public.livehoops_check_out(uuid) to authenticated;
 --    player_count still rises and falls correctly, checkin_count increments by
 --    one per completed session, and courts_visited only increments the first
 --    time you play somewhere.
+
+
+-- ── ROLLBACK: the two previous expressions, verbatim ────────────────────────
+-- Both changes live inside function bodies, so rolling back means editing two
+-- lines and re-running the file rather than executing a block. Restore these,
+-- then re-run this whole file (grants included — they are at the bottom).
+--
+-- In livehoops_check_in, the returned address:
+--
+--   'court_address', concat_ws(', ', v_court.address, v_court.city || ' TX'),
+--
+-- In livehoops_check_out, the hours added:
+--
+--   v_hours_to_add := round(v_duration_minutes::numeric / 60)::int;
+--
+-- The v_prior_minutes declaration and its SELECT can stay — an unused variable
+-- is harmless — or be removed with it.
+--
+-- The matching line in supabase/configurable_auto_checkout.sql must be reverted
+-- IN THE SAME PASS. Leaving one path on marginal hours and the other on
+-- per-session rounding means a player's lifetime total depends on whether they
+-- checked out by hand or let the session expire, which is a worse state than
+-- either version on its own.
+--
+-- Nothing needs undoing in the data: neither change rewrote a single existing
+-- row, so a rollback restores the old arithmetic without leaving anything
+-- inconsistent behind it.

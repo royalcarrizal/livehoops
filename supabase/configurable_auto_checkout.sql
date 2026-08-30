@@ -212,6 +212,17 @@ commit;
 -- ── ROLLBACK: the original 3-hour function, verbatim ────────────────────────
 -- Run this block to restore the previous behaviour.
 --
+-- ⚠️  THIS BLOCK NOW GOES BACK TWO CHANGES, NOT ONE. It was written to undo the
+--     per-user limits, and it still does that. But the function above has since
+--     also been corrected to add MARGINAL hours rather than rounding each
+--     session in isolation, and this block predates that fix — running it
+--     restores the per-session rounding along with the flat 3-hour expiry.
+--
+--     If you only want to undo the hours change, edit the one line in the live
+--     function instead (see the ROLLBACK note in supabase/atomic_checkins.sql,
+--     which carries the matching expression and must be reverted in the same
+--     pass — the two paths cannot disagree about how long a session lasted).
+--
 -- create or replace function public.livehoops_expire_stale_checkins()
 -- returns integer
 -- language plpgsql
