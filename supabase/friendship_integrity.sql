@@ -48,6 +48,12 @@
 --      make direct_messages content immutable while still letting a recipient
 --      set read_at.
 --
+-- ── ROLLBACK ────────────────────────────────────────────────────────────────
+-- The bottom of this file contains the previous policies verbatim. Running that
+-- block restores the old behaviour immediately — including, to be clear about
+-- it, the hole. The constraints can stay (they are true of every row the app
+-- writes) or be dropped separately.
+--
 -- ── The app needs no changes ────────────────────────────────────────────────
 -- Verified against the client before writing this:
 --   sendFriendRequest    (useFriends.js) already inserts status: 'pending'
@@ -71,6 +77,16 @@
 --
 -- Expect: only 'pending' / 'accepted' / 'declined', and zero self_row = true.
 
+
+-- Wrapped in a transaction, the way configurable_auto_checkout.sql is and for
+-- the same reason: the constraints and the policies must not apply separately.
+-- Constraints without the new INSERT policy would let a hostile row through and
+-- then reject it at the constraint — noisy but survivable. Policies without the
+-- constraints removes the backstop. If any statement below fails (most likely
+-- the ALTER TABLEs, on pre-existing rows the constraints reject) NOTHING is
+-- applied and the database is exactly as it was.
+
+begin;
 
 -- ── 1. Constraints ──────────────────────────────────────────────────────────
 -- Postgres has no ADD CONSTRAINT IF NOT EXISTS, so each is wrapped in a guard
@@ -140,6 +156,8 @@ with check (
 revoke update on public.friendships from authenticated;
 grant  update (status) on public.friendships to authenticated;
 
+commit;
+
 
 -- ── Verifying this after applying it ────────────────────────────────────────
 --
@@ -192,3 +210,43 @@ grant  update (status) on public.friendships to authenticated;
 --    see it arrive on the other, accept it, confirm both sides now see each
 --    other in Your Crew, then decline a second request. All four steps must
 --    behave exactly as before.
+
+
+-- ── ROLLBACK: the previous policies, verbatim ───────────────────────────────
+-- Run this block to restore the behaviour that was in place before this file.
+--
+-- Be clear about what that means: it reopens the hole described at the top.
+-- Anyone could again insert an already-accepted friendship with anyone, and
+-- with it take DMs, friends-only posts and live location. Only run this if the
+-- new policies have broken something worse, and treat it as temporary.
+--
+-- The constraints are deliberately NOT dropped here. They are true of every row
+-- the app has ever written, so leaving them costs nothing and keeps the
+-- backstop in place even while the policies are relaxed. To drop them anyway:
+--
+--   alter table public.friendships drop constraint friendships_status_check;
+--   alter table public.friendships drop constraint friendships_not_self;
+--
+-- begin;
+--
+-- -- The insert policy as block_users.sql left it.
+-- drop policy if exists "friendships_insert_own" on public.friendships;
+-- create policy "friendships_insert_own"
+-- on public.friendships for insert
+-- to authenticated
+-- with check (
+--   requester_id = auth.uid()
+--   and not public.is_blocked(auth.uid(), addressee_id)
+-- );
+--
+-- -- The update policy as rls_policies.sql left it: no WITH CHECK.
+-- drop policy if exists "friendships_update_own" on public.friendships;
+-- create policy "friendships_update_own"
+-- on public.friendships for update
+-- to authenticated
+-- using (addressee_id = auth.uid());
+--
+-- -- And UPDATE back on every column, not just status.
+-- grant update on public.friendships to authenticated;
+--
+-- commit;

@@ -49,6 +49,17 @@
 -- means composing every notification's wording in the database, which is a
 -- larger change to ~10 call sites and is deliberately not in this branch. What
 -- this file removes is the ability of a STRANGER to notify you at all.
+--
+-- ── ROLLBACK ────────────────────────────────────────────────────────────────
+-- The rollback for this half is NOT "drop the function" — do that while the new
+-- Edge Function is still deployed and every push in the app starts failing,
+-- because it calls can_notify() and fails closed when the call errors.
+--
+-- To undo: REDEPLOY THE PREVIOUS send-push, and leave this function alone. It
+-- is inert unless something calls it, so an unused can_notify costs nothing and
+-- keeps the option of re-deploying forward without re-running any SQL. There is
+-- a `drop function` line at the bottom of this file for eventual cleanup, with
+-- the same ordering warning attached.
 
 
 -- ── can_notify ──────────────────────────────────────────────────────────────
@@ -57,6 +68,8 @@
 -- payload (see the sendPush calls in usePosts.js and useComments.js), so no
 -- client change is required — and they are verified rather than trusted, since
 -- an id alone proves nothing until it is joined back to the caller's own row.
+
+begin;
 
 create or replace function public.can_notify(
   p_recipient  uuid,
@@ -219,6 +232,8 @@ $$;
 revoke execute on function public.can_notify(uuid, text, uuid, uuid) from public;
 grant  execute on function public.can_notify(uuid, text, uuid, uuid) to authenticated;
 
+commit;
+
 
 -- ── Verifying this after applying it ────────────────────────────────────────
 --
@@ -284,3 +299,27 @@ grant  execute on function public.can_notify(uuid, text, uuid, uuid) to authenti
 --
 --    Do not skip (g). Every case in it passed before this change, and a fix
 --    that breaks one of them is a regression the denied cases cannot detect.
+
+
+-- ── ROLLBACK ────────────────────────────────────────────────────────────────
+--
+-- Read the ordering note before running anything here.
+--
+-- STEP 1, and usually the only step you need: redeploy the PREVIOUS version of
+-- supabase/functions/send-push. That restores the old behaviour immediately —
+-- including, to be clear about it, the hole this file closed. can_notify() then
+-- sits unused and harms nothing.
+--
+--     git checkout <commit-before-this-branch> -- supabase/functions/send-push
+--     npx supabase functions deploy send-push
+--
+-- STEP 2, optional cleanup, and ONLY after step 1 has been confirmed live.
+-- Dropping this function while the new Edge Function is still deployed makes
+-- every can_notify() call error, and the function fails closed — so all push
+-- notifications stop. That is the same hazard as applying these in the wrong
+-- order, in reverse.
+--
+-- drop function if exists public.can_notify(uuid, text, uuid, uuid);
+--
+-- Nothing else needs undoing. This file adds one function and grants execute on
+-- it; it alters no table, no policy and no data.

@@ -49,6 +49,11 @@
 -- ── Add the two missing tables ──────────────────────────────────────────────
 -- ALTER PUBLICATION ... ADD TABLE errors if the table is already a member, so
 -- each is guarded — keeping this file re-runnable like every other file here.
+--
+-- In a transaction, like the other migrations here, so a failure on the second
+-- table cannot leave the first half applied.
+
+begin;
 
 do $$
 begin
@@ -88,6 +93,25 @@ begin
     alter publication supabase_realtime add table public.notifications;
   end if;
 end $$;
+
+commit;
+
+
+-- ── ROLLBACK ────────────────────────────────────────────────────────────────
+-- Only meaningful if `posts` and `direct_messages` were NOT published before —
+-- if they already were, this file changed nothing and there is nothing to undo.
+--
+-- Removing them restores the previous state, in which the new-posts pill and
+-- the live DM badge do not update without a refresh. Nothing breaks; two
+-- features simply go quiet again.
+--
+-- Leave `notifications` alone — notifications.sql published it, and the bell
+-- panel's cross-device sync depends on it.
+--
+-- begin;
+-- alter publication supabase_realtime drop table public.posts;
+-- alter publication supabase_realtime drop table public.direct_messages;
+-- commit;
 
 
 -- ── Verifying this after applying it ────────────────────────────────────────
