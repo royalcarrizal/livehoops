@@ -15,16 +15,21 @@
 -- publication. notifications.sql adds `notifications`. Nothing in this
 -- repository ever added the other two.
 --
--- So one of two things is true, and the query below tells you which:
+-- ── CHECKED AGAINST PRODUCTION, 2026-08-30 ─────────────────────────────────
+-- All three tables were ALREADY published. So they were added by hand in the
+-- Supabase dashboard: the features work, and always have — but the app could
+-- not be rebuilt from Git, which AGENTS.md forbids for exactly this reason.
 --
---   • they were added by hand in the Supabase dashboard — in which case they
---     work, but the app cannot be rebuilt from Git, which AGENTS.md forbids;
---   • they were never added — in which case those two subscriptions have been
---     silently dead the whole time. Nothing errors when this is the case. The
---     channel opens, subscribes successfully, and simply never fires.
+-- That makes this file a RECORD rather than a change. Running it against the
+-- current production database is a complete no-op — every guard below finds its
+-- table already present and does nothing. It is worth running anyway on a fresh
+-- environment, where it is the difference between two working features and two
+-- silently dead ones.
 --
--- Either way this file is the fix: it makes the membership explicit and
--- reproducible.
+-- The other outcome was live too: had they NOT been published, those two
+-- subscriptions would have been dead the whole time and nothing would have said
+-- so. A channel on an unpublished table opens, subscribes successfully, and
+-- simply never fires.
 --
 -- ── IS THIS A PRIVACY RISK? No ──────────────────────────────────────────────
 -- Worth stating, because "broadcast every insert" sounds alarming. Realtime
