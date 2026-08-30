@@ -1,8 +1,21 @@
 -- LiveHoops: make a friendship require both people to agree.
--- Run this manually in the Supabase SQL editor, AFTER block_users.sql (this
--- file redefines friendships_insert_own again, on top of the block check that
--- file added — the same layering rate_limits.sql does for dm_insert_own).
--- Safe to re-run.
+-- Run this manually in the Supabase SQL editor. Safe to re-run.
+--
+-- ⚠️  RUN supabase/legacy_policy_cleanup.sql FIRST. Without it this file does
+--     nothing at all, and worse, it LOOKS like it worked.
+--
+--     The friendships table carries a second, dashboard-created policy called
+--     "Users can send friend requests" — (auth.uid() = requester_id), with no
+--     status check. Postgres ORs permissive policies together, so it grants
+--     everything the policy below refuses. Every statement here succeeds, the
+--     migration reports success, and the hole stays wide open.
+--
+--     This was found the only way it could be: by running the verification at
+--     the bottom of this file and getting the wrong answer.
+--
+-- Also run this AFTER block_users.sql — it redefines friendships_insert_own on
+-- top of the block check that file added, the same layering rate_limits.sql
+-- does for dm_insert_own.
 --
 -- ── SECURITY FIX: anyone could declare themselves your friend ───────────────
 --
@@ -31,9 +44,20 @@
 -- door into the same room, and the reason it stayed open is that the guard
 -- trusts the friendships table to mean what it says.
 --
--- There was a second, narrower path too. The update policy had a USING clause
--- and no WITH CHECK, and no column restriction — so the addressee of any row
--- could rewrite requester_id to point at a stranger and accept it.
+-- There was a second path too, and the live database made it wider than the
+-- tracked policy suggested. friendships_update_own restricts updates to the
+-- addressee — but the dashboard policy sitting beside it, "Users can update
+-- friendships they received", reads
+--
+--     ((auth.uid() = addressee_id) OR (auth.uid() = requester_id))
+--
+-- so the REQUESTER could update too. Send yourself a request, then accept it:
+-- simpler than the insert trick and it reaches the same place. Neither policy
+-- had a WITH CHECK or a column restriction either, so the addressee of any row
+-- could also rewrite requester_id to point at a stranger.
+--
+-- legacy_policy_cleanup.sql removes that policy; this file tightens what
+-- remains.
 --
 -- ── The fix: three overlapping layers ───────────────────────────────────────
 --
