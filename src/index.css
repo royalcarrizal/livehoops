@@ -2212,6 +2212,15 @@ textarea.field {
   margin-bottom: 24px;
 }
 
+/* The empty state demoted to a footer, used when Live now or Crew out has
+   something to show above it. The void the 56px ball was filling is gone; what
+   is left is the one thing that has to stay reachable in every state — the way
+   out to the map. The icon and the court-line watermark are dropped in JSX
+   rather than hidden here, so there is no display:none to explain later. */
+.no-checkin-state--footer {
+  padding: 24px 20px 8px;
+}
+
 
 
 /* ── Profile Screen (redesigned as public profile page) ── */
