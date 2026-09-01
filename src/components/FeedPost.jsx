@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Heart, MessageCircle, Share2, MoreHorizontal, Play, MapPin, Send, Trash2, Flag, X, UserX } from 'lucide-react';
+import { Heart, MessageCircle, Repeat2, MoreHorizontal, Play, MapPin, Send, Trash2, Flag, X, UserX } from 'lucide-react';
 import Avatar from './Avatar';
 import BlockUserConfirm from './BlockUserConfirm';
 import { insertSelfNotification } from '../utils/notificationStore';
@@ -510,7 +510,11 @@ export default function FeedPost({
           disabled={repostBusy}
           aria-label="Repost"
         >
-          <Share2 size={20} strokeWidth={2} color="var(--text-secondary)" />
+          {/* Repeat2, not Share2. The share glyph said "send this elsewhere";
+              the button reposts to your own feed. Two arrows chasing each other
+              is the convention every feed app uses for exactly this action, so
+              it needs no label to be understood. */}
+          <Repeat2 size={20} strokeWidth={2} color="var(--text-secondary)" />
         </button>
       </div>
 
