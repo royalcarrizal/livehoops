@@ -17,10 +17,13 @@
 //
 // Data note:
 //   A friend is considered "checked in" if their object has a non-null
-//   `currentCourt` or `checkedInParkId` field. Right now the useFriends hook
-//   returns basic profile info only — check-in status will be added once a
-//   Supabase check-in system (e.g. a `checkins` table) is built.
-//   In the future this will query Supabase for real-time check-in status.
+//   `currentCourt` or `checkedInParkId` field. useFriends supplies both, via
+//   the get_friends_activity RPC, alongside `activeSince` and `lastCheckinAt`.
+//
+//   `lastCheckinAt` is NOT a substitute: it is when the friend last played,
+//   which is true of everyone who has ever checked in. Filtering on it would
+//   show a row of people who are at work. Only currentCourt/checkedInParkId
+//   mean "out right now".
 
 import Avatar from './Avatar';
 
@@ -31,12 +34,20 @@ import Avatar from './Avatar';
 //                                 checkedInParkId? }
 //   setActiveTab — function that switches the app to a different tab.
 //                  We call setActiveTab('map') when a card is tapped.
-export default function ActiveFriendsRow({ friends = [], setActiveTab }) {
+//   label        — the header text. Defaults to Home's wording; the Check tab
+//                  passes "Crew out". The header lives in here rather than at
+//                  the call site because this component self-hides, and a
+//                  header rendered outside it would be a label over nothing.
+export default function ActiveFriendsRow({
+  friends = [],
+  setActiveTab,
+  label = 'Friends playing now',
+}) {
 
   // ── Filter to only friends who are currently at a court ──────────────────
   // A friend counts as "checked in" if they have a currentCourt name or a
-  // checkedInParkId that is not null / undefined.
-  // This list will be empty until real check-in data is added to Supabase.
+  // checkedInParkId that is not null / undefined. See the data note above for
+  // why lastCheckinAt is deliberately not part of this test.
   const activeFriends = friends.filter(
     f => f.currentCourt || f.checkedInParkId
   );
@@ -68,7 +79,7 @@ export default function ActiveFriendsRow({ friends = [], setActiveTab }) {
       <div className="active-friends-header">
         {/* Orange pulsing dot — uses the existing `pulse` keyframe from index.css */}
         <span className="active-friends-live-dot-header" />
-        Friends playing now
+        {label}
       </div>
 
       {/* ── Horizontally scrollable cards ────────────────────────────────────── */}

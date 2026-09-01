@@ -72,7 +72,11 @@ export default function App() {
   //   courts            — array of court objects for the map, chips, and lists
   //   updatePlayerCount — instantly adjusts a court's player count in local state
   //   refreshCounts     — re-fetches player_count from DB (called every 60s)
-  const { courts, updatePlayerCount, refreshCounts, userPos } = useCourts();
+  // `loading` is passed down as courtsLoading so screens can tell "no courts
+  // are live" apart from "courts haven't arrived yet". CheckInScreen needs the
+  // distinction: its empty-state hero is the wrong thing to paint for a beat
+  // while the real data is still in flight.
+  const { courts, loading: courtsLoading, updatePlayerCount, refreshCounts, userPos } = useCourts();
 
   // ── Check-In ────────────────────────────────────────────────────────────
   // Manages the user's current check-in against Supabase.
@@ -403,6 +407,7 @@ export default function App() {
 
   const screenProps = {
     parks:           parksWithMeetups,
+    courtsLoading,
     activeCheckIn,
     checkIn:         handleCheckIn,   // unified handler — does geocoding + RPC
     checkOut:        handleCheckOut,
