@@ -104,6 +104,9 @@ function normPost(row, likedIds) {
     likes:        row.like_count ?? 0,
     // comment_count is kept in sync by a Supabase trigger — no extra fetch needed
     comments:     row.comment_count ?? 0,
+    // repost_count is kept in sync the same way (supabase/repost_count.sql).
+    // See effectiveRepostCount for why a repost shows the original's number.
+    reposts:      effectiveRepostCount(row, original),
     // Check if the current user has already liked this post
     isLiked:      likedIds.has(row.id),
     repostOfPostId: row.repost_of_post_id ?? null,
@@ -223,6 +226,38 @@ async function fetchLikedIds(userId, postIds) {
 //   - prevLikes isn't a usable number: the caller didn't tell us what it was
 //     showing. Number.isFinite (not typeof) so NaN falls back to a read rather
 //     than rendering "NaN likes".
+// ── Which repost count a card should show ──────────────────────────────────
+// Reposting is always aimed at the ORIGINAL: handleRepost sends
+// `repostOfPostId ?? id`, and posts_user_repost_unique is keyed on that, so
+// there is no such thing as a repost of a repost — you get a second repost of
+// the same original, or a unique violation.
+//
+// The number on screen has to follow the same rule. A repost row's own
+// repost_count is structurally always 0 (nothing can ever point at it), so
+// showing it would print "0 reposts" on a post with fifty, right next to a
+// button that reposts the thing with fifty. Show the original's count instead.
+//
+// Exported for its test; the trap is invisible until you look at a repost.
+export function effectiveRepostCount(row, original) {
+  if (row?.repost_of_post_id) return original?.repost_count ?? 0;
+  return row?.repost_count ?? 0;
+}
+
+// ── Move one card's repost count, if it is a card about this original ──────
+// "About this original" is true of the original post itself AND of every
+// repost pointing at it, because they all display the same number. Anything
+// else is returned untouched, by identity, so React skips re-rendering it.
+//
+// Clamped at zero for the same reason the SQL trigger is: branch 2 will call
+// this with -1 to undo a repost, and a feed that can print "-1" is worse than
+// one that is briefly stale.
+export function bumpRepostCount(post, originalId, delta) {
+  if (!post || !originalId) return post;
+  const isAboutOriginal = post.id === originalId || post.repostOfPostId === originalId;
+  if (!isAboutOriginal) return post;
+  return { ...post, reposts: Math.max(0, (post.reposts ?? 0) + delta) };
+}
+
 export function deriveLikeState(isLiking, prevLikes, drifted) {
   if (drifted || !Number.isFinite(prevLikes)) return null;
   return isLiking
@@ -494,7 +529,20 @@ export function usePosts() {
     let [enriched] = await attachOriginalPosts([data]);
     [enriched] = await attachProfiles([enriched]);
     const newPost = normPost(enriched, new Set());
-    setFeed(prev => [newPost, ...prev]);
+
+    // The write succeeding IS the confirmation that the count went up, the
+    // same argument deriveLikeState makes. The trigger has already moved the
+    // authoritative value; this just stops the feed showing yesterday's number
+    // until the next fetch.
+    //
+    // Every card aimed at this original moves together — the original itself,
+    // and any repost of it already in the feed, since they all display the
+    // original's count. The new repost is built from a row fetched before the
+    // trigger fired, so it needs the bump too.
+    setFeed(prev => [
+      bumpRepostCount(newPost, postId, +1),
+      ...prev.map(p => bumpRepostCount(p, postId, +1)),
+    ]);
     return { post: newPost };
   }, []);
 

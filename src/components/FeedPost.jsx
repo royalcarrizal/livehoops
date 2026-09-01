@@ -515,6 +515,9 @@ export default function FeedPost({
               is the convention every feed app uses for exactly this action, so
               it needs no label to be understood. */}
           <Repeat2 size={20} strokeWidth={2} color="var(--text-secondary)" />
+          {/* On a repost this is the ORIGINAL's count, not this row's — see
+              effectiveRepostCount in usePosts. */}
+          <span>{post.reposts ?? 0}</span>
         </button>
       </div>
 
