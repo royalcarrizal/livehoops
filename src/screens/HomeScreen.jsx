@@ -110,6 +110,7 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
     fetchFriendsFeed,
     createPost,
     createRepost,
+    undoRepost,
     likePost,
     unlikePost,
     deletePost,
@@ -185,6 +186,7 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
   const handleLikePost   = (postId, prevLikes) => likePost(postId, user.id, prevLikes);
   const handleUnlikePost = (postId, prevLikes) => unlikePost(postId, user.id, prevLikes);
   const handleRepost     = (postId) => createRepost(postId, user.id);
+  const handleUndoRepost = (postId) => undoRepost(postId, user.id);
 
   // Build the user's real initials and avatar for PostComposer + StoriesRow
   const userInitials  = (profile?.username ?? 'PL').slice(0, 2).toUpperCase();
@@ -378,6 +380,7 @@ export default function HomeScreen({ setActiveTab, user, profile, parks, onViewP
                   onLike={handleLikePost}
                   onUnlike={handleUnlikePost}
                   onRepost={handleRepost}
+                  onUndoRepost={handleUndoRepost}
                   onDelete={deletePost}
                   onReport={async (postId) => {
                     try {

@@ -71,10 +71,15 @@ export function toTimeAgo(isoString) {
   return new Date(isoString).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
+// Shared empty Set for normPost's repostedIds default. Declared above normPost
+// because a const in the temporal dead zone is a runtime error, not a warning,
+// the moment a caller omits the argument.
+const EMPTY_SET = new Set();
+
 // ── Helper: shape a raw Supabase row into the format FeedPost expects ─────
 // The FeedPost component expects a specific shape — this function handles
 // that translation so we don't repeat it everywhere.
-function normPost(row, likedIds) {
+function normPost(row, likedIds, repostedIds = EMPTY_SET) {
   const username = row.profiles?.username ?? 'Player';
   const original = row.repost_of_post_id ? row.original_post : null;
   const originalUsername = original?.profiles?.username ?? 'Player';
@@ -107,6 +112,9 @@ function normPost(row, likedIds) {
     // repost_count is kept in sync the same way (supabase/repost_count.sql).
     // See effectiveRepostCount for why a repost shows the original's number.
     reposts:      effectiveRepostCount(row, original),
+    // Has the viewer reposted the post this card acts on? Keyed on the target,
+    // so an original and every repost of it answer identically.
+    isReposted:   repostedIds.has(repostTargetId(row)),
     // Check if the current user has already liked this post
     isLiked:      likedIds.has(row.id),
     repostOfPostId: row.repost_of_post_id ?? null,
@@ -213,6 +221,35 @@ async function fetchLikedIds(userId, postIds) {
   return new Set((data ?? []).map(row => row.post_id));
 }
 
+// ── Which of these posts has the viewer already reposted? ──────────────────
+// The repost analogue of fetchLikedIds, and it works the same way: one batched
+// query, a Set, no per-card lookups.
+//
+// The difference is what goes in and what comes out. It takes ORIGINAL ids
+// (repostTargetId of each row, not the row ids), because that is what a repost
+// points at and what the unique index is keyed on. It returns the originals
+// the viewer has reposted — so both an original and any repost of it look
+// themselves up under the same key and cannot disagree.
+async function fetchRepostedIds(userId, targetIds) {
+  const ids = [...new Set((targetIds ?? []).filter(Boolean))];
+  if (!userId || ids.length === 0) return new Set();
+
+  const { data, error } = await supabase
+    .from('posts')
+    .select('repost_of_post_id')
+    .eq('user_id', userId)
+    .in('repost_of_post_id', ids);
+
+  if (error) {
+    // Fail soft, exactly as fetchLikedIds does. A feed that renders with every
+    // repost icon un-filled is worth more than no feed at all.
+    console.error('fetchRepostedIds error:', error);
+    return new Set();
+  }
+
+  return new Set((data ?? []).map(row => row.repost_of_post_id));
+}
+
 // ── Derive a post's like state without asking the server ───────────────────
 // After a like/unlike write succeeds, the resulting count is just the count we
 // were already showing, plus or minus one — the write succeeding IS the
@@ -226,6 +263,19 @@ async function fetchLikedIds(userId, postIds) {
 //   - prevLikes isn't a usable number: the caller didn't tell us what it was
 //     showing. Number.isFinite (not typeof) so NaN falls back to a read rather
 //     than rendering "NaN likes".
+// ── Which post a repost action actually targets ────────────────────────────
+// Always the original. handleRepost has sent `repostOfPostId ?? id` since
+// reposts shipped, and posts_user_repost_unique is keyed on that column, so a
+// repost of a repost is not a thing that can exist.
+//
+// Everything the button displays has to agree with that: the count
+// (effectiveRepostCount), and whether YOU have reposted it. Reposting a post
+// and then finding its repost still showing an un-reposted icon would be the
+// same object contradicting itself in one scroll.
+export function repostTargetId(row) {
+  return row?.repost_of_post_id ?? row?.id ?? null;
+}
+
 // ── Which repost count a card should show ──────────────────────────────────
 // Reposting is always aimed at the ORIGINAL: handleRepost sends
 // `repostOfPostId ?? id`, and posts_user_repost_unique is keyed on that, so
@@ -256,6 +306,21 @@ export function bumpRepostCount(post, originalId, delta) {
   const isAboutOriginal = post.id === originalId || post.repostOfPostId === originalId;
   if (!isAboutOriginal) return post;
   return { ...post, reposts: Math.max(0, (post.reposts ?? 0) + delta) };
+}
+
+// ── Flip one card's "you reposted this" flag, if it is about this original ──
+// The companion to bumpRepostCount, with the same membership rule: the
+// original and every repost of it. They share one answer, so they flip
+// together — otherwise reposting a post leaves its repost, two cards down the
+// feed, still showing an un-filled icon for the very thing you just reposted.
+//
+// Returns the post untouched by identity when nothing changes, so React can
+// skip the re-render.
+export function markReposted(post, originalId, value) {
+  if (!post || !originalId) return post;
+  const isAboutOriginal = post.id === originalId || post.repostOfPostId === originalId;
+  if (!isAboutOriginal || post.isReposted === value) return post;
+  return { ...post, isReposted: value };
 }
 
 export function deriveLikeState(isLiking, prevLikes, drifted) {
@@ -341,11 +406,12 @@ export function usePosts() {
     // the two branches together instead of end-to-end drops a round trip from
     // every feed load. (Neither attach* adds or removes rows, so the IDs are
     // the same either way.)
-    const [rows, likedIds] = await Promise.all([
+    const [rows, likedIds, repostedIds] = await Promise.all([
       attachOriginalPosts(data ?? []).then(attachProfiles),
       fetchLikedIds(userId, (data ?? []).map(r => r.id)),
+      fetchRepostedIds(userId, (data ?? []).map(repostTargetId)),
     ]);
-    setFeed(rows.map(row => normPost(row, likedIds)));
+    setFeed(rows.map(row => normPost(row, likedIds, repostedIds)));
     setLoading(false);
   }, []);
 
@@ -373,11 +439,12 @@ export function usePosts() {
     followingQueryRef.current.rawCount += (data ?? []).length;
     setFeedHasMore((data ?? []).length === PAGE_SIZE);
 
-    const [rows, likedIds] = await Promise.all([
+    const [rows, likedIds, repostedIds] = await Promise.all([
       attachOriginalPosts(data ?? []).then(attachProfiles),
       fetchLikedIds(userId, (data ?? []).map(r => r.id)),
+      fetchRepostedIds(userId, (data ?? []).map(repostTargetId)),
     ]);
-    const newPosts = rows.map(row => normPost(row, likedIds));
+    const newPosts = rows.map(row => normPost(row, likedIds, repostedIds));
 
     // Dedupe: a post created optimistically (or arriving between pages)
     // could already be in the list
@@ -403,11 +470,12 @@ export function usePosts() {
       return [];
     }
 
-    const [rows, likedIds] = await Promise.all([
+    const [rows, likedIds, repostedIds] = await Promise.all([
       attachOriginalPosts(data ?? []).then(attachProfiles),
       fetchLikedIds(viewerUserId, (data ?? []).map(r => r.id)),
+      fetchRepostedIds(viewerUserId, (data ?? []).map(repostTargetId)),
     ]);
-    return rows.map(row => normPost(row, likedIds));
+    return rows.map(row => normPost(row, likedIds, repostedIds));
   }, []);
 
   // ── Fetch one post by ID ────────────────────────────────────────────────
@@ -427,11 +495,12 @@ export function usePosts() {
       return null;
     }
 
-    const [rows, likedIds] = await Promise.all([
+    const [rows, likedIds, repostedIds] = await Promise.all([
       attachOriginalPosts([data]).then(attachProfiles),
       fetchLikedIds(viewerUserId, [data.id]),
+      fetchRepostedIds(viewerUserId, [repostTargetId(data)]),
     ]);
-    return normPost(rows[0], likedIds);
+    return normPost(rows[0], likedIds, repostedIds);
   }, []);
 
   // ── Create a new post ───────────────────────────────────────────────────
@@ -528,7 +597,9 @@ export function usePosts() {
 
     let [enriched] = await attachOriginalPosts([data]);
     [enriched] = await attachProfiles([enriched]);
-    const newPost = normPost(enriched, new Set());
+    // You have, by definition, just reposted this — so the new card comes back
+    // already marked, rather than waiting for the next fetch to notice.
+    const newPost = normPost(enriched, EMPTY_SET, new Set([postId]));
 
     // The write succeeding IS the confirmation that the count went up, the
     // same argument deriveLikeState makes. The trigger has already moved the
@@ -541,9 +612,48 @@ export function usePosts() {
     // trigger fired, so it needs the bump too.
     setFeed(prev => [
       bumpRepostCount(newPost, postId, +1),
-      ...prev.map(p => bumpRepostCount(p, postId, +1)),
+      ...prev.map(p => markReposted(bumpRepostCount(p, postId, +1), postId, true)),
     ]);
     return { post: newPost };
+  }, []);
+
+  // ── Undo a repost ───────────────────────────────────────────────────────
+  // Deletes the repost row this user made of `postId`. posts_delete_own
+  // already permits it, so no new policy is needed, and the repost_count
+  // trigger's DELETE branch walks the number back down on its own.
+  //
+  // Worth being explicit about what this removes: a repost is a real post, so
+  // undoing one deletes a post — along with any likes or comments it collected
+  // while it stood. That is the same thing "Delete Post" does to a repost
+  // today; this is a second door to it, not a new behaviour.
+  const undoRepost = useCallback(async (postId, userId) => {
+    if (!postId || !userId) return null;
+
+    // Returns the deleted rows, so an empty array means there was nothing to
+    // undo — someone else's device got there first, or our isReposted was
+    // stale. Either way the end state is the one the user wanted.
+    const { data, error } = await supabase
+      .from('posts')
+      .delete()
+      .eq('user_id', userId)
+      .eq('repost_of_post_id', postId)
+      .select('id');
+
+    if (error) {
+      console.error('undoRepost error:', error);
+      throw error;
+    }
+
+    const removedIds = new Set((data ?? []).map(r => r.id));
+
+    setFeed(prev => prev
+      // The repost itself leaves the feed.
+      .filter(p => !removedIds.has(p.id))
+      // Everything still pointing at this original loses one, and stops
+      // claiming you reposted it.
+      .map(p => markReposted(bumpRepostCount(p, postId, -1), postId, false)));
+
+    return { removed: removedIds.size };
   }, []);
 
   // ── Like a post ─────────────────────────────────────────────────────────
@@ -667,6 +777,7 @@ export function usePosts() {
     fetchPostById,
     createPost,
     createRepost,
+    undoRepost,
     likePost,
     unlikePost,
     deletePost,
