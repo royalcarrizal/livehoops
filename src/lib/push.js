@@ -17,10 +17,33 @@
 import { supabase } from './supabase';
 
 // Name of the deployed Supabase Edge Function that sends the push.
-// Deployed under its actual folder name, "send-push" (supabase/functions/send-push).
-// It used to run under "smart-api" (Supabase's default name from an earlier
-// deploy) — that function is now stale/unused now that this constant points
-// at "send-push", which also persists a notifications row (see supabase/notifications.sql).
+// Deployed under its actual folder name, "send-push" (supabase/functions/send-push),
+// which also persists a notifications row (see supabase/notifications.sql).
+//
+// ── A note about "smart-api", because the old wording here was dangerous ────
+// This constant used to point at "smart-api" (Supabase's default name from an
+// earlier deploy), and this comment said that function was "now stale/unused"
+// once the constant moved. That was true of the CODE and false of the SERVER.
+//
+// Nothing in this repository called it any more — but it was still DEPLOYED,
+// still reachable at its own URL, and still running the pre-hardening logic:
+// take user_id, title and body on trust, and push whatever you are given to
+// whoever you are told. So while send-push was being hardened
+// (supabase/notification_authorization.sql), a second endpoint sat beside it
+// answering the same requests under the old rules, and every caller of this
+// constant could have been pointed back at it by changing one string.
+//
+// It was deleted from the project on 2026-08-30:
+//
+//     npx supabase functions delete smart-api
+//
+// The lesson is worth keeping next to the constant that caused it: pointing
+// client code away from a function does not undeploy it. Supabase functions
+// live until they are explicitly deleted, and `supabase functions list` is the
+// only thing that will tell you what is actually running. This is the same
+// class of mistake as the shadow RLS policies in
+// supabase/legacy_policy_cleanup.sql — a superseded thing that was never
+// removed, quietly outranking the thing that replaced it.
 const PUSH_FUNCTION = 'send-push';
 
 /**

@@ -28,7 +28,7 @@ export default function SinglePostSheet({ postId, showComments = false, currentU
   const [photoUrl, setPhotoUrl] = useState(null);
 
   const { toast, showToast } = useToast();
-  const { fetchPostById, likePost, unlikePost, createRepost, deletePost } = usePosts();
+  const { fetchPostById, likePost, unlikePost, createRepost, undoRepost, deletePost } = usePosts();
 
   useEffect(() => {
     setLoading(true);
@@ -78,6 +78,7 @@ export default function SinglePostSheet({ postId, showComments = false, currentU
             onLike={async (id, prevLikes) => { const next = await likePost(id, currentUser?.id, prevLikes); patchLike(next); return next; }}
             onUnlike={async (id, prevLikes) => { const next = await unlikePost(id, currentUser?.id, prevLikes); patchLike(next); return next; }}
             onRepost={(id) => createRepost(id, currentUser?.id)}
+            onUndoRepost={(id) => undoRepost(id, currentUser?.id)}
             onDelete={async (id) => { await deletePost(id); onClose(); }}
             onReport={async (id) => {
               try {

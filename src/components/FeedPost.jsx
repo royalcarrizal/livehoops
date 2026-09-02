@@ -25,6 +25,7 @@ export default function FeedPost({
   onLike,
   onUnlike,
   onRepost,
+  onUndoRepost,
   onDelete,
   onReport,
   onBlock,
@@ -203,21 +204,34 @@ export default function FeedPost({
     }
   };
 
+  // Repost, or undo the one you already made. The button is a toggle now that
+  // the icon shows which state you are in — an icon that says "you reposted
+  // this" and a tap that can only repost again reads as broken.
+  //
+  // Always aimed at the original: reposting a repost is not a thing (see
+  // repostTargetId in usePosts), so the id sent here is the same one the count
+  // and the filled icon are keyed on.
   const handleRepost = async () => {
     if (repostBusy) return;
 
     const originalId = post.repostOfPostId ?? post.id;
+    const undoing = post.isReposted;
     setRepostBusy(true);
 
     try {
-      const result = await onRepost?.(originalId);
-      if (result?.alreadyReposted) {
-        onToast?.('Already reposted');
+      if (undoing) {
+        await onUndoRepost?.(originalId);
+        onToast?.('Removed from your feed');
       } else {
-        onToast?.('Reposted to your feed');
+        const result = await onRepost?.(originalId);
+        // Still possible: another device reposted this while we were looking
+        // at a stale icon. The end state matches what they wanted either way.
+        onToast?.(result?.alreadyReposted
+          ? 'Already reposted'
+          : 'Reposted to your feed');
       }
     } catch {
-      onToast?.('Failed to repost');
+      onToast?.(undoing ? 'Failed to remove repost' : 'Failed to repost');
     } finally {
       setRepostBusy(false);
     }
@@ -508,16 +522,26 @@ export default function FeedPost({
           className="feed-action-btn"
           onClick={handleRepost}
           disabled={repostBusy}
-          aria-label="Repost"
+          aria-label={post.isReposted ? 'Undo repost' : 'Repost'}
         >
           {/* Repeat2, not Share2. The share glyph said "send this elsewhere";
               the button reposts to your own feed. Two arrows chasing each other
               is the convention every feed app uses for exactly this action, so
               it needs no label to be understood. */}
-          <Repeat2 size={20} strokeWidth={2} color="var(--text-secondary)" />
+          {/* Green, not accent orange, when you have reposted it. Green is
+              this app's "this is on" colour everywhere else — the live dot,
+              the check-in badge, the nav tab mid-session — and index.css says
+              so at the Check In block. */}
+          <Repeat2
+            size={20}
+            strokeWidth={post.isReposted ? 2.5 : 2}
+            color={post.isReposted ? 'var(--green)' : 'var(--text-secondary)'}
+          />
           {/* On a repost this is the ORIGINAL's count, not this row's — see
               effectiveRepostCount in usePosts. */}
-          <span>{post.reposts ?? 0}</span>
+          <span style={{ color: post.isReposted ? 'var(--green)' : undefined }}>
+            {post.reposts ?? 0}
+          </span>
         </button>
       </div>
 
